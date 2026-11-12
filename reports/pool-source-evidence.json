@@ -19,27 +19,27 @@
       "sha256": "974506fb3185a237d96ee8b87ef7de3550c142668bef5485316f4d7386c4c6de"
     },
     {
-      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/README.md",
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/bef6dd2efa2ed803d77fb49fbc064666685cb742/README.md",
       "bytes": 17926,
       "sha256": "f8527d410b72decfd39704a99b98f9c3abca999d70e0719578ec78a4c7eb8296"
     },
     {
-      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/README-SOLOMINING.md",
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/bef6dd2efa2ed803d77fb49fbc064666685cb742/README-SOLOMINING.md",
       "bytes": 9279,
       "sha256": "eea1c786dc2dace8713de4230882f5d187582967975405812f470d91307823a7"
     },
     {
-      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/ckpool.conf",
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/bef6dd2efa2ed803d77fb49fbc064666685cb742/ckpool.conf",
       "bytes": 874,
       "sha256": "89eff1a1e88dc0ec3a58e42bac17bfb14e5a0c06feb1768101cb3c11d5af7c9c"
     },
     {
-      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/master/doc/JSON-RPC-interface.md",
+      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/6c7e464293b9cd9b14d24931de1bf86856ec737d/doc/JSON-RPC-interface.md",
       "bytes": 12115,
       "sha256": "0d92a9f8b0319373462e93a02ba414fd5f61f173e89366d430227776ba23f4bd"
     },
     {
-      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/master/doc/zmq.md",
+      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/6c7e464293b9cd9b14d24931de1bf86856ec737d/doc/zmq.md",
       "bytes": 9415,
       "sha256": "80dd823edba14d97fdfd29da3d58783e3e6e4ce94b1c09c86192d38a759e2778"
     },
