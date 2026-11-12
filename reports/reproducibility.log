@@ -1,0 +1,17 @@
+HEAD is now at e84c651 Merge pull request #88 from IsSasoriDev/fix/flasher-apostrophe
+Removing docs/native-api.json
+Removing main/asic/rx_frame.h
+Removing main/core/guardian.cpp
+Removing main/core/guardian.h
+Removing main/core/hunter.cpp
+Removing main/core/hunter.h
+Removing main/core/hunter_math.h
+Removing main/core/intel_math.h
+Removing main/core/intelligence.cpp
+Removing main/core/intelligence.h
+Removing main/stratum/v1_wire.h
+BTC Hunter hooks applied
+OTA/NVS safety and native API documentation applied
+Optional guardian observer hooked through stock API guard
+Patched pinned upstream. Build Gamma only.
+PASS: clean pinned checkout + all patch stages; byte-identical 331 source files

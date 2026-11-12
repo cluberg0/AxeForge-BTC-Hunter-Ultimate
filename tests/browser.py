@@ -2,7 +2,7 @@ import asyncio,json,pathlib,time,copy,os,shutil
 from playwright.async_api import async_playwright
 root=pathlib.Path(__file__).resolve().parent.parent;ns=json.loads((root/'tests/browser-fixture.json').read_text())
 cfg=ns['cfg'];status=ns['status'];pools=ns['pools'];status['uptime']=36000
-html=(root/'overlay/main/web/index.html').read_text();writes=[];opts={'enabled':False,'restore':False,'curve':[50,55,75,100]};fail=False;hunter_fail=False;http_fail={};auth_required=False;login_fail=False;requests=[];hunter_trial={"state":0,"stage":0,"elapsed":0,"rates":[0,0,0],"accepted":[0,0,0],"rejected":[0,0,0]}
+html=(root/'overlay/main/web/index.html').read_text();writes=[];opts={'enabled':False,'restore':False,'curve':[50,55,75,100]};fail=False;hunter_fail=False;http_fail={};auth_required=False;login_fail=False;requests=[];hunter_trial={"state":0,"stage":0,"phase":"idle","totalStages":6,"round":1,"intervalMs":500,"warmupSeconds":300,"measurementSeconds":1800,"elapsed":0,"rates":[0,0,0],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0]};guardian={'enabled':False,'taskOk':True,'state':5,'hash':'','checked':0,'height':0,'inBestChain':False,'error':''}
 async def main():
  global fail,hunter_fail,auth_required,login_fail
  async with async_playwright() as p:
@@ -21,12 +21,14 @@ async def main():
      if fail:return {'status':500,'body':'storage failed'}
      opts.update(d)
     if path=='/api/settings':cfg.update(d)
+    if path=='/api/guardian':guardian.update(d)
     if path=='/api/hunter':
      if hunter_fail:return {'status':400,'body':'not stable'}
-     hunter_trial['state']=1 if d.get('start') else 3
+     hunter_trial['state']=1 if d.get('start') else 3;hunter_trial['phase']='warmup' if d.get('start') else 'aborted'
     return {'status':200,'body':'OK'}
-   if path=='/api/hunter':
-    obj={'native':True,'taskOk':True,'seconds':3600,'pools':[{'work':1337*900,'btcWork':1337*900,'btcAccepted':900,'accepted':900,'rejected':1,'missing':0,'failed':0,'cleanN':10,'cleanMs':40,'cleanMax':100}]+[{'work':0,'btcWork':0,'btcAccepted':0,'accepted':0,'rejected':0,'missing':0,'failed':0,'cleanN':0,'cleanMs':0,'cleanMax':0} for _ in range(3)],'candidate':{'state':3,'pool':0,'hash':'000000000000000000000000000000000000000000000000000000000000abcd','persisted':True},'trial':hunter_trial}
+   if path=='/api/guardian':obj=guardian
+   elif path=='/api/hunter':
+    obj={'native':True,'taskOk':True,'seconds':3600,'pools':[{'work':1337*900,'btcWork':1337*900,'btcAccepted':900,'accepted':900,'rejected':1,'missing':0,'failed':0,'cleanN':10,'cleanMs':40,'cleanMax':100,'connectedSeconds':3500,'disconnectedSeconds':60,'observedSeconds':3560,'unobservedSeconds':40}]+[{'work':0,'btcWork':0,'btcAccepted':0,'accepted':0,'rejected':0,'missing':0,'failed':0,'cleanN':0,'cleanMs':0,'cleanMax':0} for _ in range(3)],'candidate':{'state':3,'pool':0,'hash':'000000000000000000000000000000000000000000000000000000000000abcd','persisted':True},'trial':hunter_trial}
    elif path=='/api/intelligence':
     sec=int(req['path'].split('=')[-1]);step={3600:30,86400:300,604800:3600,2592000:86400}[sec];now=int(time.time());rows=[]
     for i in range(12):rows.append([(now-(12-i)*step)*1000,3933.24 if i==4 else 1.53+i%3*.01,55,64,23.3,15.1,50,786,1170,.28,148364561003867,None,None,None,5654,5.14,1164,'BTC',1,step])
@@ -35,18 +37,29 @@ async def main():
    return {'status':200,'body':json.dumps(obj,ensure_ascii=False)}
   await page.expose_binding('mockApi',mock)
   pre="""<script>window.mem={};Object.defineProperty(window,'localStorage',{value:{getItem:k=>mem[k]??null,setItem:(k,v)=>mem[k]=String(v),removeItem:k=>delete mem[k]}});window.fetch=async(u,o={})=>{const r=await mockApi({path:String(u),method:o.method||'GET',body:o.body,headers:o.headers||{}});return new Response(r.body,{status:r.status,headers:{'content-type':'application/json'}})};history.replaceState=()=>{};</script>"""
-  await page.route('http://axeforge.test/',lambda route:route.fulfill(status=200,content_type='text/html',body=html.replace('<head>','<head>'+pre,1)));await page.goto('http://axeforge.test/');await page.wait_for_function('typeof a10info!=="undefined" && a10info && cfgReady && !a10busy && P.pools.length===4 && hunterData && !hunterBusy',timeout=15000)
+  await page.route('http://axeforge.test/',lambda route:route.fulfill(status=200,content_type='text/html',body=html.replace('<head>','<head>'+pre,1)));await page.goto('http://axeforge.test/');await page.wait_for_function('typeof a10info!=="undefined" && a10info && cfgReady && !a10busy && P.pools.length===4 && hunterData && !hunterBusy && guardianData && !guardianBusy',timeout=15000)
   assert not writes, writes;assert not errors,errors
-  assert 'Принят пулом, сеть не подтверждена' in await page.locator('#huntercandidate').inner_text()
+  assert 'Принят пулом; наблюдение сети отдельно' in await page.locator('#huntercandidate').inner_text()
   assert await page.locator('#odday').inner_text()!='1 из 5,000,000'
   assert '900 / 1' in await page.locator('#hunterstats').inner_text()
   await page.evaluate('tab("tuning")');await page.locator('#hunterstart').click();await page.wait_for_function('hunterData.trial.state===1 && !hunterCommandBusy');assert writes[-1]==('/api/hunter',{'start':True})
   await page.locator('#hunterstop').click();await page.wait_for_function('hunterData.trial.state===3 && !hunterCommandBusy');assert writes[-1]==('/api/hunter',{'start':False})
   hunter_fail=True;await page.locator('#hunterstart').click();await page.wait_for_function('!hunterCommandBusy');assert hunter_trial['state']==3;hunter_fail=False
+  assert '3,5 ч' in await page.locator('#tuning').inner_text()
+  hunter_trial.update({'state':1,'stage':3,'phase':'warmup','round':2,'intervalMs':250,'elapsed':60});await page.evaluate('hunterRefresh(true)');assert 'повтор 2/2' in await page.locator('#huntertrial').inner_text() and 'прогрев' in await page.locator('#huntertrial').inner_text()
+  hunter_trial.update({'state':2,'phase':'done','rates':[1500,1530,1510],'accepted':[1000,1000,1000],'rejected':[1,1,1],'repeatsCompleted':[2,2,2],'ci95Low':[1400,1410,1400],'ci95High':[1600,1650,1620],'stageRates':[1500,1530,1510,1510,1530,1500],'stageAccepted':[500]*6,'stageRejected':[0]*6});await page.evaluate('hunterRefresh(true)');assert 'Преимущество относительно 500 мс не подтверждено' in await page.locator('#hunterconfidence').inner_text();assert 'прибл. 95%' in await page.locator('#hunterresults').inner_text()
+  hunter_trial.update({'state':3,'phase':'aborted','abortReason':'temperature_drift'});await page.evaluate('hunterRefresh(true)');assert 'температура изменилась' in await page.locator('#huntertrial').inner_text()
+  await page.evaluate('tab("dash")');assert 'выключена' in await page.locator('#guardianstatus').inner_text()
+  await page.locator('#guardianenable').click();await page.wait_for_function('guardianData.enabled&&!guardianBusy&&!guardianCommandBusy');assert writes[-1]==('/api/guardian',{'enabled':True})
+  guardian.update({'state':3,'hash':'0'*60+'abcd','height':975538,'checked':int(time.time()),'inBestChain':True});await page.evaluate('guardianRefresh(true)');assert 'Наблюдается в основной цепочке' in await page.locator('#guardianstatus').inner_text();assert 'Принят пулом; наблюдение сети отдельно' in await page.locator('#huntercandidate').inner_text()
+  http_fail['/api/guardian']=500;await page.locator('#guardianenable').click();await page.wait_for_function('!guardianCommandBusy');assert guardian['enabled'];http_fail.clear()
+  await page.locator('#guardianenable').click();await page.wait_for_function('!guardianData.enabled&&!guardianBusy&&!guardianCommandBusy')
   assert cfg['jobms']==0 and cfg['pcap']==25
-  await page.evaluate('tab("dash");a8pick=A8N.map((_,i)=>i);a8draw()');assert await page.locator('#a8chart [data-a8line]').count()>=12
+  await page.evaluate('tab("dash");a8pick=A8N.map((_,i)=>i);a8draw()');assert await page.locator('#a8chart [data-a8line]').evaluate_all('(els)=>new Set(els.map(e=>e.dataset.a8line)).size')==13;assert await page.locator('#a8chart [data-scale]').count()==13
+  assert await page.evaluate('''()=>{const A=a8graph.A;return [...document.querySelectorAll('#a8chart [data-scale]')].every(axis=>{const k=+axis.dataset.scale,line=document.querySelector('#a8chart [data-a8line="'+k+'"]'),frame=axis.querySelector('line'),min=+axis.dataset.min,max=+axis.dataset.max,top=+frame.getAttribute('y1'),bottom=+frame.getAttribute('y2'),expected=bottom-(A[0][A8J[k]]-min)/(max-min)*(bottom-top),actual=+line.getAttribute('points').split(' ')[0].split(',')[1];return Math.abs(expected-actual)<.11&&line.getAttribute('stroke')===axis.dataset.color})}''')
   assert await page.evaluate('a8range(3600)[4][1]===null');assert '3933' not in await page.locator('#a8legend').inner_text()
-  await page.locator('#a8period').select_option('2592000');await page.wait_for_function('a10cache[2592000]?.length===12 && !a10busy');assert await page.locator('#a8chart [data-a8line]').count()>=12
+  await page.locator('#a8period').select_option('2592000');await page.wait_for_function('a10cache[2592000]?.length===12 && !a10busy');assert await page.locator('#a8chart [data-a8line]').evaluate_all('(els)=>new Set(els.map(e=>e.dataset.a8line)).size')==13;assert await page.locator('#a8chart [data-scale]').count()==13
+  await page.locator('#a8chart').dispatch_event('pointerdown',{'clientX':200,'clientY':150});assert 'Хешрейт' in await page.locator('#a8tip').inner_text()
   async with page.expect_download() as dl: await page.locator('button[onclick="a8csv()"]').click()
   assert (await dl.value).suggested_filename.endswith('.csv')
   await page.evaluate('tab("tuning")');await page.locator('#a8fanbtn').click();await page.wait_for_function('a10info?.enabled && !a10busy');assert writes[-1][0]=='/api/intelligence' and writes[-1][1]['enabled'] and cfg['fanmin']==50
@@ -104,10 +117,18 @@ async def main():
   for w in [320,375,430]:
    await page.set_viewport_size({'width':w,'height':844});await page.evaluate('tab("system")')
    await page.screenshot(path=str(shots/f'{engine}-{w}-system.png'),full_page=True,animations='disabled')
+  await page.set_viewport_size({'width':375,'height':844});await page.evaluate('tab("dash");a8pick=A8N.map((_,i)=>i);a8draw()');assert await page.locator('#a8chart [data-scale]').count()==13
+  for side,offset in [('left',0),('plot',None),('right',99999)]:
+   if offset is None:await page.evaluate('document.getElementById("a8scroll").scrollLeft=a8graph.L-48')
+   else:await page.locator('#a8scroll').evaluate('(e,x)=>e.scrollLeft=x',offset)
+   assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth+2')
+   await page.locator('#a8scroll').screenshot(path=str(shots/f'{engine}-375-all-scales-{side}.png'),animations='disabled')
+  hunter_trial.update({'state':2,'phase':'done'});await page.evaluate('hunterRefresh(true);tab("tuning");document.querySelector(".bench-detail").open=true');await page.wait_for_function('!hunterBusy');await page.screenshot(path=str(shots/f'{engine}-375-benchmark-lab.png'),full_page=True,animations='disabled')
+  hunter_trial.update({'state':1,'phase':'warmup','stage':3,'round':2,'intervalMs':250,'elapsed':60});await page.evaluate('hunterRefresh(true)');await page.wait_for_function('!hunterBusy');await page.screenshot(path=str(shots/f'{engine}-375-benchmark-warmup.png'),full_page=True,animations='disabled')
   # Invalid/empty archives must clear the plot rather than invent zero measurements.
   await page.evaluate('a10cache={};tab("dash");a8draw()');assert await page.locator('#a8chart [data-a8line]').count()==0
   assert 'Нет замеров' in await page.locator('#a8chart').text_content()
   assert not errors,errors
-  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profile 30 W, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive; no JS errors')
+  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profile 30 W, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors')
   await b.close()
 asyncio.run(main())

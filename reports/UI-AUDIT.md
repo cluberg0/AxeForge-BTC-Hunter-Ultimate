@@ -34,6 +34,8 @@ The suite covers Hunter states, start/stop/refusal, all 13 data series, implausi
 ## Limits
 
 - Playwright WebKit on Linux is not physical iPhone Safari or its Low Power Mode. Safari does not expose a reliable Low Power Mode API; manual motion control and reduced-motion remain available, and iOS may throttle animations itself.
-- Two readable colored side axes are displayed on small screens. Every selected series retains its own physical scale and its range/units in the colored legend; thirteen simultaneous side axes are not rendered.
+- ULTIMATE adds all 13 colored physical side scales aligned with the plot in a horizontally scrollable graph container. The plot retains a readable minimum width; screenshots show left axes, plot and right axes. Page-level overflow remains prohibited.
 - Coin templates are configuration storage, not verified support for arbitrary BTC/BCH/DGB/SPACE/FB/XEC pools. Automated network-specific address and Stratum compatibility verification remains unsupported; native payout enforcement remains unchanged.
 - Fixtures do not simulate every production API, USB/OTA transfer, or every possible original button action. No real miner was accessed.
+
+ULTIMATE final verification: reports/browser-ultimate-chromium.log and reports/browser-ultimate-webkit.log; both complete exit 0, adding six-stage repeated Benchmark Lab, optional independent Guardian and all 13 side scales. Pool counters are explicitly per-slot since boot; current-host recommendations are withheld because identity across configuration changes is not proven.

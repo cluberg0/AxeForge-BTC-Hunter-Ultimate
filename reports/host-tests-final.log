@@ -1,0 +1,26 @@
+make: Entering directory '/workspace/axeforge/upstream/test'
+./unit_tests
+157 checks, 0 failed
+make: Leaving directory '/workspace/axeforge/upstream/test'
+source GET /api/status: ok
+source GET /api/settings: ok
+source POST /api/settings: ok
+source GET /api/pools: ok
+source GET /api/swarm: ok
+source GET /api/otp: ok
+source POST /api/otp: ok
+flasher scripts: ok
+PASS: actual OTA handler aborts abandoned upload, tolerates temporary stalls, cleans up dropped/OOM uploads, rejects invalid sizes; no reboot/boot selection on failure
+PASS: actual saved-pools NVS read branch handles allocation/query/read failure without parsing invalid memory or erasing settings
+PASS: invalid hashrate, aggregates, missing values, precision, curve, sensor failure, safe fallback
+API_JSON {"native":true,"taskOk":true,"seconds":9469,"pools":[{"work":2048260,"btcWork":2048260,"btcAccepted":1540,"accepted":1540,"rejected":1,"missing":203,"failed":1,"cleanN":2,"cleanMs":112,"cleanMax":200},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0}],"candidate":{"state":5,"pool":0,"hash":"","persisted":true},"trial":{"state":3,"stage":0,"elapsed":0,"uncertain":true,"rates":[0.000,0.000,0.000],"ci95Low":[0.000,0.000,0.000],"ci95High":[0.000,0.000,0.000],"accepted":[0,0,0],"rejected":[0,0,0]}}
+PASS: compact BTC pow limit, unknown/rejected duplicate ACK, ACK-before-send, late ACK, throttled NVS retry, exact trial-stage attribution, exact compact target/genesis, outlier, probability, V1 difficulty ledger/duplicate replies, candidate ack/timeout/failed/SV2, flash mock, generation lag, 3 timed stages, abort/restore, API
+PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API
+API_JSON {"native":true,"time":1794491653,"last":1790010000,"archiveOk":false,"enabled":true,"restore":true,"curve":[50,55,75,100],"stableSamples":1,"point":[786,1170,25,1550,1790004600],"rows":[[1794491623000,1.55,55,64,23,14.8,0,786,1170,0.3,null,null,null,null,5000,5.1,1170,"",1,30]]}
+V1 wire: uint32 IDs, fractional/nonfinite rejection, hex validation, exact escaped authorization/submit PASS
+Image gate: valid synthetic image + 9 rejection cases PASS
+Independent compact-target reference: 10007 fixed/random vectors PASS; exact 256-bit value, zero/sign/overflow, BTC pow-limit
+native API contract: /api/intelligence source/schema/guard OK; host JSON OK
+native API contract: /api/hunter source/schema/guard OK; host JSON OK
+PASS: both native endpoints are documented and use the stock API guard
+JavaScript syntax OK

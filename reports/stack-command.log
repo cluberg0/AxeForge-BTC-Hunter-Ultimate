@@ -1,0 +1,79 @@
+Xtensa compiler -fstack-usage frames; static frame sizes, not full task call chains.
+
+core/hunter.cpp
+/workspace/axeforge/upstream/main/core/hunter.cpp:97:11:esp_err_t hunter::get(httpd_req_t*)	1312	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:113:11:esp_err_t hunter::set(httpd_req_t*)	528	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:66:6:void hunter::{anonymous}::task(void*)	192	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:81:8:double hunter::reply(int, uint32_t, bool, bool*)	192	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:68:6:void hunter::start()	144	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:34:6:void hunter::{anonymous}::cand(int, uint32_t, const char*, uint8_t, bool)	112	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:95:6:)	80	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:70:6:void hunter::submitted(int, uint32_t, double, bool, const char*, bool)	80	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:36:6:bool hunter::{anonymous}::healthy()	48	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:37:6:void hunter::{anonymous}::_ZN6hunter12_GLOBAL__N_111abort_trialENS0_5AbortE$part$0(Abort)	48	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:35:5:int hunter::{anonymous}::active_pool()	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:33:6:bool hunter::{anonymous}::hash_ok(const char*)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:69:6:void hunter::job_sent(int, uint32_t, int64_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:77:6:void hunter::sent(int, uint32_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:88:6:void hunter::disconnected(int)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:89:6:void hunter::sv2_candidate(int, const char*, bool, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:90:6:void hunter::unavailable_candidate(int, const char*, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:91:6:bool hunter::candidate_snapshot(char*, int&)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:92:10:uint16_t hunter::interval(uint16_t)	32	static
+
+core/intelligence.cpp
+/workspace/axeforge/upstream/main/core/intelligence.cpp:103:11:esp_err_t intel::get(httpd_req_t*)	1648	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:80:13:void {anonymous}::sample(uint32_t)	480	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:112:11:esp_err_t intel::set(httpd_req_t*)	320	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:72:15:intelligence::Record {anonymous}::rollup(const Day&)	304	static
+/workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/xtensa-esp-elf/include/c++/13.2.0/bits/stl_algo.h:1918:5:constexpr void std::__introsort_loop(_RandomAccessIterator, _RandomAccessIterator, _Size, _Compare) [with _RandomAccessIterator = intelligence::Record*; _Size = int; _Compare = __gnu_cxx::__ops::_Iter_comp_iter<intel::get(httpd_req_t*)::<lambda(const intelligence::Record&, const intelligence::Record&)> >]	192	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:100:6:void intel::start()	128	static
+/workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/xtensa-esp-elf/include/c++/13.2.0/bits/stl_heap.h:224:5:constexpr void std::__adjust_heap(_RandomAccessIterator, _Distance, _Distance, _Tp, _Compare) [with _RandomAccessIterator = intelligence::Record*; _Distance = int; _Tp = intelligence::Record; _Compare = __gnu_cxx::__ops::_Iter_comp_iter<intel::get(httpd_req_t*)::<lambda(const intelligence::Record&, const intelligence::Record&)> >]	112	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:53:13:bool {anonymous}::write_blob(const char*, const void*, size_t)	80	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:101:7:float intel::fan_floor()	64	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:102:6:bool intel::rollback_point(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t&, uint16_t&)	64	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:52:13:bool {anonymous}::read_blob(const char*, void*, size_t)	48	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:61:13:bool {anonymous}::row_ok(const intelligence::Record&)	32	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:60:13:void {anonymous}::mark_io(bool)	32	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:92:13:void {anonymous}::task(void*)	32	static
+
+core/guardian.cpp
+/workspace/axeforge/upstream/main/core/guardian.cpp:117:6:void guardian::{anonymous}::tick()	1200	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:213:11:esp_err_t guardian::get(httpd_req_t*)	544	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:230:11:esp_err_t guardian::set(httpd_req_t*)	144	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:192:6:void guardian::start()	64	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:183:6:void guardian::{anonymous}::task(void*)	32	static
+
+mining/miner.cpp
+/workspace/axeforge/upstream/main/mining/miner.cpp:160:13:void job_task(void*)	2384	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:343:13:void result_task(void*)	448	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:436:13:void counter_task(void*)	208	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:282:13:void on_counter(int, uint32_t, bool)	80	static
+/workspace/axeforge/upstream/main/core/hunter_math.h:14:13:bool hunter_math::meets(const uint8_t*, uint32_t)	64	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:570:7:float miner::window_stats(float*, float*)	64	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:531:6:void miner::start()	48	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:587:7:float miner::window_worst_chip_err(int*)	48	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:61:13:void invalidate_pool(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:540:6:void miner::pause(bool)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:550:6:void miner::kick()	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:555:6:void miner::forget_pool(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:560:6:void miner::reset_window()	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:604:7:float miner::window_chip_ghs(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:614:7:float miner::window_chip_err(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:624:1:cpp)	32	static
+
+stratum/pools.cpp
+/workspace/axeforge/upstream/main/stratum/pools.cpp:825:13:void pool_task(void*)	2144	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:530:13:constprop(Pool&, sv2_ext_job_t*)	1200	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:969:6:void pools::submit(int, const Work&, uint32_t, uint32_t, int, bool, const char*)	272	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:216:13:void on_share_result(Pool&, bool, const char*, double)	80	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:887:6:void pools::start()	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:919:6:bool pools::fetch_job(int, StratumJob&, JobInfo&, uint32_t*)	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:188:13:void publish(Pool&, StratumJob&, const char*, const char*)	48	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:300:13:bool send_frame(Pool&, const uint8_t*, int, uint32_t)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:291:13:bool send_line(Pool&, const char*, uint32_t)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:902:6:void pools::reconfigure()	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:910:6:bool pools::ready(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:951:10:uint32_t pools::generation(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:959:6:bool pools::take_clean_flag(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:1024:1:cpp)	32	static

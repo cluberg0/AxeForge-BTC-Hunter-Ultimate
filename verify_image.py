@@ -1,10 +1,50 @@
 #!/usr/bin/env python3
-import struct,sys,hashlib,pathlib
-p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); assert b[0]==0xe9; assert len(b)<4*1024*1024; assert struct.unpack_from('<H',b,12)[0]==9,'not ESP32-S3'; assert 1<=b[1]<=16
-pos=24;c=0xef;segs=[]
-for _ in range(b[1]):
- addr,n=struct.unpack_from('<II',b,pos);pos+=8;assert n and pos+n<=len(b);data=b[pos:pos+n];segs.append((addr,n));pos+=n
- for x in data:c^=x
-check=pos|15;assert check<len(b) and b[check]==c,'checksum mismatch'
-assert b[23]==1,'no appended digest';end=check+1;assert b[end:end+32]==hashlib.sha256(b[:end]).digest(),'app SHA mismatch';assert len(b)==end+32,'unexpected trailing bytes';assert struct.unpack_from('<I',b,32)[0]==0xabcd5432 and b[80:112].split(b'\0',1)[0]==b'axeforge','not AxeForge app';assert b'/api/hunter' in b and b'btc_hunter' in b and b'BLOCK CANDIDATE' in b,'Hunter integration missing';assert b'RU-FIX 10 NATIVE' in b,'native UI not linked';assert b'/api/intelligence' in b,'native API missing';assert b'intelligence: returned to prior measured point' in b,'native tuner integration missing'
-print('ESP32-S3 image OK, segments',segs,'size',len(b),'SHA256',hashlib.sha256(b).hexdigest())
+"""Independent, fail-closed validation of the Gamma OTA app (never a merged image)."""
+import hashlib
+import pathlib
+import struct
+import sys
+
+
+def verify(b):
+    def require(ok, msg):
+        if not ok:
+            raise ValueError(msg)
+    require(0x10000 <= len(b) <= 4 * 1024 * 1024, 'outside stock 4 MiB app partition')
+    require(b[0] == 0xe9 and 1 <= b[1] <= 16, 'invalid ESP image header')
+    require(struct.unpack_from('<H', b, 12)[0] == 9, 'not ESP32-S3')
+    require(b[23] == 1, 'missing appended digest')
+    pos, checksum, segments = 24, 0xef, []
+    for _ in range(b[1]):
+        require(pos + 8 <= len(b), 'truncated segment header')
+        addr, n = struct.unpack_from('<II', b, pos)
+        pos += 8
+        require(n > 0 and pos + n <= len(b), 'invalid segment length')
+        segments.append((addr, n))
+        for value in b[pos:pos+n]:
+            checksum ^= value
+        pos += n
+    check = pos | 15
+    require(check < len(b) and b[check] == checksum, 'segment XOR checksum mismatch')
+    require(all(x == 0 for x in b[pos:check]), 'nonzero checksum padding')
+    end = check + 1
+    require(len(b) == end + 32, 'unexpected trailing bytes or truncated digest')
+    require(b[end:] == hashlib.sha256(b[:end]).digest(), 'appended SHA-256 mismatch')
+    require(struct.unpack_from('<I', b, 32)[0] == 0xabcd5432, 'missing app descriptor')
+    require(b[80:112].split(b'\0', 1)[0] == b'axeforge', 'not AxeForge app')
+    version = b[48:80].split(b'\0', 1)[0].decode('ascii')
+    require(version == '1.4.10-hunter-ultimate', 'unexpected firmware version')
+    require(b'AXEFORGE-BOARD:gamma;\0' in b, 'Gamma board tag missing')
+    tags = [b'/api/hunter', b'btc_hunter', b'BLOCK CANDIDATE', b'RU-FIX 10 NATIVE',
+            b'/api/intelligence', b'/api/guardian', b'intelligence: returned to prior measured point']
+    for tag in tags:
+        require(tag in b, 'integration marker missing: ' + repr(tag))
+    return {'version': version, 'size': len(b), 'segments': segments,
+            'sha256': hashlib.sha256(b).hexdigest()}
+
+
+if __name__ == '__main__':
+    try:
+        print('ESP32-S3 Gamma OTA image OK:', verify(pathlib.Path(sys.argv[1]).read_bytes()))
+    except (ValueError, IndexError, OSError, struct.error) as exc:
+        sys.exit('Image verification FAILED: ' + str(exc))

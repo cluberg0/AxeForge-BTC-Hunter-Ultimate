@@ -16,12 +16,13 @@ jobs:
       - name: Host and browser tests
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev
+          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
           bash scripts/test.sh
           python3 -m venv .venv
-          .venv/bin/pip install playwright
-          .venv/bin/python -m playwright install --with-deps chromium
+          .venv/bin/pip install playwright pyyaml jsonschema
+          .venv/bin/python -m playwright install --with-deps chromium webkit
           .venv/bin/python tests/browser.py
+          BROWSER=webkit .venv/bin/python tests/browser.py
       - name: Compile ESP32-S3 Gamma OTA
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -29,9 +30,15 @@ jobs:
           target: esp32s3
           command: bash scripts/build.sh
       - name: Verify artifact again
-        run: python3 verify_image.py dist/axeforge-gamma-RU-fix10-btc-hunter.bin
+        run: python3 verify_image.py dist/axeforge-gamma-BTC-HUNTER-ultimate.bin
       - uses: actions/upload-artifact@v4
         with:
           name: Gamma-BTC-Hunter-OTA
-          path: dist/*
+          path: |
+            dist/*
+            reports/build.log
+            reports/size.txt
+            reports/image-info.txt
+            reports/image-verification.txt
+            test-results/**
           if-no-files-found: error

@@ -2,6 +2,7 @@
 #include "core/hunter.h"
 #include "core/json_util.h"
 #include "core/state.h"
+#include "core/settings.h"
 #include "net/wifi.h"
 #include "net/notify.h"
 #include "esp_crt_bundle.h"

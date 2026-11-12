@@ -1,0 +1,25 @@
+make: Entering directory '/workspace/axeforge/upstream/test'
+./unit_tests
+157 checks, 0 failed
+make: Leaving directory '/workspace/axeforge/upstream/test'
+source GET /api/status: ok
+source GET /api/settings: ok
+source POST /api/settings: ok
+source GET /api/pools: ok
+source GET /api/swarm: ok
+source GET /api/otp: ok
+source POST /api/otp: ok
+flasher scripts: ok
+PASS: actual OTA handler aborts abandoned upload, tolerates temporary stalls, cleans up dropped/OOM uploads, rejects invalid sizes; no reboot/boot selection on failure
+PASS: actual saved-pools NVS read branch handles allocation/query/read failure without parsing invalid memory or erasing settings
+PASS: actual miner send/pause barrier publishes before send, waits for in-flight send, rejects delayed work after pause and rechecks powered/pool state
+PASS: invalid hashrate, aggregates, missing values, precision, curve, sensor failure, safe fallback
+API_JSON {"native":true,"taskOk":true,"seconds":20914,"samplingSeconds":5,"pools":[{"work":4615800,"btcWork":4615800,"btcAccepted":3465,"accepted":3465,"rejected":1,"missing":202,"failed":2,"cleanN":2,"cleanMs":112,"cleanMax":200,"connectedSeconds":20858,"disconnectedSeconds":15,"observedSeconds":20873,"unobservedSeconds":36},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0}],"candidate":{"state":5,"pool":0,"hash":"","persisted":true},"trial":{"state":3,"stage":0,"phase":"aborted","intervalMs":500,"totalStages":6,"round":1,"warmupSeconds":300,"measurementSeconds":1800,"abortReason":"user","elapsed":0,"uncertain":true,"autoApply":false,"confidenceMethod":"weighted_poisson_and_two_repeat_spread","rates":[0.000,0.000,0.000],"ci95Low":[0.000,0.000,0.000],"ci95High":[0.000,0.000,0.000],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0],"stageRates":[0.000,0.000,0.000,0.000,0.000,0.000],"stageAccepted":[0,0,0,0,0,0],"stageRejected":[0,0,0,0,0,0]}}
+PASS: compact BTC pow limit, unknown/rejected duplicate ACK, ACK-before-send, late ACK, throttled NVS retry, exact trial-stage attribution, exact compact target/genesis, outlier, probability, V1 difficulty ledger/duplicate replies, candidate ack/timeout/failed/SV2, flash mock, generation lag, six balanced timed stages with excluded warmup, repeated confidence, abort/restore, candidate snapshot, sampled pool connectivity, API
+PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API
+API_JSON {"native":true,"time":1794492097,"last":1790010000,"archiveOk":false,"enabled":true,"restore":true,"curve":[50,55,75,100],"stableSamples":1,"point":[786,1170,25,1550,1790004600],"rows":[[1794492067000,1.55,55,64,23,14.8,0,786,1170,0.3,null,null,null,null,5000,5.1,1170,"",1,30]]}
+In file included from tests/v1_wire.cpp:4:
+overlay/main/stratum/v1_wire.h:8:10: fatal error: cJSON.h: No such file or directory
+    8 | #include "cJSON.h"
+      |          ^~~~~~~~~
+compilation terminated.

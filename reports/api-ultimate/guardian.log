@@ -1,0 +1,2 @@
+API_JSON {"enabled":true,"taskOk":true,"state":4,"hash":"0000000000000000000000000000000000000000000000000000000000000001","checked":1794492074,"height":0,"inBestChain":false,"error":"expired"}
+PASS: guardian defaultoff, config/NVS failures, HTTPS/redirect/404, exact schema, malformed/truncated/deep/oversized responses, deadline, throttling, stale candidate/config race, disable and expiry

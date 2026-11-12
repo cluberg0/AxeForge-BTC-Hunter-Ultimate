@@ -1,0 +1,19 @@
+{
+  "utc": "2026-11-12T14:14:37.294579+00:00",
+  "version": "1.4.10-hunter-ultimate",
+  "upstream_commit": "e84c651c36a4b5f91c537577704245ded032592d",
+  "esp_idf_tag": "v5.3.2",
+  "esp_idf_commit": "9d7f2d69f50d1288526d4f1027108e314e8c879f",
+  "artifact": "axeforge-gamma-BTC-HUNTER-ultimate.bin",
+  "bytes": 1901968,
+  "sha256": "7dbdeb54ac5f1706709fdc01f26109d3d3d2f1bf523d2eb4c2f89752e1e0afe8",
+  "ota_partition_bytes": 4194304,
+  "unused_partition_bytes": 2292336,
+  "hardware_tested": false,
+  "measured_performance_gain": null,
+  "sdkconfig_sha256": "24380e923342734324acc61001b7f599cff222c52e076d2404daee953c6bd087",
+  "partition_table/partition-table.bin_sha256": "e75e395babb06872cee026a49a60a4e791f443b827765709b2f5745e5b1e6b0c",
+  "axeforge.elf_sha256": "488aa88b3f51962ecfbdd5c883cba7a97ce72e9665ded40ea6af4a16647d9ca8",
+  "axeforge.map_sha256": "cca4f7fb4de71de3598d059c0ebfc6dc673a733a3f4ddd82627d39e9e1294b11",
+  "build_inputs_sha256": "38e389fb471e9d18299179897d8c57079f256c73308770c4313b375ca6eb3c4b"
+}

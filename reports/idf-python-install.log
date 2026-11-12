@@ -1,0 +1,172 @@
+Creating a new Python environment in /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env
+Downloading https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.3.txt
+Destination: /workspace/toolchains/idf-tools/espidf.constraints.v5.3.txt.tmp
+0%27%54%82%100%Done
+Requirement already satisfied: pip in /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/lib/python3.12/site-packages (25.0.1)
+Collecting pip
+  Downloading pip-26.2.2-py3-none-any.whl.metadata (4.6 kB)
+Collecting setuptools
+  Downloading setuptools-84.2.1-py3-none-any.whl.metadata (6.6 kB)
+Downloading pip-26.2.2-py3-none-any.whl (1.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 12.0 MB/s eta 0:00:00
+Downloading setuptools-84.2.1-py3-none-any.whl (876 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 876.3/876.3 kB 18.3 MB/s eta 0:00:00
+Installing collected packages: setuptools, pip
+  Attempting uninstall: pip
+    Found existing installation: pip 25.0.1
+    Uninstalling pip-25.0.1:
+      Successfully uninstalled pip-25.0.1
+Successfully installed pip-26.2.2 setuptools-84.2.1
+
+[notice] A new release of pip is available: 26.2.2 -> 26.3
+[notice] To update, run: python -m pip install --upgrade pip
+Looking in indexes: https://pypi.org/simple, https://dl.espressif.com/pypi
+Ignoring importlib_metadata: markers 'python_version < "3.8"' don't match your environment
+Requirement already satisfied: setuptools in /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/lib/python3.12/site-packages (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 3)) (84.2.1)
+Collecting packaging (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 4))
+  Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Collecting click (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 7))
+  Downloading click-8.1.8-py3-none-any.whl (98 kB)
+Collecting pyserial (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 8))
+  Downloading pyserial-3.5-py2.py3-none-any.whl (90 kB)
+Collecting cryptography (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 9))
+  Downloading cryptography-42.0.8-cp39-abi3-manylinux_2_28_x86_64.manylinux_2_34_x86_64.whl (3.4 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.4/3.4 MB 28.1 MB/s  0:00:00
+Collecting pyparsing (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 10))
+  Downloading pyparsing-3.2.5-py3-none-any.whl.metadata (5.0 kB)
+Collecting pyelftools (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 11))
+  Downloading pyelftools-0.33-py3-none-any.whl (201 kB)
+Collecting idf-component-manager (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading idf_component_manager-2.5.2-py3-none-any.whl (184 kB)
+Collecting esp-coredump (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading esp_coredump-1.18.1-py3-none-any.whl (51 kB)
+Collecting esptool (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading esptool-4.13.0.tar.gz (490 kB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting esp-idf-kconfig (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 15))
+  Downloading esp_idf_kconfig-2.5.4-py3-none-any.whl (146 kB)
+Collecting esp-idf-monitor (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 16))
+  Downloading esp_idf_monitor-1.10.0-py3-none-any.whl (73 kB)
+Collecting esp-idf-nvs-partition-gen (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 17))
+  Downloading esp_idf_nvs_partition_gen-0.1.9-py3-none-any.whl (22 kB)
+Collecting esp-idf-size (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 18))
+  Downloading esp_idf_size-1.7.1-py3-none-any.whl (82 kB)
+Collecting esp-idf-panic-decoder (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 19))
+  Downloading esp_idf_panic_decoder-1.5.0-py3-none-any.whl (21 kB)
+Collecting pyclang (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 20))
+  Downloading pyclang-0.7.0-py3-none-any.whl (13 kB)
+Collecting construct (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 21))
+  Downloading construct-2.10.70-py3-none-any.whl (63 kB)
+Collecting freertos_gdb (from -r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 24))
+  Downloading freertos_gdb-1.0.4-py3-none-any.whl (14 kB)
+Collecting cffi>=1.12 (from cryptography->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 9))
+  Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_34_x86_64.whl (208 kB)
+Collecting psutil (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading psutil-7.2.2-cp36-abi3-manylinux_2_34_x86_64.whl (117 kB)
+Collecting colorama (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting ruamel.yaml (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading ruamel_yaml-0.19.1-py3-none-any.whl (118 kB)
+Collecting requests (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting requests-file (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading requests_file-3.0.1-py2.py3-none-any.whl (4.5 kB)
+Collecting requests-toolbelt (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+Collecting tqdm (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+Collecting jsonref (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading jsonref-1.1.0-py3-none-any.whl (9.4 kB)
+Collecting pydantic!=2.12.0 (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading pydantic-2.14.2-py3-none-any.whl (490 kB)
+Collecting pydantic-core (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading pydantic_core-2.50.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_34_x86_64.whl (2.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 34.3 MB/s  0:00:00
+Collecting pydantic-settings (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading pydantic_settings-2.16.2-py3-none-any.whl (81 kB)
+Collecting pathvalidate (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading pathvalidate-3.3.1-py3-none-any.whl.metadata (12 kB)
+Collecting truststore (from idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading truststore-0.10.5-py3-none-any.whl.metadata (4.5 kB)
+Collecting pygdbmi>=0.9.0.2 (from esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading pygdbmi-0.11.0.0-py3-none-any.whl (21 kB)
+Collecting esp-pylib>=1.1.4 (from esp-pylib[cli,ide]>=1.1.4->esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading esp_pylib-1.2.1-py3-none-any.whl (59 kB)
+Collecting rich-click (from esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading rich_click-1.9.9-py3-none-any.whl (71 kB)
+Collecting rich (from esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+Collecting bitstring!=4.2.0,<5,>=3.1.6 (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading bitstring-4.4.0-py3-none-any.whl (76 kB)
+Collecting ecdsa>=0.16.0 (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading ecdsa-0.19.2-py2.py3-none-any.whl (150 kB)
+Collecting reedsolo<1.8,>=1.5.3 (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading reedsolo-1.7.0-py3-none-any.whl (32 kB)
+Collecting PyYAML>=5.1 (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_34_x86_64.whl (200 kB)
+Collecting intelhex (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading intelhex-2.3.0-py2.py3-none-any.whl (50 kB)
+Collecting argcomplete>=3 (from esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading argcomplete-3.7.2-py3-none-any.whl (43 kB)
+Collecting bitarray<4.0,>=3.0.0 (from bitstring!=4.2.0,<5,>=3.1.6->esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading bitarray-3.12.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (404 kB)
+Collecting tibs<0.6,>=0.5.6 (from bitstring!=4.2.0,<5,>=3.1.6->esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading tibs-0.5.7-cp38-abi3-manylinux_2_34_x86_64.whl (375 kB)
+Collecting pycparser (from cffi>=1.12->cryptography->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 9))
+  Downloading pycparser-3.12-py3-none-any.whl (62 kB)
+Collecting six>=1.9.0 (from ecdsa>=0.16.0->esptool->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 14))
+  Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting websockets>=12.0 (from esp-pylib[cli,ide]>=1.1.4->esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading websockets-17.3-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
+Collecting annotated-types>=0.6.0 (from pydantic!=2.12.0->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting typing-extensions>=4.16.0 (from pydantic!=2.12.0->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting typing-inspection>=0.4.4 (from pydantic!=2.12.0->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting markdown-it-py>=2.2.0 (from rich->esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+Collecting pygments<3.0.0,>=2.13.0 (from rich->esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 46.1 MB/s  0:00:00
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich->esp-coredump->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 13))
+  Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Collecting python-dotenv>=1.2.2 (from pydantic-settings->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Collecting charset_normalizer<4,>=2 (from requests->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+Collecting idna<4,>=2.5 (from requests->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading urllib3-1.26.20-py2.py3-none-any.whl (144 kB)
+Collecting certifi>=2023.5.7 (from requests->idf-component-manager->-r /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt (line 12))
+  Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+Downloading pyparsing-3.2.5-py3-none-any.whl (113 kB)
+Downloading websockets-17.3-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+Downloading pathvalidate-3.3.1-py3-none-any.whl (24 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading truststore-0.10.5-py3-none-any.whl (19 kB)
+Building wheels for collected packages: esptool
+  Building wheel for esptool (pyproject.toml): started
+  Building wheel for esptool (pyproject.toml): finished with status 'done'
+  Created wheel for esptool: filename=esptool-4.13.0-py3-none-any.whl size=634567 sha256=a98c3c65203ddacd291f4938a63cbdb4c0b8649037157b9e5920dc1bb8306f61
+  Stored in directory: /home/agent/.cache/pip/wheels/82/3c/84/ee7e994b7c0491d1570d157938d33965619eed9a8161d08eb4
+Successfully built esptool
+Installing collected packages: reedsolo, pyserial, pygdbmi, intelhex, websockets, urllib3, typing-extensions, truststore, tqdm, tibs, six, ruamel.yaml, PyYAML, python-dotenv, pyparsing, pygments, pyelftools, pycparser, psutil, pathvalidate, packaging, mdurl, jsonref, idna, freertos_gdb, esp-idf-kconfig, construct, colorama, click, charset_normalizer, certifi, bitarray, argcomplete, annotated-types, typing-inspection, requests, pydantic-core, markdown-it-py, esp-idf-panic-decoder, ecdsa, cffi, bitstring, rich, requests-toolbelt, requests-file, pydantic, cryptography, rich-click, pydantic-settings, esptool, esp-pylib, esp-idf-size, esp-idf-nvs-partition-gen, idf-component-manager, pyclang, esp-coredump, esp-idf-monitor
+
+Successfully installed PyYAML-6.0.3 annotated-types-0.8.0 argcomplete-3.7.2 bitarray-3.12.3 bitstring-4.4.0 certifi-2026.10.23 cffi-2.1.1 charset_normalizer-3.5.2 click-8.1.8 colorama-0.4.6 construct-2.10.70 cryptography-42.0.8 ecdsa-0.19.2 esp-coredump-1.18.1 esp-idf-kconfig-2.5.4 esp-idf-monitor-1.10.0 esp-idf-nvs-partition-gen-0.1.9 esp-idf-panic-decoder-1.5.0 esp-idf-size-1.7.1 esp-pylib-1.2.1 esptool-4.13.0 freertos_gdb-1.0.4 idf-component-manager-2.5.2 idna-3.20 intelhex-2.3.0 jsonref-1.1.0 markdown-it-py-4.2.0 mdurl-0.1.2 packaging-26.3 pathvalidate-3.3.1 psutil-7.2.2 pyclang-0.7.0 pycparser-3.12 pydantic-2.14.2 pydantic-core-2.50.2 pydantic-settings-2.16.2 pyelftools-0.33 pygdbmi-0.11.0.0 pygments-2.21.0 pyparsing-3.2.5 pyserial-3.5 python-dotenv-1.2.4 reedsolo-1.7.0 requests-2.34.2 requests-file-3.0.1 requests-toolbelt-1.0.0 rich-15.0.0 rich-click-1.9.9 ruamel.yaml-0.19.1 six-1.17.0 tibs-0.5.7 tqdm-4.70.1 truststore-0.10.5 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-1.26.20 websockets-17.3
+
+[notice] A new release of pip is available: 26.2.2 -> 26.3
+[notice] To update, run: /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python -m pip install --upgrade pip
+Upgrading pip and setuptools...
+Installing Python packages
+ Constraint file: /workspace/toolchains/idf-tools/espidf.constraints.v5.3.txt
+ Requirement files:
+  - /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt

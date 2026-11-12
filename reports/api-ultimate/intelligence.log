@@ -1,0 +1,2 @@
+PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API
+API_JSON {"native":true,"time":1794492073,"last":1790010000,"archiveOk":false,"enabled":true,"restore":true,"curve":[50,55,75,100],"stableSamples":1,"point":[786,1170,25,1550,1790004600],"rows":[[1794492043000,1.55,55,64,23,14.8,0,786,1170,0.3,null,null,null,null,5000,5.1,1170,"",1,30]]}

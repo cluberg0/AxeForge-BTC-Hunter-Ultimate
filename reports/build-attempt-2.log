@@ -1,0 +1,333 @@
+Executing action: all (aliases: build)
+Running ninja in directory /workspace/axeforge/upstream/build_gamma
+Executing "ninja all"...
+[0/1] Re-running CMake...
+-- Building ESP-IDF components for target esp32s3
+NOTICE: Processing 5 dependencies:
+NOTICE: [1/5] atanisoft/esp_lcd_ili9488 (1.1.1)
+NOTICE: [2/5] espressif/cmake_utilities (0.5.3)
+NOTICE: [3/5] espressif/esp_lcd_st7796 (1.5.0)
+NOTICE: [4/5] lvgl/lvgl (8.3.11)
+NOTICE: [5/5] idf (5.3.2)
+-- Project sdkconfig file /workspace/axeforge/upstream/build_gamma/sdkconfig
+Loading defaults file /workspace/axeforge/upstream/sdkconfig.defaults...
+Loading defaults file /workspace/axeforge/upstream/sdkconfig.defaults.gamma...
+-- Compiler supported targets: xtensa-esp-elf
+CMake Deprecation Warning at /workspace/toolchains/esp-idf/components/mbedtls/mbedtls/CMakeLists.txt:21 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- App "axeforge" version: 1.4.10-ru-fix10-btc-hunter
+-- Adding linker script /workspace/axeforge/upstream/build_gamma/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script /workspace/axeforge/upstream/build_gamma/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_cca.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script /workspace/toolchains/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- ESP_LCD_ST7796: 1.5.0
+-- AxeForge board: gamma (/workspace/axeforge/upstream/main/../boards/gamma.toml)
+-- Components: app_trace app_update atanisoft__esp_lcd_ili9488 bootloader bootloader_support bt cmock console cxx driver efuse esp-tls esp_adc esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_cam esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_isp esp_driver_jpeg esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_ppa esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_uart esp_driver_usb_serial_jtag esp_eth esp_event esp_gdbstub esp_hid esp_http_client esp_http_server esp_https_ota esp_https_server esp_hw_support esp_lcd esp_local_ctrl esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_system esp_timer esp_vfs_console esp_wifi espcoredump espressif__cmake_utilities espressif__esp_lcd_st7796 esptool_py fatfs freertos hal heap http_parser idf_test ieee802154 json libsecp256k1 log lvgl__lvgl lwip main mbedtls mqtt newlib nvs_flash nvs_sec_provider openthread partition_table perfmon protobuf-c protocomm pthread sdmmc soc spi_flash spiffs stratum_v2 tcp_transport touch_element ulp unity usb vfs wear_levelling wifi_provisioning wpa_supplicant xtensa
+-- Component paths: /workspace/toolchains/esp-idf/components/app_trace /workspace/toolchains/esp-idf/components/app_update /workspace/axeforge/upstream/managed_components/atanisoft__esp_lcd_ili9488 /workspace/toolchains/esp-idf/components/bootloader /workspace/toolchains/esp-idf/components/bootloader_support /workspace/toolchains/esp-idf/components/bt /workspace/toolchains/esp-idf/components/cmock /workspace/toolchains/esp-idf/components/console /workspace/toolchains/esp-idf/components/cxx /workspace/toolchains/esp-idf/components/driver /workspace/toolchains/esp-idf/components/efuse /workspace/toolchains/esp-idf/components/esp-tls /workspace/toolchains/esp-idf/components/esp_adc /workspace/toolchains/esp-idf/components/esp_app_format /workspace/toolchains/esp-idf/components/esp_bootloader_format /workspace/toolchains/esp-idf/components/esp_coex /workspace/toolchains/esp-idf/components/esp_common /workspace/toolchains/esp-idf/components/esp_driver_ana_cmpr /workspace/toolchains/esp-idf/components/esp_driver_cam /workspace/toolchains/esp-idf/components/esp_driver_dac /workspace/toolchains/esp-idf/components/esp_driver_gpio /workspace/toolchains/esp-idf/components/esp_driver_gptimer /workspace/toolchains/esp-idf/components/esp_driver_i2c /workspace/toolchains/esp-idf/components/esp_driver_i2s /workspace/toolchains/esp-idf/components/esp_driver_isp /workspace/toolchains/esp-idf/components/esp_driver_jpeg /workspace/toolchains/esp-idf/components/esp_driver_ledc /workspace/toolchains/esp-idf/components/esp_driver_mcpwm /workspace/toolchains/esp-idf/components/esp_driver_parlio /workspace/toolchains/esp-idf/components/esp_driver_pcnt /workspace/toolchains/esp-idf/components/esp_driver_ppa /workspace/toolchains/esp-idf/components/esp_driver_rmt /workspace/toolchains/esp-idf/components/esp_driver_sdio /workspace/toolchains/esp-idf/components/esp_driver_sdm /workspace/toolchains/esp-idf/components/esp_driver_sdmmc /workspace/toolchains/esp-idf/components/esp_driver_sdspi /workspace/toolchains/esp-idf/components/esp_driver_spi /workspace/toolchains/esp-idf/components/esp_driver_touch_sens /workspace/toolchains/esp-idf/components/esp_driver_tsens /workspace/toolchains/esp-idf/components/esp_driver_uart /workspace/toolchains/esp-idf/components/esp_driver_usb_serial_jtag /workspace/toolchains/esp-idf/components/esp_eth /workspace/toolchains/esp-idf/components/esp_event /workspace/toolchains/esp-idf/components/esp_gdbstub /workspace/toolchains/esp-idf/components/esp_hid /workspace/toolchains/esp-idf/components/esp_http_client /workspace/toolchains/esp-idf/components/esp_http_server /workspace/toolchains/esp-idf/components/esp_https_ota /workspace/toolchains/esp-idf/components/esp_https_server /workspace/toolchains/esp-idf/components/esp_hw_support /workspace/toolchains/esp-idf/components/esp_lcd /workspace/toolchains/esp-idf/components/esp_local_ctrl /workspace/toolchains/esp-idf/components/esp_mm /workspace/toolchains/esp-idf/components/esp_netif /workspace/toolchains/esp-idf/components/esp_netif_stack /workspace/toolchains/esp-idf/components/esp_partition /workspace/toolchains/esp-idf/components/esp_phy /workspace/toolchains/esp-idf/components/esp_pm /workspace/toolchains/esp-idf/components/esp_psram /workspace/toolchains/esp-idf/components/esp_ringbuf /workspace/toolchains/esp-idf/components/esp_rom /workspace/toolchains/esp-idf/components/esp_system /workspace/toolchains/esp-idf/components/esp_timer /workspace/toolchains/esp-idf/components/esp_vfs_console /workspace/toolchains/esp-idf/components/esp_wifi /workspace/toolchains/esp-idf/components/espcoredump /workspace/axeforge/upstream/managed_components/espressif__cmake_utilities /workspace/axeforge/upstream/managed_components/espressif__esp_lcd_st7796 /workspace/toolchains/esp-idf/components/esptool_py /workspace/toolchains/esp-idf/components/fatfs /workspace/toolchains/esp-idf/components/freertos /workspace/toolchains/esp-idf/components/hal /workspace/toolchains/esp-idf/components/heap /workspace/toolchains/esp-idf/components/http_parser /workspace/toolchains/esp-idf/components/idf_test /workspace/toolchains/esp-idf/components/ieee802154 /workspace/toolchains/esp-idf/components/json /workspace/axeforge/upstream/components/libsecp256k1 /workspace/toolchains/esp-idf/components/log /workspace/axeforge/upstream/managed_components/lvgl__lvgl /workspace/toolchains/esp-idf/components/lwip /workspace/axeforge/upstream/main /workspace/toolchains/esp-idf/components/mbedtls /workspace/toolchains/esp-idf/components/mqtt /workspace/toolchains/esp-idf/components/newlib /workspace/toolchains/esp-idf/components/nvs_flash /workspace/toolchains/esp-idf/components/nvs_sec_provider /workspace/toolchains/esp-idf/components/openthread /workspace/toolchains/esp-idf/components/partition_table /workspace/toolchains/esp-idf/components/perfmon /workspace/toolchains/esp-idf/components/protobuf-c /workspace/toolchains/esp-idf/components/protocomm /workspace/toolchains/esp-idf/components/pthread /workspace/toolchains/esp-idf/components/sdmmc /workspace/toolchains/esp-idf/components/soc /workspace/toolchains/esp-idf/components/spi_flash /workspace/toolchains/esp-idf/components/spiffs /workspace/axeforge/upstream/components/stratum_v2 /workspace/toolchains/esp-idf/components/tcp_transport /workspace/toolchains/esp-idf/components/touch_element /workspace/toolchains/esp-idf/components/ulp /workspace/toolchains/esp-idf/components/unity /workspace/toolchains/esp-idf/components/usb /workspace/toolchains/esp-idf/components/vfs /workspace/toolchains/esp-idf/components/wear_levelling /workspace/toolchains/esp-idf/components/wifi_provisioning /workspace/toolchains/esp-idf/components/wpa_supplicant /workspace/toolchains/esp-idf/components/xtensa
+-- Configuring done (6.5s)
+-- Generating done (1.0s)
+-- Build files have been written to: /workspace/axeforge/upstream/build_gamma
+[1/72] Building C object esp-idf/esp_app_format/CMakeFiles/__idf_esp_app_format.dir/esp_app_desc.c.obj
+[2/72] Linking C static library esp-idf/esp_app_format/libesp_app_format.a
+[3/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board.cpp.obj
+[4/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_bitaxe.cpp.obj
+[5/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_suprahex.cpp.obj
+[6/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/asic/bm13xx.cpp.obj
+[7/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/dust.cpp.obj
+[8/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/gates.cpp.obj
+[9/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/energy.cpp.obj
+[10/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/hunter.cpp.obj
+[11/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/intelligence.cpp.obj
+[12/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/monitor.cpp.obj
+[13/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/ota_guard.cpp.obj
+[14/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/psu.cpp.obj
+[15/72] Performing build step for 'bootloader'
+[1/114] Building C object esp-idf/log/CMakeFiles/__idf_log.dir/log_noos.c.obj
+[2/114] Building C object esp-idf/log/CMakeFiles/__idf_log.dir/log_buffers.c.obj
+[3/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_crc.c.obj
+[4/114] Building C object esp-idf/log/CMakeFiles/__idf_log.dir/log.c.obj
+[5/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_sys.c.obj
+[6/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_uart.c.obj
+[7/114] Building ASM object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_longjmp.S.obj
+[8/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_spiflash.c.obj
+[9/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_efuse.c.obj
+[10/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_systimer.c.obj
+[11/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_wdt.c.obj
+[12/114] Building ASM object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_cache_writeback_esp32s3.S.obj
+[13/114] Linking C static library esp-idf/log/liblog.a
+[14/114] Building C object esp-idf/esp_rom/CMakeFiles/__idf_esp_rom.dir/patches/esp_rom_cache_esp32s2_esp32s3.c.obj
+[15/114] Linking C static library esp-idf/esp_rom/libesp_rom.a
+[16/114] Building C object esp-idf/esp_common/CMakeFiles/__idf_esp_common.dir/src/esp_err_to_name.c.obj
+[17/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/cpu.c.obj
+[18/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/esp_cpu_intr.c.obj
+[19/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/esp_memory_utils.c.obj
+[20/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/cpu_region_protect.c.obj
+[21/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/rtc_clk_init.c.obj
+[22/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/rtc_sleep.c.obj
+[23/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/rtc_init.c.obj
+[24/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/chip_info.c.obj
+[25/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/rtc_time.c.obj
+[26/114] Linking C static library esp-idf/esp_common/libesp_common.a
+[27/114] Building C object esp-idf/esp_hw_support/CMakeFiles/__idf_esp_hw_support.dir/port/esp32s3/rtc_clk.c.obj
+[28/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/esp32s3/esp_efuse_table.c.obj
+[29/114] Building C object esp-idf/esp_system/CMakeFiles/__idf_esp_system.dir/esp_err.c.obj
+[30/114] Linking C static library esp-idf/esp_hw_support/libesp_hw_support.a
+[31/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/esp32s3/esp_efuse_fields.c.obj
+[32/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/esp32s3/esp_efuse_rtc_calib.c.obj
+[33/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/esp32s3/esp_efuse_utility.c.obj
+[34/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/src/esp_efuse_fields.c.obj
+[35/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/src/esp_efuse_api.c.obj
+[36/114] Linking C static library esp-idf/esp_system/libesp_system.a
+[37/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/src/efuse_controller/keys/with_key_purposes/esp_efuse_api_key.c.obj
+[38/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_common_loader.c.obj
+[39/114] Building C object esp-idf/efuse/CMakeFiles/__idf_efuse.dir/src/esp_efuse_utility.c.obj
+[40/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_clock_init.c.obj
+[41/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_mem.c.obj
+[42/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_common.c.obj
+[43/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_random.c.obj
+[44/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_efuse.c.obj
+[45/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/secure_boot.c.obj
+[46/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_random_esp32s3.c.obj
+[47/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/flash_encrypt.c.obj
+[48/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/bootloader_flash/src/bootloader_flash.c.obj
+[49/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/bootloader_flash/src/bootloader_flash_config_esp32s3.c.obj
+[50/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/bootloader_flash/src/flash_qio_mode.c.obj
+[51/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/flash_partitions.c.obj
+[52/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_utility.c.obj
+[53/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_clock_loader.c.obj
+[54/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_init.c.obj
+[55/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_console_loader.c.obj
+[56/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_console.c.obj
+[57/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/esp32s3/bootloader_sha.c.obj
+[58/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/esp32s3/bootloader_soc.c.obj
+[59/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/bootloader_panic.c.obj
+[60/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/esp_image_format.c.obj
+[61/114] Linking C static library esp-idf/efuse/libefuse.a
+[62/114] Building C object esp-idf/esp_bootloader_format/CMakeFiles/__idf_esp_bootloader_format.dir/esp_bootloader_desc.c.obj
+[63/114] Building C object esp-idf/bootloader_support/CMakeFiles/__idf_bootloader_support.dir/src/esp32s3/bootloader_esp32s3.c.obj
+[64/114] Linking C static library esp-idf/bootloader_support/libbootloader_support.a
+[65/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/hal_utils.c.obj
+[66/114] Linking C static library esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+[67/114] Building C object esp-idf/spi_flash/CMakeFiles/__idf_spi_flash.dir/spi_flash_wrap.c.obj
+[68/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/mpu_hal.c.obj
+[69/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/efuse_hal.c.obj
+[70/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/esp32s3/efuse_hal.c.obj
+[71/114] Linking C static library esp-idf/spi_flash/libspi_flash.a
+[72/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/mmu_hal.c.obj
+[73/114] Building C object esp-idf/hal/CMakeFiles/__idf_hal.dir/cache_hal.c.obj
+[74/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/lldesc.c.obj
+[75/114] Linking C static library esp-idf/hal/libhal.a
+[76/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/dport_access_common.c.obj
+[77/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/interrupts.c.obj
+[78/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/gpio_periph.c.obj
+[79/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/adc_periph.c.obj
+[80/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/uart_periph.c.obj
+[81/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/dedic_gpio_periph.c.obj
+[82/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/gdma_periph.c.obj
+[83/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/spi_periph.c.obj
+[84/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/pcnt_periph.c.obj
+[85/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/ledc_periph.c.obj
+[86/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/sdm_periph.c.obj
+[87/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/rmt_periph.c.obj
+[88/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/i2c_periph.c.obj
+[89/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/i2s_periph.c.obj
+[90/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/temperature_sensor_periph.c.obj
+[91/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/timer_periph.c.obj
+[92/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/lcd_periph.c.obj
+[93/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/mcpwm_periph.c.obj
+[94/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/sdmmc_periph.c.obj
+[95/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/mpi_periph.c.obj
+[96/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/touch_sensor_periph.c.obj
+[97/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/twai_periph.c.obj
+[98/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/usb_periph.c.obj
+[99/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/wdt_periph.c.obj
+[100/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/usb_dwc_periph.c.obj
+[101/114] Building C object esp-idf/xtensa/CMakeFiles/__idf_xtensa.dir/eri.c.obj
+[102/114] Building C object esp-idf/soc/CMakeFiles/__idf_soc.dir/esp32s3/rtc_io_periph.c.obj
+[103/114] Generating project_elf_src_esp32s3.c
+[104/114] Building C object esp-idf/xtensa/CMakeFiles/__idf_xtensa.dir/xt_trax.c.obj
+[105/114] Building C object CMakeFiles/bootloader.elf.dir/project_elf_src_esp32s3.c.obj
+[106/114] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/bootloader_start.c.obj
+[107/114] Building C object esp-idf/micro-ecc/CMakeFiles/__idf_micro-ecc.dir/uECC_verify_antifault.c.obj
+[108/114] Linking C static library esp-idf/micro-ecc/libmicro-ecc.a
+[109/114] Linking C static library esp-idf/soc/libsoc.a
+[110/114] Linking C static library esp-idf/xtensa/libxtensa.a
+[111/114] Linking C static library esp-idf/main/libmain.a
+[112/114] Linking C executable bootloader.elf
+[113/114] Generating binary image from built executable
+esptool.py v4.13.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
+[114/114] cd /workspace/axeforge/upstream/build_gamma/bootloader/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
+Bootloader binary size 0x5490 bytes. 0x2b70 bytes (34%) free.
+[16/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/selftest.cpp.obj
+[17/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/bap.cpp.obj
+[18/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/settings.cpp.obj
+[19/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/ds4432u.cpp.obj
+[20/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/purifier.cpp.obj
+[21/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/i2c_bus.cpp.obj
+[22/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/sensors.cpp.obj
+[23/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/tuner.cpp.obj
+[24/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tps53647.cpp.obj
+[25/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tmp451.cpp.obj
+[26/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+[27/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/payout.cpp.obj
+[28/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/stats.cpp.obj
+[29/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tps546.cpp.obj
+[30/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/ble_setup.cpp.obj
+[31/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/work.cpp.obj
+[32/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/eth.cpp.obj
+[33/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/captive.cpp.obj
+[34/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/fwupdate.cpp.obj
+[35/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/http_util.cpp.obj
+[36/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/miner.cpp.obj
+[37/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/mempool.cpp.obj
+[38/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/netping.cpp.obj
+[39/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/otp.cpp.obj
+[40/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/notify.cpp.obj
+[41/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/swarm.cpp.obj
+[42/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/weather.cpp.obj
+[43/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/price.cpp.obj
+[44/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/wifi.cpp.obj
+[45/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/layout_store.cpp.obj
+[46/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/web.cpp.obj
+[47/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/theme.cpp.obj
+[48/72] Building ASM object esp-idf/main/CMakeFiles/__idf_main.dir/__/__/index.html.S.obj
+[49/72] Linking C static library esp-idf/app_trace/libapp_trace.a
+[50/72] Linking C static library esp-idf/cmock/libcmock.a
+[51/72] Linking C static library esp-idf/esp_driver_cam/libesp_driver_cam.a
+[52/72] Linking C static library esp-idf/esp_hid/libesp_hid.a
+[53/72] Linking C static library esp-idf/esp_local_ctrl/libesp_local_ctrl.a
+[54/72] Linking C static library esp-idf/espcoredump/libespcoredump.a
+[55/72] Linking C static library esp-idf/fatfs/libfatfs.a
+[56/72] Linking C static library esp-idf/mqtt/libmqtt.a
+[57/72] Linking C static library esp-idf/nvs_sec_provider/libnvs_sec_provider.a
+[58/72] Linking C static library esp-idf/perfmon/libperfmon.a
+[59/72] Linking C static library esp-idf/spiffs/libspiffs.a
+[60/72] Linking C static library esp-idf/touch_element/libtouch_element.a
+[61/72] Linking C static library esp-idf/usb/libusb.a
+[62/72] No install step for 'bootloader'
+[63/72] Completed 'bootloader'
+[64/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/oled.cpp.obj
+[65/72] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj
+FAILED: [code=1] esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj 
+/workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin/xtensa-esp32s3-elf-g++ -DESP_PLATFORM -DIDF_VER=\"v5.3.2\" -DLV_CONF_INCLUDE_SIMPLE -DMBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\" -DSOC_MMU_PAGE_SIZE=CONFIG_MMU_PAGE_SIZE -DSOC_XTAL_FREQ_MHZ=CONFIG_XTAL_FREQ -D_GLIBCXX_HAVE_POSIX_SEMAPHORE -D_GLIBCXX_USE_POSIX_SEMAPHORE -D_GNU_SOURCE -D_POSIX_READER_WRITER_LOCKS -I/workspace/axeforge/upstream/build_gamma/config -I/workspace/axeforge/upstream/main -I/workspace/axeforge/upstream/build_gamma/esp-idf/main/board -I/workspace/toolchains/esp-idf/components/newlib/platform_include -I/workspace/toolchains/esp-idf/components/freertos/config/include -I/workspace/toolchains/esp-idf/components/freertos/config/include/freertos -I/workspace/toolchains/esp-idf/components/freertos/config/xtensa/include -I/workspace/toolchains/esp-idf/components/freertos/FreeRTOS-Kernel/include -I/workspace/toolchains/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include -I/workspace/toolchains/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include/freertos -I/workspace/toolchains/esp-idf/components/freertos/esp_additions/include -I/workspace/toolchains/esp-idf/components/esp_hw_support/include -I/workspace/toolchains/esp-idf/components/esp_hw_support/include/soc -I/workspace/toolchains/esp-idf/components/esp_hw_support/include/soc/esp32s3 -I/workspace/toolchains/esp-idf/components/esp_hw_support/dma/include -I/workspace/toolchains/esp-idf/components/esp_hw_support/ldo/include -I/workspace/toolchains/esp-idf/components/esp_hw_support/port/esp32s3/. -I/workspace/toolchains/esp-idf/components/esp_hw_support/port/esp32s3/include -I/workspace/toolchains/esp-idf/components/heap/include -I/workspace/toolchains/esp-idf/components/log/include -I/workspace/toolchains/esp-idf/components/soc/include -I/workspace/toolchains/esp-idf/components/soc/esp32s3 -I/workspace/toolchains/esp-idf/components/soc/esp32s3/include -I/workspace/toolchains/esp-idf/components/hal/platform_port/include -I/workspace/toolchains/esp-idf/components/hal/esp32s3/include -I/workspace/toolchains/esp-idf/components/hal/include -I/workspace/toolchains/esp-idf/components/esp_rom/include -I/workspace/toolchains/esp-idf/components/esp_rom/include/esp32s3 -I/workspace/toolchains/esp-idf/components/esp_rom/esp32s3 -I/workspace/toolchains/esp-idf/components/esp_common/include -I/workspace/toolchains/esp-idf/components/esp_system/include -I/workspace/toolchains/esp-idf/components/esp_system/port/soc -I/workspace/toolchains/esp-idf/components/esp_system/port/include/private -I/workspace/toolchains/esp-idf/components/xtensa/esp32s3/include -I/workspace/toolchains/esp-idf/components/xtensa/include -I/workspace/toolchains/esp-idf/components/xtensa/deprecated_include -I/workspace/toolchains/esp-idf/components/lwip/include -I/workspace/toolchains/esp-idf/components/lwip/include/apps -I/workspace/toolchains/esp-idf/components/lwip/include/apps/sntp -I/workspace/toolchains/esp-idf/components/lwip/lwip/src/include -I/workspace/toolchains/esp-idf/components/lwip/port/include -I/workspace/toolchains/esp-idf/components/lwip/port/freertos/include -I/workspace/toolchains/esp-idf/components/lwip/port/esp32xx/include -I/workspace/toolchains/esp-idf/components/lwip/port/esp32xx/include/arch -I/workspace/toolchains/esp-idf/components/lwip/port/esp32xx/include/sys -I/workspace/toolchains/esp-idf/components/driver/deprecated -I/workspace/toolchains/esp-idf/components/driver/i2c/include -I/workspace/toolchains/esp-idf/components/driver/touch_sensor/include -I/workspace/toolchains/esp-idf/components/driver/twai/include -I/workspace/toolchains/esp-idf/components/driver/touch_sensor/esp32s3/include -I/workspace/toolchains/esp-idf/components/esp_pm/include -I/workspace/toolchains/esp-idf/components/esp_ringbuf/include -I/workspace/toolchains/esp-idf/components/esp_driver_gpio/include -I/workspace/toolchains/esp-idf/components/esp_driver_pcnt/include -I/workspace/toolchains/esp-idf/components/esp_driver_gptimer/include -I/workspace/toolchains/esp-idf/components/esp_driver_spi/include -I/workspace/toolchains/esp-idf/components/esp_driver_mcpwm/include -I/workspace/toolchains/esp-idf/components/esp_driver_ana_cmpr/include -I/workspace/toolchains/esp-idf/components/esp_driver_i2s/include -I/workspace/toolchains/esp-idf/components/esp_driver_sdmmc/include -I/workspace/toolchains/esp-idf/components/sdmmc/include -I/workspace/toolchains/esp-idf/components/esp_driver_sdspi/include -I/workspace/toolchains/esp-idf/components/esp_driver_sdio/include -I/workspace/toolchains/esp-idf/components/esp_driver_dac/include -I/workspace/toolchains/esp-idf/components/esp_driver_rmt/include -I/workspace/toolchains/esp-idf/components/esp_driver_tsens/include -I/workspace/toolchains/esp-idf/components/esp_driver_sdm/include -I/workspace/toolchains/esp-idf/components/esp_driver_i2c/include -I/workspace/toolchains/esp-idf/components/esp_driver_uart/include -I/workspace/toolchains/esp-idf/components/vfs/include -I/workspace/toolchains/esp-idf/components/esp_driver_ledc/include -I/workspace/toolchains/esp-idf/components/esp_driver_parlio/include -I/workspace/toolchains/esp-idf/components/esp_driver_usb_serial_jtag/include -I/workspace/toolchains/esp-idf/components/esp_wifi/include -I/workspace/toolchains/esp-idf/components/esp_wifi/wifi_apps/include -I/workspace/toolchains/esp-idf/components/esp_wifi/wifi_apps/nan_app/include -I/workspace/toolchains/esp-idf/components/esp_wifi/include/local -I/workspace/toolchains/esp-idf/components/esp_event/include -I/workspace/toolchains/esp-idf/components/esp_phy/include -I/workspace/toolchains/esp-idf/components/esp_phy/esp32s3/include -I/workspace/toolchains/esp-idf/components/esp_netif/include -I/workspace/toolchains/esp-idf/components/nvs_flash/include -I/workspace/toolchains/esp-idf/components/spi_flash/include -I/workspace/toolchains/esp-idf/components/esp_partition/include -I/workspace/toolchains/esp-idf/components/esp_http_server/include -I/workspace/toolchains/esp-idf/components/http_parser -I/workspace/toolchains/esp-idf/components/esp_timer/include -I/workspace/toolchains/esp-idf/components/esp_lcd/include -I/workspace/toolchains/esp-idf/components/esp_lcd/interface -I/workspace/toolchains/esp-idf/components/esp_lcd/rgb/include -I/workspace/toolchains/esp-idf/components/json/cJSON -I/workspace/toolchains/esp-idf/components/mbedtls/port/include -I/workspace/toolchains/esp-idf/components/mbedtls/mbedtls/include -I/workspace/toolchains/esp-idf/components/mbedtls/mbedtls/library -I/workspace/toolchains/esp-idf/components/mbedtls/esp_crt_bundle/include -I/workspace/toolchains/esp-idf/components/mbedtls/mbedtls/3rdparty/everest/include -I/workspace/toolchains/esp-idf/components/mbedtls/mbedtls/3rdparty/p256-m -I/workspace/toolchains/esp-idf/components/mbedtls/mbedtls/3rdparty/p256-m/p256-m -I/workspace/toolchains/esp-idf/components/esp_app_format/include -I/workspace/toolchains/esp-idf/components/app_update/include -I/workspace/toolchains/esp-idf/components/bootloader_support/include -I/workspace/toolchains/esp-idf/components/bootloader_support/bootloader_flash/include -I/workspace/toolchains/esp-idf/components/esp_bootloader_format/include -I/workspace/toolchains/esp-idf/components/esp_http_client/include -I/workspace/toolchains/esp-idf/components/esp_https_ota/include -I/workspace/toolchains/esp-idf/components/tcp_transport/include -I/workspace/toolchains/esp-idf/components/esp-tls -I/workspace/toolchains/esp-idf/components/esp-tls/esp-tls-crypto -I/workspace/axeforge/upstream/components/stratum_v2/include -I/workspace/axeforge/upstream/components/libsecp256k1/libsecp256k1/include -I/workspace/toolchains/esp-idf/components/esp_adc/include -I/workspace/toolchains/esp-idf/components/esp_adc/interface -I/workspace/toolchains/esp-idf/components/esp_adc/esp32s3/include -I/workspace/toolchains/esp-idf/components/esp_adc/deprecated/include -I/workspace/toolchains/esp-idf/components/esp_eth/include -I/workspace/toolchains/esp-idf/components/wifi_provisioning/include -I/workspace/toolchains/esp-idf/components/protocomm/include/common -I/workspace/toolchains/esp-idf/components/protocomm/include/security -I/workspace/toolchains/esp-idf/components/protocomm/include/transports -I/workspace/toolchains/esp-idf/components/protocomm/include/crypto/srp6a -I/workspace/toolchains/esp-idf/components/protocomm/proto-c -I/workspace/toolchains/esp-idf/components/bt/include/esp32c3/include -I/workspace/toolchains/esp-idf/components/bt/common/osi/include -I/workspace/toolchains/esp-idf/components/bt/common/api/include/api -I/workspace/toolchains/esp-idf/components/bt/common/btc/profile/esp/blufi/include -I/workspace/toolchains/esp-idf/components/bt/common/btc/profile/esp/include -I/workspace/toolchains/esp-idf/components/bt/common/hci_log/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/ans/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/bas/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/dis/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/gap/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/gatt/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/hr/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/htp/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/ias/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/ipss/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/lls/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/prox/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/cts/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/tps/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/hid/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/sps/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/services/cte/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/util/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/store/ram/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/host/store/config/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/porting/nimble/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/port/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/nimble/transport/include -I/workspace/toolchains/esp-idf/components/bt/porting/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/nimble/porting/npl/freertos/include -I/workspace/toolchains/esp-idf/components/bt/host/nimble/esp-hci/include -I/workspace/toolchains/esp-idf/components/wpa_supplicant/include -I/workspace/toolchains/esp-idf/components/wpa_supplicant/port/include -I/workspace/toolchains/esp-idf/components/wpa_supplicant/esp_supplicant/include -I/workspace/axeforge/upstream/managed_components/atanisoft__esp_lcd_ili9488/include -I/workspace/axeforge/upstream/managed_components/espressif__esp_lcd_st7796/include -I/workspace/axeforge/upstream/managed_components/lvgl__lvgl -I/workspace/axeforge/upstream/managed_components/lvgl__lvgl/src -I/workspace/axeforge/upstream/managed_components -I/workspace/axeforge/upstream/managed_components/lvgl__lvgl/examples -I/workspace/axeforge/upstream/managed_components/lvgl__lvgl/demos -mlongcalls  -fno-builtin-memcpy -fno-builtin-memset -fno-builtin-bzero -fno-builtin-stpcpy -fno-builtin-strncpy -fdiagnostics-color=always -fdiagnostics-color=always -ffunction-sections -fdata-sections -Wall -Werror=all -Wno-error=unused-function -Wno-error=unused-variable -Wno-error=unused-but-set-variable -Wno-error=deprecated-declarations -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-enum-conversion -gdwarf-4 -ggdb -mdisable-hardware-atomics -O2 -fmacro-prefix-map=/workspace/axeforge/upstream=. -fmacro-prefix-map=/workspace/toolchains/esp-idf=/IDF -fstrict-volatile-bitfields -fno-jump-tables -fno-tree-switch-conversion -std=gnu++2b -fno-exceptions -fno-rtti -Wno-missing-field-initializers -Wno-format-truncation -Wno-deprecated-enum-enum-conversion -DESP_LCD_ST7796_VER_MAJOR=1 -DESP_LCD_ST7796_VER_MINOR=5 -DESP_LCD_ST7796_VER_PATCH=0 -MD -MT esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj -MF esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj.d -o esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj -c /workspace/axeforge/upstream/main/stratum/pools.cpp
+In file included from /workspace/axeforge/upstream/main/stratum/pools.cpp:14:
+/workspace/axeforge/upstream/main/stratum/pools.cpp: In function 'void v1_message(Pool&, const char*)':
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:290:27: error: format '%d' expects argument of type 'int', but argument 7 has type 'long unsigned int' [-Werror=format=]
+  290 | #define LOG_COLOR(COLOR)  "\033[0;" COLOR "m"
+      |                           ^
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:293:27: note: in expansion of macro 'LOG_COLOR'
+  293 | #define LOG_COLOR_E       LOG_COLOR(LOG_COLOR_RED)
+      |                           ^~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:307:37: note: in expansion of macro 'LOG_COLOR_E'
+  307 | #define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%" PRIu32 ") %s: " format LOG_RESET_COLOR "\n"
+      |                                     ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:417:86: note: in expansion of macro 'LOG_FORMAT'
+  417 |         if (level==ESP_LOG_ERROR )          { esp_log_write(ESP_LOG_ERROR,      tag, LOG_FORMAT(E, format), esp_log_timestamp(), tag __VA_OPT__(,) __VA_ARGS__); } \
+      |                                                                                      ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:463:41: note: in expansion of macro 'ESP_LOG_LEVEL'
+  463 |         if ( LOG_LOCAL_LEVEL >= level ) ESP_LOG_LEVEL(level, tag, format, ##__VA_ARGS__); \
+      |                                         ^~~~~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:360:38: note: in expansion of macro 'ESP_LOG_LEVEL_LOCAL'
+  360 | #define ESP_LOGW( tag, format, ... ) ESP_LOG_LEVEL_LOCAL(ESP_LOG_WARN,    tag, format __VA_OPT__(,) __VA_ARGS__)
+      |                                      ^~~~~~~~~~~~~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:17: note: in expansion of macro 'ESP_LOGW'
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                 ^~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:290:27: error: format '%d' expects argument of type 'int', but argument 7 has type 'long unsigned int' [-Werror=format=]
+  290 | #define LOG_COLOR(COLOR)  "\033[0;" COLOR "m"
+      |                           ^
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:294:27: note: in expansion of macro 'LOG_COLOR'
+  294 | #define LOG_COLOR_W       LOG_COLOR(LOG_COLOR_BROWN)
+      |                           ^~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:307:37: note: in expansion of macro 'LOG_COLOR_W'
+  307 | #define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%" PRIu32 ") %s: " format LOG_RESET_COLOR "\n"
+      |                                     ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:418:86: note: in expansion of macro 'LOG_FORMAT'
+  418 |         else if (level==ESP_LOG_WARN )      { esp_log_write(ESP_LOG_WARN,       tag, LOG_FORMAT(W, format), esp_log_timestamp(), tag __VA_OPT__(,) __VA_ARGS__); } \
+      |                                                                                      ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:463:41: note: in expansion of macro 'ESP_LOG_LEVEL'
+  463 |         if ( LOG_LOCAL_LEVEL >= level ) ESP_LOG_LEVEL(level, tag, format, ##__VA_ARGS__); \
+      |                                         ^~~~~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:360:38: note: in expansion of macro 'ESP_LOG_LEVEL_LOCAL'
+  360 | #define ESP_LOGW( tag, format, ... ) ESP_LOG_LEVEL_LOCAL(ESP_LOG_WARN,    tag, format __VA_OPT__(,) __VA_ARGS__)
+      |                                      ^~~~~~~~~~~~~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:17: note: in expansion of macro 'ESP_LOGW'
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                 ^~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:1: error: format '%d' expects argument of type 'int', but argument 7 has type 'long unsigned int' [-Werror=format=]
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                                                                                                          ~
+      |                                                                                                          |
+      |                                                                                                          long unsigned int
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:307:59: note: in definition of macro 'LOG_FORMAT'
+  307 | #define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%" PRIu32 ") %s: " format LOG_RESET_COLOR "\n"
+      |                                                           ^~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:463:41: note: in expansion of macro 'ESP_LOG_LEVEL'
+  463 |         if ( LOG_LOCAL_LEVEL >= level ) ESP_LOG_LEVEL(level, tag, format, ##__VA_ARGS__); \
+      |                                         ^~~~~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:360:38: note: in expansion of macro 'ESP_LOG_LEVEL_LOCAL'
+  360 | #define ESP_LOGW( tag, format, ... ) ESP_LOG_LEVEL_LOCAL(ESP_LOG_WARN,    tag, format __VA_OPT__(,) __VA_ARGS__)
+      |                                      ^~~~~~~~~~~~~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:17: note: in expansion of macro 'ESP_LOGW'
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                 ^~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:1: error: format '%d' expects argument of type 'int', but argument 7 has type 'long unsigned int' [-Werror=format=]
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                                                                                                          ~
+      |                                                                                                          |
+      |                                                                                                          long unsigned int
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:307:59: note: in definition of macro 'LOG_FORMAT'
+  307 | #define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%" PRIu32 ") %s: " format LOG_RESET_COLOR "\n"
+      |                                                           ^~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:463:41: note: in expansion of macro 'ESP_LOG_LEVEL'
+  463 |         if ( LOG_LOCAL_LEVEL >= level ) ESP_LOG_LEVEL(level, tag, format, ##__VA_ARGS__); \
+      |                                         ^~~~~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:360:38: note: in expansion of macro 'ESP_LOG_LEVEL_LOCAL'
+  360 | #define ESP_LOGW( tag, format, ... ) ESP_LOG_LEVEL_LOCAL(ESP_LOG_WARN,    tag, format __VA_OPT__(,) __VA_ARGS__)
+      |                                      ^~~~~~~~~~~~~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:17: note: in expansion of macro 'ESP_LOGW'
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                 ^~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:290:27: error: format '%d' expects argument of type 'int', but argument 7 has type 'long unsigned int' [-Werror=format=]
+  290 | #define LOG_COLOR(COLOR)  "\033[0;" COLOR "m"
+      |                           ^
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:295:27: note: in expansion of macro 'LOG_COLOR'
+  295 | #define LOG_COLOR_I       LOG_COLOR(LOG_COLOR_GREEN)
+      |                           ^~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:307:37: note: in expansion of macro 'LOG_COLOR_I'
+  307 | #define LOG_FORMAT(letter, format)  LOG_COLOR_ ## letter #letter " (%" PRIu32 ") %s: " format LOG_RESET_COLOR "\n"
+      |                                     ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:421:86: note: in expansion of macro 'LOG_FORMAT'
+  421 |         else                                { esp_log_write(ESP_LOG_INFO,       tag, LOG_FORMAT(I, format), esp_log_timestamp(), tag __VA_OPT__(,) __VA_ARGS__); } \
+      |                                                                                      ^~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:463:41: note: in expansion of macro 'ESP_LOG_LEVEL'
+  463 |         if ( LOG_LOCAL_LEVEL >= level ) ESP_LOG_LEVEL(level, tag, format, ##__VA_ARGS__); \
+      |                                         ^~~~~~~~~~~~~
+/workspace/toolchains/esp-idf/components/log/include/esp_log.h:360:38: note: in expansion of macro 'ESP_LOG_LEVEL_LOCAL'
+  360 | #define ESP_LOGW( tag, format, ... ) ESP_LOG_LEVEL_LOCAL(ESP_LOG_WARN,    tag, format __VA_OPT__(,) __VA_ARGS__)
+      |                                      ^~~~~~~~~~~~~~~~~~~
+/workspace/axeforge/upstream/main/stratum/pools.cpp:416:17: note: in expansion of macro 'ESP_LOGW'
+  416 |                 ESP_LOGW(TAG, "[%d] pool refused the worker for chip %d", p.idx, rid - ID_CHIP_AUTH_BASE + 1);
+      |                 ^~~~~~~~
+cc1plus: some warnings being treated as errors
+ninja: build stopped: subcommand failed.
+ninja failed with exit code 1, output of the command is in the /workspace/axeforge/upstream/build_gamma/log/idf_py_stderr_output_14036 and /workspace/axeforge/upstream/build_gamma/log/idf_py_stdout_output_14036
