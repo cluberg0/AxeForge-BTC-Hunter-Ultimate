@@ -1,0 +1,16 @@
+{
+  "observedDate": "2026-11-12",
+  "repository": "https://github.com/bitaxeorg/ESP-Miner",
+  "treeCommit": "2492d00571a179dc833eefce2c53290edbb359bc",
+  "files": {
+    "bm1370": {
+      "sha256": "4fa0c2f7ef546bdc12189d54149887e80acc3c3c6ea59856c08b2b01d01d287c"
+    },
+    "asic-common": {
+      "sha256": "2ba46056c96c690bba6d7e01efd23e80d04056e0d179c473b7f865f0ad6ef749"
+    },
+    "crc": {
+      "sha256": "ce5269b8a8547ee9f5ab4c8309752adf198e93cae4cebf0944c37f030efd34b7"
+    }
+  }
+}
