@@ -33,4 +33,6 @@ patch('main/net/web.cpp',[inc,('        {"/api/status", HTTP_GET, status_get, NU
 # CMake GLOB_RECURSE includes new .cpp; EMBED_TXTFILES embeds the HTML at link time.
 shutil.copytree(P/'overlay',R,dirs_exist_ok=True)
 subprocess.run([sys.executable,str(P/"patch_hunter.py"),str(R)],check=True)
+subprocess.run(['git', '-C', str(R), 'apply', str(P/'integration-hardening.patch')], check=True)
+subprocess.run([sys.executable, str(P/'patch_api_safety.py'), str(R)], check=True)
 print('Patched pinned upstream. Build Gamma only.')

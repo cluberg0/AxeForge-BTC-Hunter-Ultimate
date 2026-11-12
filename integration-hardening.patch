@@ -1,0 +1,762 @@
+--- a/main/asic/bm13xx.cpp
++++ b/main/asic/bm13xx.cpp
+@@ -697,16 +697,21 @@
+     ESP_LOGI(TAG, "ticket mask %lu", (unsigned long) mask);
+ }
+ 
+-uint8_t send_job(uint32_t counter, AsicJob &job)
++uint8_t job_slot(uint32_t counter)
+ {
+ #if AF_ASIC_BM1397
+     // 32 slots, 4 apart: the result carries the midstate index in the low 2 bits
+-    job.job_id = (counter * 4) & 0x7f;
++    return (counter * 4) & 0x7f;
+ #elif AF_ASIC_BM1366
+-    job.job_id = (counter * 8) & 0x7f;  // the BM1366 reports it back with the small-core id in the low 3 bits
+-#else
+-    job.job_id = (counter * 24) & 0x7f;
+-#endif
++    return (counter * 8) & 0x7f;  // the BM1366 reports it back with the small-core id in the low 3 bits
++#else
++    return (counter * 24) & 0x7f;
++#endif
++}
++
++uint8_t send_job(uint32_t counter, AsicJob &job)
++{
++    job.job_id = job_slot(counter);
+ #if !AF_ASIC_BM1397
+     job.num_midstates = 1;  // the BM1397's count comes from work::build
+ #endif
+--- a/main/asic/bm13xx.h
++++ b/main/asic/bm13xx.h
+@@ -114,6 +114,7 @@
+ int offset_total();         // sum over the detected chips, for the expected hashrate
+ 
+ // Returns the asic job id (slot) used.
++uint8_t job_slot(uint32_t counter);
+ uint8_t send_job(uint32_t counter, AsicJob &job);
+ // Blocks up to timeout_ms for one 11-byte response.
+ bool receive(AsicResult &out, int timeout_ms);
+--- a/main/core/monitor.cpp
++++ b/main/core/monitor.cpp
+@@ -4,6 +4,7 @@
+ #include <stdio.h>
+ #include "esp_attr.h"
+ #include "esp_log.h"
++#include "esp_timer.h"
+ #include "freertos/FreeRTOS.h"
+ #include "freertos/task.h"
+ #include "sdkconfig.h"
+@@ -133,6 +134,7 @@
+         vTaskDelay(pdMS_TO_TICKS(1000));
+         g_state.uptime_s++;
+         board::read_telemetry();
++        g_state.telemetry_ms.store((uint32_t)(esp_timer_get_time() / 1000));
+         psu::tick();
+         ota_guard::tick();
+         energy::tick();
+--- a/main/core/state.h
++++ b/main/core/state.h
+@@ -4,6 +4,7 @@
+ // torn read just means one stale value for one refresh.
+ 
+ #include <stdint.h>
++#include <atomic>
+ #include <stdbool.h>
+ 
+ #include "core/board_config.h"  // AF_NUM_ASICS
+@@ -161,6 +162,8 @@
+ };
+ 
+ struct MinerState {
++    std::atomic<uint32_t> hash_counter_ms{0}; // zero means missing/reset/outlier counter
++    std::atomic<uint32_t> telemetry_ms{0}; // complete monitor sample, monotonic modulo 2^32
+     SysStatus status = SysStatus::Booting;
+     char fault[64] = "";
+ 
+--- a/main/mining/miner.cpp
++++ b/main/mining/miner.cpp
+@@ -2,6 +2,7 @@
+ #include <math.h>
+ 
+ #include <algorithm>
++#include <atomic>
+ 
+ #include <stdlib.h>
+ #include <string.h>
+@@ -40,11 +41,12 @@
+ 
+ static SemaphoreHandle_t s_work_lock;
+ static Work s_work[NUM_SLOTS];
+-static volatile bool s_paused = false;
++static std::atomic<bool> s_paused{false};
+ static TaskHandle_t s_job_task;
+ static uint32_t s_job_counter = 0;
+ 
+ // --- hashrate counters (written only by the result task) ---
++static std::atomic<bool> s_reset_counters{false};
+ static int64_t s_prev_t[AF_NUM_ASICS];
+ static uint32_t s_prev_cnt[AF_NUM_ASICS];
+ static int64_t s_prev_err_t[AF_NUM_ASICS];
+@@ -55,13 +57,6 @@
+ static double s_win_err[AF_NUM_ASICS];
+ static int64_t s_win_us[AF_NUM_ASICS];
+ static int64_t s_win_start;
+-
+-static void invalidate_all()
+-{
+-    xSemaphoreTake(s_work_lock, portMAX_DELAY);
+-    for (auto &w : s_work) w.valid = false;
+-    xSemaphoreGive(s_work_lock);
+-}
+ 
+ static void invalidate_pool(int pool)
+ {
+@@ -188,15 +183,13 @@
+                 }
+                 s.tmpl = next;
+                 s.have = true;
+-                if (pools::take_clean_flag(i)) invalidate_pool(i);
++                if (s.info.clean) invalidate_pool(i);
+             }
+             if (s.have && s.shown_gen != s.gen) {
+                 // decode each pool's template once per new job: the payout check
+                 // has to see it before the pool is picked
+                 s.decoded = BlockTemplate();
+-                char user[sizeof(settings::get().pools[i].user)];
+-                settings::pool_user(i, user, sizeof(user));
+-                work::describe_template(s.tmpl, s.info.en1, s.info.en2_len, s.decoded, user);
++                work::describe_template(s.tmpl, s.info.en1, s.info.en2_len, s.decoded, s.info.user);
+                 s.decoded.pool = i;
+                 s.shown_gen = s.gen;
+                 note_payout(i, s.decoded);
+@@ -224,13 +217,28 @@
+         Work w;
+         AsicJob cj;
+         work::build(s.tmpl, s.info.en1, s.en2++, s.info.en2_len, s.info.version_mask, s.info.difficulty, w, cj);
++        if (!w.valid) {
++            ESP_LOGE(TAG, "job allocation failed; waiting for memory");
++            vTaskDelay(pdMS_TO_TICKS(100));
++            continue;
++        }
+         w.pool = p;
+         w.pool_session = s.info.session;
++        w.btc_network = s.info.btc_network;
++        // pause(true) takes this same lock, so it is a barrier: when it
++        // returns no in-flight builder can publish or transmit after shutdown.
++        xSemaphoreTake(s_work_lock, portMAX_DELAY);
++        if (s_paused || !board::is_powered() || !pools::ready(p)) {
++            xSemaphoreGive(s_work_lock);
++            continue;
++        }
+         asic::set_difficulty_mask(asic_difficulty(min_diff));
+         asic::set_version_mask(roll_mask);
+-        uint8_t slot = asic::send_job(s_job_counter++, cj);
+-        xSemaphoreTake(s_work_lock, portMAX_DELAY);
++        // Publish verification data before a fast result can arrive on UART.
++        uint32_t counter = s_job_counter++;
++        uint8_t slot = asic::job_slot(counter);
+         s_work[slot] = w;
++        asic::send_job(counter, cj);
+         xSemaphoreGive(s_work_lock);
+ 
+         hunter::job_sent(p, s.gen, s.info.received_us, s.info.clean);
+@@ -274,6 +282,11 @@
+ static void on_counter(int chip, uint32_t cnt, bool is_error)
+ {
+     if (chip < 0 || chip >= AF_NUM_ASICS) return;
++    if (s_reset_counters.exchange(false)) {
++        memset(s_prev_t, 0, sizeof(s_prev_t));
++        memset(s_prev_err_t, 0, sizeof(s_prev_err_t));
++        g_state.hash_counter_ms.store(0);
++    }
+     int64_t now = esp_timer_get_time();
+     int64_t *pt = is_error ? s_prev_err_t : s_prev_t;
+     uint32_t *pc = is_error ? s_prev_err : s_prev_cnt;
+@@ -291,7 +304,12 @@
+     float ghs = (float) ((double) dc * 4294967296.0 / (double) dt / 1000.0);
+     // Gamma: reject nonphysical valid-count samples before poisoning the EMA or tuner.
+     // The baseline has already been advanced, so a counter reset affects only this sample.
+-    if (!is_error && !hunter_math::rate_ok(ghs)) { ESP_LOGW(TAG, "invalid counter rate %.0f GH/s, skipped", ghs); return; }
++    if (!is_error && !hunter_math::rate_ok(ghs)) {
++        g_state.chip_ghs[chip] = 0;
++        g_state.hash_counter_ms.store(0);
++        ESP_LOGW(TAG, "invalid counter rate %.0f GH/s, skipped (reset/wrap or unsynchronised read)", ghs);
++        return;
++    }
+     portENTER_CRITICAL(&s_win_mux);
+     if (is_error) {
+         g_state.chip_err_ghs[chip] = ghs;
+@@ -300,6 +318,7 @@
+         g_state.chip_ghs[chip] = ghs;
+         s_win_valid[chip] += dc;
+         s_win_us[chip] += dt;
++        g_state.hash_counter_ms.store((uint32_t)(now / 1000));
+     }
+     portEXIT_CRITICAL(&s_win_mux);
+ }
+@@ -362,13 +381,16 @@
+                      (unsigned long) r.nonce, r.job_slot, (unsigned long) g_state.dup_results);
+             continue;
+         }
+-        const bool candidate = hunter_math::meets(hash, w.nbits);
+-        // A full target hit gets the originating connection first, before logging/statistics.
+-        if (candidate) {
++        const bool target_hit = hunter_math::meets(hash, w.nbits);
++        const bool candidate = w.btc_network && hunter_math::meets_btc(hash, w.nbits);
++        // Every compact-target hit gets the originating connection first. Only a
++        // known BTC session within its pow limit enters the BTC candidate journal.
++        // nBits is pool supplied: this is not Bitcoin consensus/chain validation.
++        if (target_hit) {
+             char display_hash[65]; uint8_t be_candidate[32];
+             for (int i = 0; i < 32; i++) be_candidate[i] = hash[31 - i];
+             work::bin2hex(be_candidate, 32, display_hash);
+-            pools::submit(w.pool, w, r.nonce, version, r.chip, true, display_hash);
++            pools::submit(w.pool, w, r.nonce, version, r.chip, candidate, candidate ? display_hash : nullptr);
+         }
+         g_state.hashes_checked++;
+         if (diff > g_state.session_best) g_state.session_best = diff;
+@@ -392,7 +414,7 @@
+         work::bin2hex(be, 32, g_state.last_hash);
+         g_state.last_hash_diff = diff;
+ 
+-        if (candidate || diff >= w.pool_diff) {
++        if (target_hit || diff >= w.pool_diff) {
+             // only notable shares at info level, otherwise the console is just shares
+             if (diff >= 8.0 * w.pool_diff)
+                 ESP_LOGI(TAG, "nice share: pool %d chip %d diff %.0f (pool %lu)", w.pool + 1, r.chip, diff,
+@@ -401,7 +423,7 @@
+                 ESP_LOGD(TAG, "share pool %d chip %d diff %.0f", w.pool + 1, r.chip, diff);
+             // Send the exact-target candidate on its originating pool, even if share difficulty is higher.
+             // No flash or notification before the submission; never replay it to another pool.
+-            if (!candidate) pools::submit(w.pool, w, r.nonce, version, r.chip);
++            if (!target_hit) pools::submit(w.pool, w, r.nonce, version, r.chip);
+             if (candidate) {
+                 g_state.blocks_found++;  // local candidates, not chain confirmations
+                 ESP_LOGW(TAG, "BLOCK CANDIDATE diff %.0f on pool %d (check Hunter reply)", diff, w.pool);
+@@ -417,8 +439,8 @@
+     int n = 0, periods = 0, stall = 0, dead = 0;
+     while (true) {
+         if (!board::is_powered()) {
+-            memset(s_prev_t, 0, sizeof(s_prev_t));
+-            memset(s_prev_err_t, 0, sizeof(s_prev_err_t));
++            s_reset_counters = true;
++            g_state.hash_counter_ms.store(0);
+             g_state.hashrate_ghs = 0;
+             memset(g_state.chip_ghs, 0, sizeof(g_state.chip_ghs));
+             memset(g_state.chip_err_ghs, 0, sizeof(g_state.chip_err_ghs));
+@@ -429,8 +451,8 @@
+         if (s_paused) {
+             // power-up or a clock change in progress: keep off the UART, and take a
+             // fresh baseline afterwards (the counters restart with the chips)
+-            memset(s_prev_t, 0, sizeof(s_prev_t));
+-            memset(s_prev_err_t, 0, sizeof(s_prev_err_t));
++            s_reset_counters = true;
++            g_state.hash_counter_ms.store(0);
+             dead = 0;
+             vTaskDelay(pdMS_TO_TICKS(500));
+             continue;
+@@ -517,9 +539,12 @@
+ 
+ void pause(bool p)
+ {
++    if (!s_work_lock) { s_paused = p; return; }
++    xSemaphoreTake(s_work_lock, portMAX_DELAY);
+     s_paused = p;
+-    if (p) invalidate_all();
+-    else if (s_job_task) xTaskNotifyGive(s_job_task);
++    if (p) for (auto &w : s_work) w.valid = false;
++    xSemaphoreGive(s_work_lock);
++    if (!p && s_job_task) xTaskNotifyGive(s_job_task);
+ }
+ 
+ void kick()
+--- a/main/mining/work.cpp
++++ b/main/mining/work.cpp
+@@ -154,7 +154,8 @@
+     // coinbase = coinb1 + en1 + en2 + coinb2
+     size_t l1 = strlen(sj.coinb1), le1 = strlen(extranonce1), le2 = strlen(w.extranonce2), l2 = strlen(sj.coinb2);
+     size_t bin_len = (l1 + le1 + le2 + l2) / 2;
+-    uint8_t *cb = (uint8_t *) malloc(bin_len);
++    uint8_t *cb = (uint8_t *) malloc(bin_len ? bin_len : 1);
++    if (!cb) { w.valid = false; return; }
+     size_t o = 0;
+     o += hex2bin(sj.coinb1, cb + o, bin_len - o);
+     o += hex2bin(extranonce1, cb + o, bin_len - o);
+--- a/main/mining/work.h
++++ b/main/mining/work.h
+@@ -26,6 +26,7 @@
+     bool valid = false;
+     int pool = 0;
+     uint32_t pool_session = 0;
++    bool btc_network = false;
+     char job_id[40];
+     char extranonce2[33];
+     uint32_t version;
+--- a/main/stratum/pools.cpp
++++ b/main/stratum/pools.cpp
+@@ -1,4 +1,5 @@
+ #include "pools.h"
++#include "stratum/v1_wire.h"
+ 
+ #include <ctype.h>
+ #include <atomic>
+@@ -76,26 +77,28 @@
+ struct Pool {
+     int idx = 0;
+     TaskHandle_t task = nullptr;
+-    volatile bool restart = false;
++    std::atomic<bool> restart{false};
+     SemaphoreHandle_t lock = nullptr;     // job template
+     SemaphoreHandle_t io = nullptr;       // transport writes (and V1 reads)
+     esp_transport_handle_t t = nullptr;
+     sv2_noise_ctx_t *noise = nullptr;
+-    PoolProto proto = PoolProto::V1;
++    std::atomic<PoolProto> proto{PoolProto::V1};
+ 
+     StratumJob job;
+     bool have_job = false;
++    bool subscribed = false;
+     uint32_t gen = 0;
+     bool clean = false;
+     int64_t received_us = 0;
+     std::atomic<uint32_t> session{1};
+     char session_user[96] = {};
++    bool session_btc = false;
+     char en1[67] = "";
+     int en2_len = 4;
+     uint32_t version_mask = DEFAULT_VERSION_MASK;
+     double diff = SUGGEST_DIFF;  // pools may send fractional difficulties
+     uint32_t submit_id = ID_SUBMIT_BASE;
+-    uint32_t chip_ok = 0;        // chips whose own worker the pool accepted
++    std::atomic<uint32_t> chip_ok{0};        // chips whose own worker the pool accepted
+     int64_t submit_t_us = 0;
+ 
+     // SV2 channel
+@@ -125,7 +128,7 @@
+ {
+     size_t n = strlen(s) + 1;
+     char *d = (char *) malloc(n);
+-    memcpy(d, s, n);
++    if (d) memcpy(d, s, n);
+     return d;
+ }
+ 
+@@ -184,6 +187,14 @@
+ // Publishes a new template and wakes the job task on clean jobs.
+ static void publish(Pool &p, StratumJob &j, const char *coinb1_hex, const char *coinb2_hex)
+ {
++    // Allocate the complete replacement before releasing any published template.
++    char *cb1 = dup_str(coinb1_hex), *cb2 = dup_str(coinb2_hex);
++    if (!cb1 || !cb2) {
++        free(cb1); free(cb2);
++        ESP_LOGE(TAG, "[%d] job allocation failed; reconnecting", p.idx);
++        p.restart = true;
++        return;
++    }
+     note_new_block(p, j.prev_hash_raw);
+     xSemaphoreTake(p.lock, portMAX_DELAY);
+     // A changed previous hash always makes old work stale, even if the pool omitted clean_jobs.
+@@ -192,8 +203,8 @@
+     free(p.job.coinb1);
+     free(p.job.coinb2);
+     p.job = j;
+-    p.job.coinb1 = dup_str(coinb1_hex);
+-    p.job.coinb2 = dup_str(coinb2_hex);
++    p.job.coinb1 = cb1;
++    p.job.coinb2 = cb2;
+     p.have_job = true;
+     p.gen++;
+     if (j.clean) p.clean = true;
+@@ -232,6 +243,7 @@
+ static bool transport_connect(Pool &p, const PoolCfg &cfg)
+ {
+     p.t = (cfg.proto == PoolProto::V1Tls) ? esp_transport_ssl_init() : esp_transport_tcp_init();
++    if (!p.t) { set_status(p, "Not enough memory for transport"); return false; }
+     if (cfg.proto == PoolProto::V1Tls) esp_transport_ssl_crt_bundle_attach(p.t, esp_crt_bundle_attach);
+     if (esp_transport_connect(p.t, cfg.url, cfg.port, 10000) < 0) {
+         set_status(p, "Can't connect to %s", cfg.url);
+@@ -280,6 +292,7 @@
+ {
+     xSemaphoreTake(p.io, portMAX_DELAY);
+     bool ok = (!session || session == p.session) && p.t && esp_transport_write(p.t, line, strlen(line), 5000) == (int) strlen(line);
++    if (!ok) p.restart = true;
+     xSemaphoreGive(p.io);
+     return ok;
+ }
+@@ -288,6 +301,7 @@
+ {
+     xSemaphoreTake(p.io, portMAX_DELAY);
+     bool ok = (!session || session == p.session) && p.noise && p.t && sv2_noise_send(p.noise, p.t, frame, len) == 0;
++    if (!ok) p.restart = true;
+     xSemaphoreGive(p.io);
+     return ok;
+ }
+@@ -306,14 +320,20 @@
+     cJSON *branches = cJSON_GetArrayItem(params, 4);
+     if (!cJSON_IsArray(branches)) return;
+ 
+-    StratumJob j;
+-    strncpy(j.job_id, f[0], sizeof(j.job_id) - 1);
++    StratumJob j{};
++    size_t id_len = strlen(f[0]);
++    if (!id_len || id_len >= sizeof(j.job_id) ||
++        !v1_wire::hex_field(f[1], 64, 64) || !v1_wire::hex_field(f[2], 0, V1_RX_BUF) ||
++        !v1_wire::hex_field(f[3], 0, V1_RX_BUF) || !v1_wire::hex_field(f[5], 8, 8) ||
++        !v1_wire::hex_field(f[6], 8, 8) || !v1_wire::hex_field(f[7], 8, 8)) return;
++    // Job IDs are opaque JSON strings; cJSON serializes the submit safely below.
++    memcpy(j.job_id, f[0], id_len + 1);
+     work::hex2bin(f[1], j.prev_hash_raw, 32);
+     j.n_merkle = cJSON_GetArraySize(branches);
+     if (j.n_merkle > MAX_MERKLE_BRANCHES) return;
+     for (int i = 0; i < j.n_merkle; i++) {
+         cJSON *b = cJSON_GetArrayItem(branches, i);
+-        if (!cJSON_IsString(b)) return;
++        if (!cJSON_IsString(b) || !v1_wire::hex_field(b->valuestring, 64, 64)) return;
+         work::hex2bin(b->valuestring, j.merkle[i], 32);
+     }
+     j.version = strtoul(f[5], NULL, 16);
+@@ -339,31 +359,45 @@
+             v1_notify(p, params);
+         } else if (!strcmp(m, "mining.set_difficulty")) {
+             cJSON *d = cJSON_GetArrayItem(params, 0);
+-            if (cJSON_IsNumber(d)) {
+-                // keep the fraction: truncating 1500.7 to 1500 submits shares the pool rejects
+-                p.diff = d->valuedouble < 1 ? 1 : d->valuedouble;
++            if (cJSON_IsNumber(d) && isfinite(d->valuedouble) && d->valuedouble > 0) {
++                // Preserve every positive fractional difficulty and publish atomically with fetch_job.
++                xSemaphoreTake(p.lock, portMAX_DELAY);
++                p.diff = d->valuedouble;
++                xSemaphoreGive(p.lock);
+                 g_state.pools[p.idx].diff = shown_diff(p.diff);
+             }
+         } else if (!strcmp(m, "mining.set_version_mask")) {
+             cJSON *v = cJSON_GetArrayItem(params, 0);
+-            if (cJSON_IsString(v)) p.version_mask = strtoul(v->valuestring, NULL, 16);
++            if (cJSON_IsString(v) && v1_wire::hex_field(v->valuestring, 8, 8)) {
++                xSemaphoreTake(p.lock, portMAX_DELAY);
++                p.version_mask = strtoul(v->valuestring, NULL, 16);
++                xSemaphoreGive(p.lock);
++            }
+         }
+     } else if (cJSON_IsNumber(id)) {
+-        int rid = id->valueint;
++        // valueint saturates at INT_MAX; reject fractional/out-of-range IDs explicitly.
++        uint32_t rid;
++        if (!v1_wire::request_id(id, rid)) { cJSON_Delete(root); return; }
+         if (rid == ID_CONFIGURE && cJSON_IsObject(result)) {
+             cJSON *mask = cJSON_GetObjectItem(result, "version-rolling.mask");
+-            if (cJSON_IsString(mask)) p.version_mask = strtoul(mask->valuestring, NULL, 16);
+-        } else if (rid == ID_SUBSCRIBE && cJSON_IsArray(result) && !p.en1[0]) {
++            if (cJSON_IsString(mask) && v1_wire::hex_field(mask->valuestring, 8, 8)) {
++                xSemaphoreTake(p.lock, portMAX_DELAY);
++                p.version_mask = strtoul(mask->valuestring, NULL, 16);
++                xSemaphoreGive(p.lock);
++            }
++        } else if (rid == ID_SUBSCRIBE && cJSON_IsArray(result) && !p.subscribed) {
+             // once per connection: a later "reply" would swap extranonce1 under work in flight
+             cJSON *en1 = cJSON_GetArrayItem(result, 1);
+             cJSON *en2 = cJSON_GetArrayItem(result, 2);
+             // a negative or oversized extranonce2 would make the coinbase builder
+             // write outside its buffers: refuse the pool rather than mine for it
+             if (cJSON_IsString(en1) && cJSON_IsNumber(en2) && valid_en1(en1->valuestring) &&
+-                en2->valuedouble >= EN2_MIN && en2->valuedouble <= EN2_MAX) {
++                en2->valuedouble >= EN2_MIN && en2->valuedouble <= EN2_MAX &&
++                floor(en2->valuedouble) == en2->valuedouble) {
+                 xSemaphoreTake(p.lock, portMAX_DELAY);
+                 snprintf(p.en1, sizeof(p.en1), "%s", en1->valuestring);
+                 p.en2_len = en2->valueint;
++                p.subscribed = true;
+                 xSemaphoreGive(p.lock);
+             } else {
+                 ESP_LOGE(TAG, "[%d] pool sent an invalid extranonce (extranonce2 size must be %d-%d bytes)", p.idx,
+@@ -383,12 +417,25 @@
+             }
+         } else if (rid >= ID_SUBMIT_BASE) {
+             char *err = cJSON_IsTrue(result) ? nullptr : cJSON_PrintUnformatted(cJSON_GetObjectItem(root, "error"));
+-            const double credited = hunter::reply(p.idx, (uint32_t)rid, cJSON_IsTrue(result));
+-            on_share_result(p, cJSON_IsTrue(result), err, credited);
++            bool matched = false;
++            const double credited = hunter::reply(p.idx, rid, cJSON_IsTrue(result), &matched);
++            // Unknown, timed-out and duplicate replies must not reach legacy counters either.
++            if (matched) on_share_result(p, cJSON_IsTrue(result), err, credited);
+             free(err);
+         }
+     }
+     cJSON_Delete(root);
++}
++
++static bool authorize_v1(Pool &p, uint32_t id, const char *user, const char *pass)
++{
++    const char *fields[] = {user, pass};
++    size_t len;
++    char *wire = v1_wire::request(id, "mining.authorize", fields, 2, len);
++    if (!wire) { p.restart = true; return false; }
++    bool ok = send_line(p, wire);
++    free(wire);
++    return ok;
+ }
+ 
+ static void run_v1(Pool &p, const PoolCfg &cfg)
+@@ -399,27 +446,25 @@
+     xSemaphoreTake(p.lock, portMAX_DELAY);
+     p.en1[0] = 0;
+     p.en2_len = 4;
++    p.subscribed = false;
+     xSemaphoreGive(p.lock);
+     snprintf(line, sizeof(line),
+              "{\"id\":%d,\"method\":\"mining.configure\",\"params\":[[\"version-rolling\"],"
+              "{\"version-rolling.mask\":\"ffffffff\"}]}\n"
+              "{\"id\":%d,\"method\":\"mining.subscribe\",\"params\":[\"AxeForge/%s\"]}\n",
+              ID_CONFIGURE, ID_SUBSCRIBE, app->version);
+-    send_line(p, line);
++    if (!send_line(p, line) || !authorize_v1(p, ID_AUTHORIZE, cfg.user, cfg.pass)) return;
+     snprintf(line, sizeof(line),
+-             "{\"id\":%d,\"method\":\"mining.authorize\",\"params\":[\"%s\",\"%s\"]}\n"
+              "{\"id\":%d,\"method\":\"mining.suggest_difficulty\",\"params\":[%d]}\n",
+-             ID_AUTHORIZE, cfg.user, cfg.pass, ID_SUGGEST, SUGGEST_DIFF);
+-    send_line(p, line);
++             ID_SUGGEST, SUGGEST_DIFF);
++    if (!send_line(p, line)) return;
+     p.chip_ok = 0;
+     g_state.pools[p.idx].chip_workers = 0;
+     if (settings::get().chip_workers && AF_NUM_ASICS > 1) {
+         for (int c = 0; c < AF_NUM_ASICS; c++) {
+             char worker[112];
+             chip_worker(cfg.user, c, worker, sizeof(worker));
+-            snprintf(line, sizeof(line), "{\"id\":%d,\"method\":\"mining.authorize\",\"params\":[\"%s\",\"%s\"]}\n",
+-                     ID_CHIP_AUTH_BASE + c, worker, cfg.pass);
+-            send_line(p, line);
++            if (!authorize_v1(p, ID_CHIP_AUTH_BASE + c, worker, cfg.pass)) return;
+         }
+     }
+     g_state.pools[p.idx].connected = true;
+@@ -427,6 +472,7 @@
+     set_status(p, cfg.proto == PoolProto::V1Tls ? "Connected (TLS)" : "Connected");
+ 
+     char *buf = (char *) malloc(V1_RX_BUF);
++    if (!buf) { set_status(p, "Not enough memory for Stratum"); return; }
+     int fill = 0;
+     int64_t last_rx = esp_timer_get_time();
+     p.bad_subscribe = false;
+@@ -460,7 +506,10 @@
+         }
+         fill = strlen(start);
+         memmove(buf, start, fill + 1);
+-        if (fill >= V1_RX_BUF - 1) fill = 0;
++        if (fill >= V1_RX_BUF - 1) {
++            set_status(p, "Stratum message too large");
++            break;  // never parse a suffix of a truncated message as an independent command
++        }
+     }
+     free(buf);
+ }
+@@ -493,6 +542,11 @@
+     size_t l1 = ej->coinbase_prefix_len + ej->extranonce_prefix_len;
+     char *h1 = (char *) malloc(l1 * 2 + 1);
+     char *h2 = (char *) malloc(ej->coinbase_suffix_len * 2 + 1);
++    if (!h1 || !h2) {
++        free(h1); free(h2); p.restart = true;
++        ESP_LOGE(TAG, "[%d] SV2 job allocation failed", p.idx);
++        return;
++    }
+     work::bin2hex(ej->coinbase_prefix, ej->coinbase_prefix_len, h1);
+     work::bin2hex(ej->extranonce_prefix, ej->extranonce_prefix_len, h1 + ej->coinbase_prefix_len * 2);
+     work::bin2hex(ej->coinbase_suffix, ej->coinbase_suffix_len, h2);
+@@ -650,6 +704,7 @@
+     }
+ 
+     uint8_t *buf = (uint8_t *) malloc(SV2_RX_BUF);
++    if (!buf) { set_status(p, "Not enough memory for SV2"); return; }
+     uint8_t hdr[6];
+     int len = 0;
+     sv2_frame_header_t fh;
+@@ -795,7 +850,10 @@
+             continue;
+         }
+         xSemaphoreTake(p.io, portMAX_DELAY);
++        xSemaphoreTake(p.lock, portMAX_DELAY);
+         snprintf(p.session_user, sizeof(p.session_user), "%s", cfg.user);
++        p.session_btc = !strcmp(cfg.url, "stratum.bitaxe.de") || !strcmp(cfg.url, "stratum.ckpool.org");
++        xSemaphoreGive(p.lock);
+         xSemaphoreGive(p.io);
+         set_status(p, "Connecting...");
+         p.proto = cfg.proto;
+@@ -807,14 +865,15 @@
+             else run_v1(p, cfg);
+         }
+         ps.connected = false;
+-        hunter::disconnected(p.idx);
+         xSemaphoreTake(p.lock, portMAX_DELAY);
+         p.have_job = false;
+         xSemaphoreGive(p.lock);
+         // results for this connection's jobs would be stale (or carry the old
+         // extranonce) on the next one
+         miner::forget_pool(p.idx);
+-        transport_close(p);
++        transport_close(p);  // invalidate transport/session before clearing the ledger
++        hunter::disconnected(p.idx);
++        p.submit_id = ID_SUBMIT_BASE;
+         if (!p.restart) {
+             ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(backoff_s * 1000));
+             if (backoff_s < 60) backoff_s *= 2;
+@@ -850,7 +909,10 @@
+ bool ready(int i)
+ {
+     Pool &p = s_pools[i];
+-    return g_state.pools[i].connected && p.have_job && (p.proto == PoolProto::V2 || p.en1[0]);
++    xSemaphoreTake(p.lock, portMAX_DELAY);
++    bool available = g_state.pools[i].connected && p.have_job && (p.proto == PoolProto::V2 || p.subscribed);
++    xSemaphoreGive(p.lock);
++    return available;
+ }
+ 
+ bool fetch_job(int i, StratumJob &out, JobInfo &info, uint32_t *gen)
+@@ -859,15 +921,24 @@
+     bool got = false;
+     xSemaphoreTake(p.lock, portMAX_DELAY);
+     if (p.have_job && p.gen != *gen) {
++        char *cb1 = dup_str(p.job.coinb1), *cb2 = dup_str(p.job.coinb2);
++        if (!cb1 || !cb2) {
++            free(cb1); free(cb2);
++            xSemaphoreGive(p.lock);
++            return false;
++        }
+         out = p.job;
+-        out.coinb1 = dup_str(p.job.coinb1);
+-        out.coinb2 = dup_str(p.job.coinb2);
++        out.coinb1 = cb1;
++        out.coinb2 = cb2;
+         strcpy(info.en1, p.en1);
++        memcpy(info.user, p.session_user, sizeof(info.user));
++        info.btc_network = p.session_btc;
+         info.en2_len = p.en2_len;
+         info.version_mask = p.version_mask;
+         info.difficulty = p.diff;
+         info.received_us = p.received_us;
+         info.clean = p.job.clean || p.clean;
++        p.clean = false;  // consume with the matching template under the same lock
+         info.session = p.session;
+         *gen = p.gen;
+         got = true;
+@@ -876,7 +947,13 @@
+     return got;
+ }
+ 
+-uint32_t generation(int i) { return s_pools[i].gen; }
++uint32_t generation(int i) {
++    Pool &p = s_pools[i];
++    xSemaphoreTake(p.lock, portMAX_DELAY);
++    uint32_t gen = p.gen;
++    xSemaphoreGive(p.lock);
++    return gen;
++}
+ 
+ bool take_clean_flag(int i)
+ {
+@@ -890,8 +967,14 @@
+ 
+ void submit(int i, const Work &w, uint32_t nonce, uint32_t version, int chip, bool candidate, const char *hash)
+ {
++    if (i < 0 || i >= AF_MAX_POOLS) return;
+     Pool &p = s_pools[i];
+-    if (!g_state.pools[i].connected || w.pool_session != p.session) { if (candidate) hunter::unavailable_candidate(i, hash); return; }
++    xSemaphoreTake(p.io, portMAX_DELAY);
++    if (!g_state.pools[i].connected || w.pool_session != p.session || !p.t) {
++        xSemaphoreGive(p.io);
++        if (candidate) hunter::unavailable_candidate(i, hash);
++        return;
++    }
+     p.submit_t_us = esp_timer_get_time();
+     if (p.proto == PoolProto::V2) {
+         uint8_t en2[32];
+@@ -900,27 +983,41 @@
+         int n = sv2_build_submit_shares_extended(frame, sizeof(frame), p.channel_id, p.seq++,
+                                                  strtoul(w.job_id, NULL, 10), nonce, w.ntime, version, en2,
+                                                  (uint8_t) en2_len);
+-        bool ok = n > 0 && send_frame(p, frame, n, w.pool_session);
++        bool ok = n > 0 && p.noise && sv2_noise_send(p.noise, p.t, frame, n) == 0;
++        xSemaphoreGive(p.io);
++        if (!ok) p.restart = true;
+         if (candidate) hunter::sv2_candidate(i, hash, ok);
+         return;
+     }
++    if (p.submit_id == UINT32_MAX) {
++        // Reconnect before wrapping into handshake IDs or reusing an in-flight ID.
++        p.restart = true;
++        xSemaphoreGive(p.io);
++        if (candidate) hunter::unavailable_candidate(i, hash);
++        return;
++    }
+     const uint32_t request_id = p.submit_id++;
+-    char line[340], worker[112], session_user[96];
+-    xSemaphoreTake(p.io, portMAX_DELAY);
+-    memcpy(session_user, p.session_user, sizeof(session_user));
+-    xSemaphoreGive(p.io);
+-    session_user[sizeof(session_user)-1] = 0;
+-    const char *user = session_user;
++    char worker[112];
++    const char *user = p.session_user;
+     if (chip >= 0 && chip < AF_NUM_ASICS && (p.chip_ok & (1u << chip))) {
+         chip_worker(user, chip, worker, sizeof(worker));
+         user = worker;
+     }
+-    snprintf(line, sizeof(line),
+-             "{\"id\":%lu,\"method\":\"mining.submit\",\"params\":[\"%s\",\"%s\",\"%s\",\"%08lx\",\"%08lx\",\"%08lx\"]}\n",
+-             (unsigned long) request_id, user, w.job_id, w.extranonce2,
+-             (unsigned long) w.ntime, (unsigned long) nonce, (unsigned long) (version & w.version_mask));
++    // Escape pool-controlled job IDs and user strings instead of interpolating JSON.
++    char nt[9], nn[9], vr[9];
++    snprintf(nt, sizeof(nt), "%08lx", (unsigned long) w.ntime);
++    snprintf(nn, sizeof(nn), "%08lx", (unsigned long) nonce);
++    snprintf(vr, sizeof(vr), "%08lx", (unsigned long) (version & w.version_mask));
++    const char *fields[] = {user, w.job_id, w.extranonce2, nt, nn, vr};
++    size_t wire_len;
++    char *line = v1_wire::request(request_id, "mining.submit", fields, 6, wire_len);
+     hunter::submitted(i, request_id, w.pool_diff, candidate, hash);
+-    hunter::sent(i, request_id, send_line(p, line, w.pool_session));
++    bool ok = false;
++    if (line) ok = esp_transport_write(p.t, line, wire_len, 5000) == (int)wire_len;
++    hunter::sent(i, request_id, ok);
++    if (!ok) p.restart = true;
++    free(line);
++    xSemaphoreGive(p.io);
+ }
+ 
+ } // namespace pools
+--- a/main/stratum/pools.h
++++ b/main/stratum/pools.h
+@@ -15,6 +15,8 @@
+     int64_t received_us;
+     bool clean;
+     uint32_t session;
++    char user[96];          // immutable payout identity of the originating connection
++    bool btc_network;       // known BTC host of that session (not full-node validation)
+ };
+ 
+ void start();
+--- a/test/test_main.cpp
++++ b/test/test_main.cpp
+@@ -109,6 +109,16 @@
+     AsicJob cj;
+     work::build(j, GENESIS_EN1, 0x2a, 8, 0x1fffe000, 1, w, cj);
+     CHECK(strcmp(w.extranonce2, "000000000000002a") == 0);
++    work::build(j, GENESIS_EN1, 0x1234, 1, 0x1fffe000, 0.25, w, cj);
++    CHECK(strcmp(w.extranonce2, "34") == 0);
++    CHECK(w.valid && w.pool_diff == 0.25);
++    uint8_t first[32]; memcpy(first, w.merkle_root, 32);
++    work::build(j, GENESIS_EN1, 0xab34, 1, 0x1fffe000, 0.25, w, cj);
++    CHECK(memcmp(first, w.merkle_root, 32) == 0);  // same rolled byte means same header
++    work::build(j, GENESIS_EN1, 0xab35, 1, 0x1fffe000, 0.25, w, cj);
++    CHECK(memcmp(first, w.merkle_root, 32) != 0);
++    work::build(j, GENESIS_EN1, 0x12345678, 2, 0x1fffe000, 1, w, cj);
++    CHECK(strcmp(w.extranonce2, "5678") == 0);
+ }
+ 
+ // A current-style coinbase: BIP34 height, pool tag, two outputs.
+--- a/version.txt
++++ b/version.txt
+@@ -1 +1 @@
+-1.4.10
++1.4.10-ru-fix10-btc-hunter
