@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <initializer_list>
 #include "stratum/v1_wire.h"
+static int budget;
+static void *limited_malloc(size_t n) { if (budget-- == 0) return nullptr; return malloc(n); }
 int main()
 {
     uint32_t id=777;
@@ -29,5 +31,18 @@ int main()
     root=cJSON_Parse(wire);assert(root);params=cJSON_GetObjectItem(root,"params");assert(cJSON_GetArraySize(params)==2);
     assert(strcmp(cJSON_GetArrayItem(params,0)->valuestring,fields[0])==0);assert(strcmp(cJSON_GetArrayItem(params,1)->valuestring,fields[1])==0);
     cJSON_Delete(root);free(wire);
+    // Fail each allocation in the real cJSON builder: never emit a truncated
+    // request without params, and ASan checks all partial trees are released.
+    for (int fail=0; fail<60; ++fail) {
+        budget=fail; cJSON_Hooks hooks{limited_malloc,free}; cJSON_InitHooks(&hooks);
+        wire=v1_wire::request(100,"mining.submit",fields,6,len);
+        cJSON_InitHooks(nullptr);
+        if (wire) {
+            root=cJSON_Parse(wire); assert(root);
+            params=cJSON_GetObjectItem(root,"params"); assert(cJSON_GetArraySize(params)==6);
+            assert(v1_wire::request_id(cJSON_GetObjectItem(root,"id"),id)&&id==100);
+            cJSON_Delete(root);free(wire);
+        } else assert(len==0);
+    }
     puts("V1 wire: uint32 IDs, fractional/nonfinite rejection, hex validation, exact escaped authorization/submit PASS");
 }

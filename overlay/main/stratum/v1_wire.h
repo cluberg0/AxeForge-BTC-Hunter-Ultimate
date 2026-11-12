@@ -32,7 +32,7 @@ inline char *request(uint32_t id, const char *method, const char *const *fields,
     cJSON *params = cJSON_CreateStringArray(fields, count);
     bool built = msg && params && cJSON_AddNumberToObject(msg, "id", id) &&
                  cJSON_AddStringToObject(msg, "method", method);
-    if (built) { cJSON_AddItemToObject(msg, "params", params); params = nullptr; }
+    if (built) { built = cJSON_AddItemToObject(msg, "params", params); if (built) params = nullptr; }
     char *json = built ? cJSON_PrintUnformatted(msg) : nullptr;
     cJSON_Delete(params); cJSON_Delete(msg);
     if (!json) return nullptr;
