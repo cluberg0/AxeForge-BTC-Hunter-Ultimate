@@ -31,6 +31,7 @@ int main(){using namespace hunter_math;uint8_t t[32];assert(target(0x1d00ffff,t)
  // Reader can ACK before send() returns, including partial-write failure.
  auto failures=hunter::ps[0].failed;hunter::submitted(0,994,10,true,gen);assert(hunter::reply(0,994,true,&matched)==10&&matched);hunter::sent(0,994,false);assert(hunter::last.state==3&&hunter::ps[0].failed==failures);assert(hunter::reply(0,994,true,&matched)==0&&!matched);
  hunter::submitted(0,995,10,true,gen);hunter::sent(0,995,true);advance(121);assert(hunter::last.state==6);auto lost=hunter::ps[0].missed;advance(121);assert(hunter::ps[0].missed==lost);assert(hunter::reply(0,995,true,&matched)==10&&matched&&hunter::last.state==3);
+ hunter::submitted(0,996,50,true,gen);hunter::sent(0,996,true);for(unsigned i=0;i<200;i++)hunter::submitted(0,10000+i,1,false,nullptr);assert(hunter::reply(0,996,true,&matched)==50&&matched&&hunter::last.state==3);hunter::disconnected(0);
  hunter::submitted(0,102,2000,true,gen);hunter::sent(0,102,true);advance(121);assert(hunter::last.state==6);hunter::disconnected(0);assert(hunter::reply(0,102,true)==0&&hunter::last.state==6);
  hunter::submitted(0,103,2000,true,gen);hunter::sent(0,103,false);assert(hunter::last.state==5&&hunter::ps[0].failed==1);hunter::sv2_candidate(1,gen,true);assert(hunter::last.state==7);
  hunter::job_sent(0,1,clock_us-100000,true);hunter::job_sent(0,1,clock_us-200000,true);assert(hunter::ps[0].clean_n==1&&hunter::ps[0].clean_ms==100);hunter::job_sent(0,2,clock_us-200000,true);assert(hunter::ps[0].clean_n==2&&hunter::ps[0].max_ms==200);
