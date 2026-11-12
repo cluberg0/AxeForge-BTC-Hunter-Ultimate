@@ -1,0 +1,549 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AxeForge RU-FIX10 native additions",
+    "version": "1.4.10-ru-fix10"
+  },
+  "servers": [
+    {
+      "url": "http://{miner}",
+      "variables": {
+        "miner": {
+          "default": "192.168.1.50"
+        }
+      }
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "csrf": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-AxeForge"
+      },
+      "session": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-AxeForge-Session"
+      }
+    }
+  },
+  "paths": {
+    "/api/intelligence": {
+      "get": {
+        "summary": "Native history, cooling options and measured fallback point",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current native state; Cache-Control no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "native",
+                    "time",
+                    "last",
+                    "archiveOk",
+                    "enabled",
+                    "restore",
+                    "curve",
+                    "stableSamples",
+                    "point",
+                    "rows"
+                  ],
+                  "properties": {
+                    "native": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "time": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                    },
+                    "last": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                    },
+                    "archiveOk": {
+                      "type": "boolean",
+                      "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                    },
+                    "restore": {
+                      "type": "boolean",
+                      "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                    },
+                    "curve": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 50,
+                        "maximum": 100
+                      },
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "description": "Nondecreasing fan duty at 40/50/60/70 Celsius; only enabled extra floor in stock automatic mode."
+                    },
+                    "stableSamples": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                    },
+                    "point": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                      },
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "description": "[MHz, mV, cap W, measured GH/s, Unix seconds], zero values mean absent; never a guarantee of hardware stability."
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "nullable": true,
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "minItems": 20,
+                        "maxItems": 20,
+                        "description": "Positional history row. Missing physical observations are JSON null; reserved positions are null. No interpolation is implied. Time is Unix milliseconds.",
+                        "x-columns": [
+                          "time_ms",
+                          "hashrate_TH_s",
+                          "ASIC_C",
+                          "VRM_C",
+                          "power_W",
+                          "efficiency_J_TH",
+                          "fan_pct",
+                          "frequency_MHz",
+                          "set_core_mV",
+                          "errors_pct",
+                          "BTC_network_difficulty",
+                          "reserved",
+                          "reserved",
+                          "reserved",
+                          "fan_RPM",
+                          "input_V",
+                          "measured_core_mV",
+                          "network",
+                          "samples",
+                          "step_s"
+                        ]
+                      },
+                      "description": "Autonomous 30-second telemetry, RAM/hourly/daily aggregation; recent partial hour can be lost on power cut. Sparse observations stay sparse."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        },
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                3600,
+                86400,
+                604800,
+                2592000
+              ],
+              "default": 3600
+            },
+            "description": "Seconds. Unsupported/malformed values fall back to one hour; storage availability may shorten history."
+          }
+        ]
+      },
+      "post": {
+        "summary": "Persist optional native controls in af_intel",
+        "security": [
+          {
+            "csrf": [],
+            "session": []
+          }
+        ],
+        "description": "X-AxeForge: 1 required. Session only required when 2FA enabled; origin/fetch-site restrictions always apply. No hardware limits or original settings are changed by these endpoints.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "enabled",
+                  "restore",
+                  "curve"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                  },
+                  "restore": {
+                    "type": "boolean",
+                    "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                  },
+                  "curve": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 50,
+                      "maximum": 100
+                    },
+                    "minItems": 4,
+                    "maxItems": 4
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, incomplete body, invalid setting, or unsafe test start"
+          },
+          "401": {
+            "description": "Two-factor session required for POST"
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        }
+      }
+    },
+    "/api/hunter": {
+      "get": {
+        "summary": "Per-request V1 statistics, last block candidate and timing trial",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current native state; Cache-Control no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "native",
+                    "taskOk",
+                    "seconds",
+                    "pools",
+                    "candidate",
+                    "trial"
+                  ],
+                  "properties": {
+                    "native": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "taskOk": {
+                      "type": "boolean",
+                      "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                    },
+                    "seconds": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "pools": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "work",
+                          "btcWork",
+                          "btcAccepted",
+                          "accepted",
+                          "rejected",
+                          "missing",
+                          "failed",
+                          "cleanN",
+                          "cleanMs",
+                          "cleanMax"
+                        ],
+                        "properties": {
+                          "work": {
+                            "type": "number"
+                          },
+                          "btcWork": {
+                            "type": "number"
+                          },
+                          "btcAccepted": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "accepted": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "rejected": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "missing": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "failed": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "cleanN": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "cleanMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "cleanMax": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          }
+                        },
+                        "description": "V1/TLS ledger since boot; work is sum of originating share difficulty for accepted matched replies. Missing replies are unknown, never accepted. SV2 aggregate acknowledgements are excluded. cleanMs/cleanMax measure notify-to-driver-send completion, not ASIC hashing."
+                      },
+                      "minItems": 4,
+                      "maxItems": 4
+                    },
+                    "candidate": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "pool",
+                        "hash",
+                        "persisted"
+                      ],
+                      "properties": {
+                        "state": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 7,
+                          "description": "0 none; 1 queued; 2 sent; 3 pool accepted (not Bitcoin confirmation); 4 pool rejected; 5 transport failure; 6 reply unknown; 7 SV2 sent, no individual acknowledgement"
+                        },
+                        "pool": {
+                          "type": "integer",
+                          "minimum": -1,
+                          "maximum": 3,
+                          "description": "Zero-based originating pool; -1 when absent"
+                        },
+                        "hash": {
+                          "type": "string",
+                          "pattern": "^([0-9a-fA-F]{64})?$"
+                        },
+                        "persisted": {
+                          "type": "boolean",
+                          "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                        }
+                      }
+                    },
+                    "trial": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "stage",
+                        "elapsed",
+                        "rates",
+                        "accepted",
+                        "rejected",
+                        "uncertain",
+                        "ci95Low",
+                        "ci95High"
+                      ],
+                      "properties": {
+                        "state": {
+                          "type": "integer",
+                          "enum": [
+                            0,
+                            1,
+                            2,
+                            3
+                          ],
+                          "description": "0 idle, 1 running, 2 complete, 3 stopped"
+                        },
+                        "stage": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2
+                        },
+                        "elapsed": {
+                          "type": "number",
+                          "minimum": 0,
+                          "description": "Seconds in current stage"
+                        },
+                        "rates": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "accepted": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "rejected": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "uncertain": {
+                          "type": "boolean",
+                          "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                        },
+                        "ci95Low": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "ci95High": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "description": "500/350/250ms sequence, 1800 seconds each; rates GH/s from accepted difficulty. Results are exploratory; uncertainty and approximate intervals do not establish a causal improvement. Original interval restored; no winner is automatically applied."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        }
+      },
+      "post": {
+        "summary": "Start or cancel the optional timing trial",
+        "security": [
+          {
+            "csrf": [],
+            "session": []
+          }
+        ],
+        "description": "X-AxeForge: 1 required. Session only required when 2FA enabled; origin/fetch-site restrictions always apply. No hardware limits or original settings are changed by these endpoints. start=true additionally needs 30 minutes of continuous healthy locked capped tuning, one V1/TLS failover pool, default timing/version rolling and sufficient accepted samples during every trial stage; start=false cancels without flash writes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "boolean",
+                    "description": "False after allocation, task or flash/archive failure; settings are not erased."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, incomplete body, invalid setting, or unsafe test start"
+          },
+          "401": {
+            "description": "Two-factor session required for POST"
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        }
+      }
+    }
+  }
+}
