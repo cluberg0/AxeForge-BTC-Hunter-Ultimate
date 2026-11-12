@@ -12,6 +12,10 @@ inline bool target(uint32_t bits, uint8_t out[32]) {
     for(unsigned i=0;i<32;i++) {if(out[i])return true;} return false;
 }
 inline bool meets(const uint8_t hash[32],uint32_t bits){uint8_t t[32];if(!target(bits,t))return false;for(int i=31;i>=0;i--){if(hash[i]!=t[i])return hash[i]<t[i];}return true;}
+// Bitcoin mainnet consensus pow limit (00000000ffff0000...). A pool-supplied
+// compact value above this limit cannot designate a Bitcoin block candidate.
+inline bool btc_target_ok(uint32_t bits){uint8_t t[32],limit[32];if(!target(bits,t)||!target(0x1d00ffff,limit))return false;for(int i=31;i>=0;i--){if(t[i]!=limit[i])return t[i]<limit[i];}return true;}
+inline bool meets_btc(const uint8_t hash[32],uint32_t bits){return btc_target_ok(bits)&&meets(hash,bits);}
 inline uint64_t en2_capacity(int len){unsigned n=len<1?1:len>4?4:(unsigned)len;return uint64_t{1}<<(8*n);}
 inline uint32_t en2_value(uint32_t counter,int len){return (uint32_t)(counter%en2_capacity(len));}
 inline bool rate_ok(double ghs){return std::isfinite(ghs)&&ghs>=0&&ghs<=4000;}
