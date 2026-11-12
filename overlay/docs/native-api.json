@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "AxeForge RU-FIX10 native additions",
-    "version": "1.4.10-ru-fix10"
+    "title": "AxeForge RU-FIX10 ULTIMATE native additions",
+    "version": "1.4.10-ru-fix10-ultimate"
   },
   "servers": [
     {
@@ -198,7 +198,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "additionalProperties": false,
+                "additionalProperties": true,
                 "required": [
                   "enabled",
                   "restore",
@@ -256,7 +256,7 @@
     },
     "/api/hunter": {
       "get": {
-        "summary": "Per-request V1 statistics, last block candidate and timing trial",
+        "summary": "Per-request V1 statistics, last block candidate and repeated Benchmark Lab",
         "security": [],
         "responses": {
           "200": {
@@ -272,7 +272,8 @@
                     "seconds",
                     "pools",
                     "candidate",
-                    "trial"
+                    "trial",
+                    "samplingSeconds"
                   ],
                   "properties": {
                     "native": {
@@ -304,7 +305,11 @@
                           "failed",
                           "cleanN",
                           "cleanMs",
-                          "cleanMax"
+                          "cleanMax",
+                          "connectedSeconds",
+                          "disconnectedSeconds",
+                          "observedSeconds",
+                          "unobservedSeconds"
                         ],
                         "properties": {
                           "work": {
@@ -352,9 +357,25 @@
                             "type": "integer",
                             "minimum": 0,
                             "description": "Unix seconds of latest valid wall-clock sample; 0 before first sample."
+                          },
+                          "connectedSeconds": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "disconnectedSeconds": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "observedSeconds": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "unobservedSeconds": {
+                            "type": "integer",
+                            "minimum": 0
                           }
                         },
-                        "description": "V1/TLS ledger since boot; work is sum of originating share difficulty for accepted matched replies. Missing replies are unknown, never accepted. SV2 aggregate acknowledgements are excluded. cleanMs/cleanMax measure notify-to-driver-send completion, not ASIC hashing."
+                        "description": "V1/TLS ledger since boot; work is sum of originating share difficulty for accepted matched replies. Missing replies are unknown, never accepted. SV2 aggregate acknowledgements are excluded. cleanMs/cleanMax measure notify-to-driver-send completion, not ASIC hashing. Connection durations are sampled every five seconds; unobservedSeconds marks controller gaps."
                       },
                       "minItems": 4,
                       "maxItems": 4
@@ -403,7 +424,20 @@
                         "rejected",
                         "uncertain",
                         "ci95Low",
-                        "ci95High"
+                        "ci95High",
+                        "phase",
+                        "intervalMs",
+                        "totalStages",
+                        "warmupSeconds",
+                        "measurementSeconds",
+                        "round",
+                        "abortReason",
+                        "stageRates",
+                        "stageAccepted",
+                        "stageRejected",
+                        "repeatsCompleted",
+                        "autoApply",
+                        "confidenceMethod"
                       ],
                       "properties": {
                         "state": {
@@ -419,7 +453,7 @@
                         "stage": {
                           "type": "integer",
                           "minimum": 0,
-                          "maximum": 2
+                          "maximum": 5
                         },
                         "elapsed": {
                           "type": "number",
@@ -473,9 +507,117 @@
                           },
                           "minItems": 3,
                           "maxItems": 3
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "idle",
+                            "warmup",
+                            "measure",
+                            "done",
+                            "aborted"
+                          ]
+                        },
+                        "intervalMs": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalStages": {
+                          "type": "integer",
+                          "enum": [
+                            6
+                          ]
+                        },
+                        "warmupSeconds": {
+                          "type": "integer",
+                          "enum": [
+                            300
+                          ]
+                        },
+                        "measurementSeconds": {
+                          "type": "integer",
+                          "enum": [
+                            1800
+                          ]
+                        },
+                        "round": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2
+                        },
+                        "abortReason": {
+                          "type": "string",
+                          "description": "Machine-readable stop cause; none before an abort.",
+                          "enum": [
+                            "none",
+                            "user",
+                            "safety_or_telemetry",
+                            "pool_changed",
+                            "configuration_changed",
+                            "temperature_drift",
+                            "insufficient_samples",
+                            "controller_timeout",
+                            "transport_failure",
+                            "reply_loss_or_rejections"
+                          ]
+                        },
+                        "stageRates": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 6,
+                          "maxItems": 6
+                        },
+                        "stageAccepted": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "minItems": 6,
+                          "maxItems": 6
+                        },
+                        "stageRejected": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "minItems": 6,
+                          "maxItems": 6
+                        },
+                        "repeatsCompleted": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        },
+                        "autoApply": {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        "confidenceMethod": {
+                          "type": "string",
+                          "enum": [
+                            "weighted_poisson_and_two_repeat_spread"
+                          ]
                         }
                       },
-                      "description": "500/350/250ms sequence, 1800 seconds each; rates GH/s from accepted difficulty. Results are exploratory; uncertainty and approximate intervals do not establish a causal improvement. Original interval restored; no winner is automatically applied."
+                      "description": "Benchmark Lab: balanced 500/350/250/250/350/500 ms sequence. Each stage has 300 s warm-up excluded from statistics followed by 1800 s measurement. rates/accepted/rejected/ci95Low/ci95High aggregate intervals [500,350,250]. stage* arrays contain six measurements. Weighted-Poisson uncertainty and two-repeat spread are exploratory, not causal proof. Original interval restored; autoApply is always false."
+                    },
+                    "samplingSeconds": {
+                      "type": "integer",
+                      "enum": [
+                        5
+                      ],
+                      "description": "Observation cadence for connected/disconnected estimates; transitions are sampled, not exact wire timestamps"
                     }
                   }
                 }
@@ -491,21 +633,21 @@
         }
       },
       "post": {
-        "summary": "Start or cancel the optional timing trial",
+        "summary": "Start or cancel the optional repeated timing benchmark",
         "security": [
           {
             "csrf": [],
             "session": []
           }
         ],
-        "description": "X-AxeForge: 1 required. Session only required when 2FA enabled; origin/fetch-site restrictions always apply. No hardware limits or original settings are changed by these endpoints. start=true additionally needs 30 minutes of continuous healthy locked capped tuning, one V1/TLS failover pool, default timing/version rolling and sufficient accepted samples during every trial stage; start=false cancels without flash writes.",
+        "description": "X-AxeForge: 1 required. Session only required when 2FA enabled; origin/fetch-site restrictions always apply. No hardware limits or original settings are changed by these endpoints. start=true additionally needs 30 minutes of continuous healthy locked capped tuning, one V1/TLS failover pool, default timing/version rolling and sufficient accepted samples during every 1800 s measurement stage after 300 s warm-up; Six balanced stages, two measurements of each interval; start=false cancels without flash writes.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "additionalProperties": false,
+                "additionalProperties": true,
                 "required": [
                   "start"
                 ],
@@ -532,6 +674,131 @@
           },
           "400": {
             "description": "Malformed JSON, incomplete body, invalid setting, or unsafe test start"
+          },
+          "401": {
+            "description": "Two-factor session required for POST"
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        }
+      }
+    },
+    "/api/guardian": {
+      "get": {
+        "summary": "Optional external observation of the last Bitcoin candidate hash",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current native state; Cache-Control no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "taskOk": {
+                      "type": "boolean"
+                    },
+                    "state": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5,
+                      "description": "0 none, 1 pending, 2 remote HTTP 404, 3 remotely observed, 4 lookup error/expired, 5 disabled"
+                    },
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^([0-9a-fA-F]{64})?$"
+                    },
+                    "checked": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Unix seconds of latest attempted HTTPS lookup; 0 before NTP/attempt"
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Reported height; 0 when unknown/off-chain"
+                    },
+                    "inBestChain": {
+                      "type": "boolean",
+                      "description": "Meaningful only for state 3, according to external service"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Bounded machine-readable code; expired means 24-hour lookup window elapsed"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "taskOk",
+                    "state",
+                    "hash",
+                    "checked",
+                    "height",
+                    "inBestChain",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Host, setup-network, or same-origin guard rejected request"
+          },
+          "500": {
+            "description": "Allocation, task, lock or persistent-storage failure"
+          }
+        },
+        "description": "Off by default. Independent low-priority HTTPS observer of a fixed mempool.space service; only the 64-character block hash is sent. Never delays local submission, never retries a share to another pool, and does not implement own-node consensus validation. A pool ACK is not a chain confirmation; state observed is the remote service response."
+      },
+      "post": {
+        "summary": "Enable or disable the optional external observer",
+        "security": [
+          {
+            "csrf": [],
+            "session": []
+          }
+        ],
+        "description": "X-AxeForge: 1 and stock same-origin rules required; OTP session required only when 2FA enabled. Explicitly persists enabled in separate af_guardian namespace; default false. Does not alter miner settings, pools, voltage/frequency or boot partition. Does not require reboot. Unavailable task/NVS/busy returns 500.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON, enabled type, body size or incomplete body"
           },
           "401": {
             "description": "Two-factor session required for POST"

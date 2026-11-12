@@ -36,6 +36,30 @@ def json_schema(schema):
     return schema
 
 
+def cpp_body(source, name):
+    """Extract one C++ handler, ignoring braces in strings and comments."""
+    start = re.search(r'\besp_err_t\s+' + re.escape(name) + r'\s*\(', source)
+    assert start, ('handler missing', name)
+    begin = source.index('{', start.end())
+    i, depth = begin + 1, 1
+    while depth:
+        if source.startswith('//', i):
+            end = source.find('\n', i + 2)
+            i = len(source) if end < 0 else end + 1
+        elif source.startswith('/*', i):
+            i = source.index('*/', i + 2) + 2
+        elif source[i] in ("\"", "'"):
+            quote = source[i]
+            i += 1
+            while source[i] != quote:
+                i += 2 if source[i] == '\\' else 1
+            i += 1
+        else:
+            depth += (source[i] == '{') - (source[i] == '}')
+            i += 1
+    return source[begin + 1:i - 1]
+
+
 def check(source_root, json_dir=None):
     import yaml
     reference = json.loads((ROOT / 'overlay/docs/native-api.json').read_text())
@@ -44,8 +68,8 @@ def check(source_root, json_dir=None):
     assert 'u.handler = api_guard;' in web and 'strncmp(u.uri, "/api/", 5) == 0' in web
     assert 'otp::session_ok(tok)' in web and 'origin_matches(v, host)' in web
     for path, methods in reference['paths'].items():
-        module = 'hunter' if path.endswith('hunter') else 'intelligence'
-        namespace = 'hunter' if module == 'hunter' else 'intel'
+        module = path.rsplit('/', 1)[-1]
+        namespace = 'intel' if module == 'intelligence' else module
         source = (source_root / f'main/core/{module}.cpp').read_text()
         for method, spec in methods.items():
             assert merged['paths'][path][method] == spec, (path, method, 'merged documentation differs')
@@ -54,11 +78,11 @@ def check(source_root, json_dir=None):
             assert registration in web, (path, method, 'route missing or bypasses expected handler')
             if method == 'get':
                 schema = spec['responses']['200']['content']['application/json']['schema']
-                sent_keys = set(re.findall(r'\\"(\w+)\\"\s*:', source))
+                sent_keys = set(re.findall(r'\\"(\w+)\\"\s*:', cpp_body(source, 'get')))
                 assert sent_keys == property_names(schema), (path, 'response keys', sent_keys ^ property_names(schema))
             else:
                 schema = spec['requestBody']['content']['application/json']['schema']
-                read_keys = set(re.findall(r'cJSON_GetObjectItem\([^,]+,\s*"(\w+)"\)', source))
+                read_keys = set(re.findall(r'cJSON_GetObjectItem\([^,]+,\s*"(\w+)"\)', cpp_body(source, 'set')))
                 assert read_keys == set(schema['properties']), (path, 'POST keys', read_keys ^ set(schema['properties']))
                 assert spec['security'] == [{'csrf': [], 'session': []}]
         if json_dir:
@@ -71,7 +95,7 @@ def check(source_root, json_dir=None):
             for line in lines:
                 jsonschema.validate(json.loads(line), schema)
         print('native API contract:', path, 'source/schema/guard OK' + ('; host JSON OK' if json_dir else ''))
-    print('PASS: both native endpoints are documented and use the stock API guard')
+    print(f'PASS: {len(reference["paths"])} native endpoints are documented and use the stock API guard')
 
 
 if __name__ == '__main__':
