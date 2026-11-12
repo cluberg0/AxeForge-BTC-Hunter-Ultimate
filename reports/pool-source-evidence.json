@@ -1,0 +1,57 @@
+{
+  "checked_date_utc": "2026-11-12",
+  "stratum_tested": false,
+  "latency_measured": false,
+  "sources": [
+    {
+      "url": "https://solo.ckpool.org/",
+      "bytes": 17397,
+      "sha256": "5d230d98cf334552447320e8531f301e8b9a3951f2fd08a33bdb81c44934d77c"
+    },
+    {
+      "url": "https://solo-btc.2miners.com/help",
+      "bytes": 57069,
+      "sha256": "e9d7c93d853da07e003fd05cb35057bcc32fd6b0759e88b857905cf71ce6a9be"
+    },
+    {
+      "url": "https://solo-btc.2miners.com/",
+      "bytes": 68477,
+      "sha256": "974506fb3185a237d96ee8b87ef7de3550c142668bef5485316f4d7386c4c6de"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/README.md",
+      "bytes": 17926,
+      "sha256": "f8527d410b72decfd39704a99b98f9c3abca999d70e0719578ec78a4c7eb8296"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/README-SOLOMINING.md",
+      "bytes": 9279,
+      "sha256": "eea1c786dc2dace8713de4230882f5d187582967975405812f470d91307823a7"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ckolivas/ckpool/master/ckpool.conf",
+      "bytes": 874,
+      "sha256": "89eff1a1e88dc0ec3a58e42bac17bfb14e5a0c06feb1768101cb3c11d5af7c9c"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/master/doc/JSON-RPC-interface.md",
+      "bytes": 12115,
+      "sha256": "0d92a9f8b0319373462e93a02ba414fd5f61f173e89366d430227776ba23f4bd"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/bitcoin/bitcoin/master/doc/zmq.md",
+      "bytes": 9415,
+      "sha256": "80dd823edba14d97fdfd29da3d58783e3e6e4ce94b1c09c86192d38a759e2778"
+    },
+    {
+      "url": "https://bitcoincore.org/en/doc/30.0.0/rpc/mining/getblocktemplate/",
+      "bytes": 435557,
+      "sha256": "939b4afdba167567b19126ce7274d43e4a88f09f04d7c08345877af3d68ca561"
+    },
+    {
+      "url": "https://bitcoincore.org/en/doc/30.0.0/rpc/mining/submitblock/",
+      "bytes": 429642,
+      "sha256": "4e122f3bb367c336403cec6f3dd2377dcef1043e2507c2e12c9ceae935bff34b"
+    }
+  ]
+}
