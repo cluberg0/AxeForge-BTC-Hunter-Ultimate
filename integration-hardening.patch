@@ -1,6 +1,63 @@
 --- a/main/asic/bm13xx.cpp
 +++ b/main/asic/bm13xx.cpp
-@@ -697,16 +697,21 @@
+@@ -1,4 +1,5 @@
+ #include "bm13xx.h"
++#include "asic/rx_frame.h"
+ 
+ #include <math.h>
+ #include <string.h>
+@@ -46,6 +47,12 @@
+ #endif
+ 
+ static SemaphoreHandle_t s_tx_lock;
++static SemaphoreHandle_t s_rx_lock;
++static asic_frame::Collector<CHIP_ID_FRAME> s_rx_frame;
++struct RxGuard {
++    RxGuard() { xSemaphoreTake(s_rx_lock, portMAX_DELAY); }
++    ~RxGuard() { xSemaphoreGive(s_rx_lock); }
++};
+ static float s_freq = 56.25f;
+ static uint32_t s_diff_mask = 0xffffffff;
+ static uint32_t s_version_mask = 0xffffffff;
+@@ -65,18 +72,7 @@
+ // ------------------------------------------------------------------ CRC
+ static uint8_t crc5(const uint8_t *data, int len)
+ {
+-    uint8_t c[5] = {1, 1, 1, 1, 1};
+-    for (int i = 0; i < len * 8; i++) {
+-        uint8_t din = (data[i / 8] >> (7 - (i % 8))) & 1;
+-        uint8_t n0 = c[4] ^ din;
+-        uint8_t n2 = c[1] ^ c[4] ^ din;
+-        c[4] = c[3];
+-        c[3] = c[2];
+-        c[2] = n2;
+-        c[1] = c[0];
+-        c[0] = n0;
+-    }
+-    return (c[4] << 4) | (c[3] << 3) | (c[2] << 2) | (c[1] << 1) | c[0];
++    return asic_frame::crc5(data, (size_t)len);
+ }
+ 
+ static uint16_t crc16_false(const uint8_t *data, int len)
+@@ -321,6 +317,7 @@
+ void uart_init()
+ {
+     s_tx_lock = xSemaphoreCreateMutex();
++    s_rx_lock = xSemaphoreCreateMutex();
+     s_pll_lock = xSemaphoreCreateRecursiveMutex();
+     uart_config_t cfg = {};
+     cfg.baud_rate = 115200;
+@@ -336,6 +333,9 @@
+ 
+ int init(float freq_mhz, int expected_chips, uint32_t difficulty)
+ {
++    // Recovery's discovery reads must have exclusive ownership of RX.
++    RxGuard rx;
++    s_rx_frame.reset();
+     // Freshly powered chips listen at 115200. After switch_to_fast_baud() the UART
+     // stays at 1 Mbaud, so every later power-up (fault retry, overheat recovery)
+     // found no chips unless the port is set back first.
+@@ -697,21 +697,41 @@
      ESP_LOGI(TAG, "ticket mask %lu", (unsigned long) mask);
  }
  
@@ -28,6 +85,54 @@
  #if !AF_ASIC_BM1397
      job.num_midstates = 1;  // the BM1397's count comes from work::build
  #endif
+     send(TYPE_JOB | CMD_WRITE, (const uint8_t *) &job, sizeof(job));
+     return job.job_id;
++}
++
++// A single bounded UART read per call. Keep partial bytes over timeouts and
++// resynchronise by sliding instead of flushing a following valid candidate.
++static bool read_result_frame(uint8_t *out, int timeout_ms)
++{
++    RxGuard rx;
++    uint8_t incoming[CHIP_ID_FRAME];
++    int n = uart_read_bytes(UART, incoming, s_rx_frame.needed(), pdMS_TO_TICKS(timeout_ms));
++    if (n <= 0) return false;
++    uint32_t bad = s_rx_frame.crc_errors;
++    for (int i=0;i<n;i++) if (s_rx_frame.push(incoming[i],out)) return true;
++    if (s_rx_frame.crc_errors != bad)
++        ESP_LOGW(TAG, "UART RX CRC error (%lu total); resynchronising", (unsigned long)s_rx_frame.crc_errors);
++    return false;
+ }
+ 
+ #if AF_ASIC_BM1397
+@@ -720,12 +740,7 @@
+ bool receive(AsicResult &out, int timeout_ms)
+ {
+     uint8_t b[9];
+-    int n = uart_read_bytes(UART, b, sizeof(b), pdMS_TO_TICKS(timeout_ms));
+-    if (n <= 0) return false;
+-    if (n != 9 || b[0] != 0xAA || b[1] != 0x55) {
+-        uart_flush_input(UART);
+-        return false;
+-    }
++    if (!read_result_frame(b, timeout_ms)) return false;
+     uint32_t nonce;
+     memcpy(&nonce, b + 2, 4);
+     if (!(b[8] & 0x80)) {
+@@ -748,12 +763,7 @@
+ bool receive(AsicResult &out, int timeout_ms)
+ {
+     uint8_t b[11];
+-    int n = uart_read_bytes(UART, b, sizeof(b), pdMS_TO_TICKS(timeout_ms));
+-    if (n <= 0) return false;
+-    if (n != 11 || b[0] != 0xAA || b[1] != 0x55) {
+-        uart_flush_input(UART);
+-        return false;
+-    }
++    if (!read_result_frame(b, timeout_ms)) return false;
+     uint32_t nonce;
+     memcpy(&nonce, b + 2, 4);
+     uint8_t midstate = b[6];
 --- a/main/asic/bm13xx.h
 +++ b/main/asic/bm13xx.h
 @@ -114,6 +114,7 @@
@@ -196,6 +301,15 @@
      }
      portEXIT_CRITICAL(&s_win_mux);
  }
+@@ -326,7 +345,7 @@
+     AsicResult r;
+     uint8_t hash[32];
+     while (true) {
+-        if (!board::is_powered()) {
++        if (s_paused || !board::is_powered()) {
+             vTaskDelay(pdMS_TO_TICKS(200));
+             continue;
+         }
 @@ -362,13 +381,16 @@
                       (unsigned long) r.nonce, r.job_slot, (unsigned long) g_state.dup_results);
              continue;
@@ -670,7 +784,7 @@
 +    xSemaphoreTake(p.io, portMAX_DELAY);
 +    if (!g_state.pools[i].connected || w.pool_session != p.session || !p.t) {
 +        xSemaphoreGive(p.io);
-+        if (candidate) hunter::unavailable_candidate(i, hash);
++        if (candidate) hunter::unavailable_candidate(i, hash, w.btc_network);
 +        return;
 +    }
      p.submit_t_us = esp_timer_get_time();
@@ -681,17 +795,18 @@
                                                   strtoul(w.job_id, NULL, 10), nonce, w.ntime, version, en2,
                                                   (uint8_t) en2_len);
 -        bool ok = n > 0 && send_frame(p, frame, n, w.pool_session);
+-        if (candidate) hunter::sv2_candidate(i, hash, ok);
 +        bool ok = n > 0 && p.noise && sv2_noise_send(p.noise, p.t, frame, n) == 0;
 +        xSemaphoreGive(p.io);
 +        if (!ok) p.restart = true;
-         if (candidate) hunter::sv2_candidate(i, hash, ok);
++        if (candidate) hunter::sv2_candidate(i, hash, ok, w.btc_network);
          return;
      }
 +    if (p.submit_id == UINT32_MAX) {
 +        // Reconnect before wrapping into handshake IDs or reusing an in-flight ID.
 +        p.restart = true;
 +        xSemaphoreGive(p.io);
-+        if (candidate) hunter::unavailable_candidate(i, hash);
++        if (candidate) hunter::unavailable_candidate(i, hash, w.btc_network);
 +        return;
 +    }
      const uint32_t request_id = p.submit_id++;
@@ -711,6 +826,8 @@
 -             "{\"id\":%lu,\"method\":\"mining.submit\",\"params\":[\"%s\",\"%s\",\"%s\",\"%08lx\",\"%08lx\",\"%08lx\"]}\n",
 -             (unsigned long) request_id, user, w.job_id, w.extranonce2,
 -             (unsigned long) w.ntime, (unsigned long) nonce, (unsigned long) (version & w.version_mask));
+-    hunter::submitted(i, request_id, w.pool_diff, candidate, hash);
+-    hunter::sent(i, request_id, send_line(p, line, w.pool_session));
 +    // Escape pool-controlled job IDs and user strings instead of interpolating JSON.
 +    char nt[9], nn[9], vr[9];
 +    snprintf(nt, sizeof(nt), "%08lx", (unsigned long) w.ntime);
@@ -719,8 +836,7 @@
 +    const char *fields[] = {user, w.job_id, w.extranonce2, nt, nn, vr};
 +    size_t wire_len;
 +    char *line = v1_wire::request(request_id, "mining.submit", fields, 6, wire_len);
-     hunter::submitted(i, request_id, w.pool_diff, candidate, hash);
--    hunter::sent(i, request_id, send_line(p, line, w.pool_session));
++    hunter::submitted(i, request_id, w.pool_diff, candidate, hash, w.btc_network);
 +    bool ok = false;
 +    if (line) ok = esp_transport_write(p.t, line, wire_len, 5000) == (int)wire_len;
 +    hunter::sent(i, request_id, ok);
@@ -764,4 +880,4 @@
 +++ b/version.txt
 @@ -1 +1 @@
 -1.4.10
-+1.4.10-ru-fix10-btc-hunter
++1.4.10-hunter-ultimate
