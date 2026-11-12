@@ -25,8 +25,9 @@ int nvs_set_blob(nvs_handle_t,const char*k,const void*p,size_t n){if(storage_fai
 int nvs_commit(nvs_handle_t){return storage_fail?ESP_FAIL:ESP_OK;}
 void nvs_close(nvs_handle_t){}
 static std::string response,body;
+static unsigned parse_calls=0;
 static cJSON root{},on{1,1},restore{1,1},array{},curve[4]={{50,50},{55,55},{75,75},{100,100}};
-cJSON*cJSON_Parse(const char*s){return std::string(s)=="valid"?&root:nullptr;}
+cJSON*cJSON_Parse(const char*s){parse_calls++;return std::string(s)=="valid"?&root:nullptr;}
 cJSON*cJSON_GetObjectItem(cJSON*,const char*k){if(!strcmp(k,"enabled"))return &on;if(!strcmp(k,"restore"))return &restore;return &array;}
 cJSON*cJSON_GetArrayItem(cJSON*,int i){return &curve[i];}
 bool cJSON_IsBool(cJSON*p){return p==&on||p==&restore;}
@@ -44,7 +45,7 @@ int httpd_resp_set_type(httpd_req_t*,const char*){return ESP_OK;}
 int httpd_resp_set_hdr(httpd_req_t*,const char*,const char*){return ESP_OK;}
 int httpd_req_recv(httpd_req_t*,char*p,size_t n){memcpy(p,body.data(),n);return int(n);}
 static int set_config(){body="valid";httpd_req_t r{int(body.size())};return intel::set(&r);}
-static void fresh_sample(uint32_t now){clock_us+=30000000;g_state.telemetry_ms.store(uint32_t(clock_us/1000));sample(now);}
+static void fresh_sample(uint32_t now){clock_us+=30000000;g_state.telemetry_ms.store(uint32_t(clock_us/1000));g_state.hash_counter_ms.store(uint32_t(clock_us/1000));sample(now);}
 int main(){
  (void)TAG;
  intel::start();assert(task_ok&&mu&&save_day&&save_month);assert(!conf.enabled&&!conf.restore);deny_lock=true;assert(intel::fan_floor()==0);deny_lock=false;
@@ -67,14 +68,19 @@ int main(){
  auto old_conf=conf;available=0;assert(set_config()==500&&conf.enabled==old_conf.enabled);
  available=1000;storage_fail=true;assert(set_config()==500&&conf.enabled==old_conf.enabled);
  storage_fail=false;assert(set_config()==0&&conf.enabled&&conf.restore);
+ body=std::string(17,'[')+std::string(17,']');httpd_req_t deep{int(body.size())};auto before_parse=parse_calls;assert(intel::set(&deep)==400&&parse_calls==before_parse);
  clock_us+=4000000;assert(intel::fan_floor()==100);sample(base+150);assert(recent[(rh-1+H)%H].x[0]==Missing);
  g_state.telemetry_ms.store(uint32_t(clock_us/1000));
+ g_state.hash_counter_ms.store(0);sample(base+180);assert(recent[(rh-1+H)%H].x[0]==Missing);
+ g_state.hash_counter_ms.store(uint32_t(clock_us/1000)-10001);sample(base+210);assert(recent[(rh-1+H)%H].x[0]==Missing);
  g_state.temp_ok=false;assert(intel::fan_floor()==100);g_state.temp_ok=true;
  deny_lock=true;assert(intel::fan_floor()==100);deny_lock=false;
  uint16_t f=0,mv=0;g_state.vin=4.5;assert(!intel::rollback_point(798,1180,786,25,f,mv));g_state.vin=5.1;
  task_ok=false;assert(set_config()==500&&!intel::rollback_point(798,1180,786,25,f,mv));task_ok=true;
  auto count=blobs.size();available=0;fresh_sample(base+7200);assert(!archive_ok&&blobs.size()==count);
+ float live[N];values(live);Aggregate visible;visible.add(uint32_t(time(nullptr))-30,live);ring_add(recent,H,rh,rn,visible.finish());
  httpd_req_t req{};response.clear();assert(intel::get(&req)==0&&response.find("\"archiveOk\":false")!=std::string::npos);
  std::cout<<"PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API\n";
+ if(getenv("AXEFORGE_API_JSON"))std::cout<<"API_JSON "<<response<<'\n';
  free(recent);free(five);free(week);free(save_day);free(save_month);
 }
