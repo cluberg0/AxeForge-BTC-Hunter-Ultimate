@@ -585,7 +585,7 @@
                  xSemaphoreGive(p.lock);
              } else {
                  ESP_LOGE(TAG, "[%d] pool sent an invalid extranonce (extranonce2 size must be %d-%d bytes)", p.idx,
-@@ -379,16 +413,29 @@
+@@ -379,16 +413,30 @@
                  p.chip_ok |= 1u << (rid - ID_CHIP_AUTH_BASE);
                  g_state.pools[p.idx].chip_workers++;
              } else {
@@ -598,7 +598,8 @@
 -            on_share_result(p, cJSON_IsTrue(result), err, credited);
 +            bool matched = false;
 +            const double credited = hunter::reply(p.idx, rid, cJSON_IsTrue(result), &matched);
-+            // Unknown, timed-out and duplicate replies must not reach legacy counters either.
++            // Unknown and duplicate replies must not reach legacy counters either.
++            // A still-associated late ACK is credited once by the native ledger.
 +            if (matched) on_share_result(p, cJSON_IsTrue(result), err, credited);
              free(err);
          }
@@ -618,7 +619,7 @@
  }
  
  static void run_v1(Pool &p, const PoolCfg &cfg)
-@@ -399,27 +446,25 @@
+@@ -399,27 +447,25 @@
      xSemaphoreTake(p.lock, portMAX_DELAY);
      p.en1[0] = 0;
      p.en2_len = 4;
@@ -651,7 +652,7 @@
          }
      }
      g_state.pools[p.idx].connected = true;
-@@ -427,6 +472,7 @@
+@@ -427,6 +473,7 @@
      set_status(p, cfg.proto == PoolProto::V1Tls ? "Connected (TLS)" : "Connected");
  
      char *buf = (char *) malloc(V1_RX_BUF);
@@ -659,7 +660,7 @@
      int fill = 0;
      int64_t last_rx = esp_timer_get_time();
      p.bad_subscribe = false;
-@@ -460,7 +506,10 @@
+@@ -460,7 +507,10 @@
          }
          fill = strlen(start);
          memmove(buf, start, fill + 1);
@@ -671,7 +672,7 @@
      }
      free(buf);
  }
-@@ -493,6 +542,11 @@
+@@ -493,6 +543,11 @@
      size_t l1 = ej->coinbase_prefix_len + ej->extranonce_prefix_len;
      char *h1 = (char *) malloc(l1 * 2 + 1);
      char *h2 = (char *) malloc(ej->coinbase_suffix_len * 2 + 1);
@@ -683,7 +684,7 @@
      work::bin2hex(ej->coinbase_prefix, ej->coinbase_prefix_len, h1);
      work::bin2hex(ej->extranonce_prefix, ej->extranonce_prefix_len, h1 + ej->coinbase_prefix_len * 2);
      work::bin2hex(ej->coinbase_suffix, ej->coinbase_suffix_len, h2);
-@@ -650,6 +704,7 @@
+@@ -650,6 +705,7 @@
      }
  
      uint8_t *buf = (uint8_t *) malloc(SV2_RX_BUF);
@@ -691,7 +692,7 @@
      uint8_t hdr[6];
      int len = 0;
      sv2_frame_header_t fh;
-@@ -795,7 +850,10 @@
+@@ -795,7 +851,10 @@
              continue;
          }
          xSemaphoreTake(p.io, portMAX_DELAY);
@@ -702,7 +703,7 @@
          xSemaphoreGive(p.io);
          set_status(p, "Connecting...");
          p.proto = cfg.proto;
-@@ -807,14 +865,15 @@
+@@ -807,14 +866,15 @@
              else run_v1(p, cfg);
          }
          ps.connected = false;
@@ -720,7 +721,7 @@
          if (!p.restart) {
              ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(backoff_s * 1000));
              if (backoff_s < 60) backoff_s *= 2;
-@@ -850,7 +909,10 @@
+@@ -850,7 +910,10 @@
  bool ready(int i)
  {
      Pool &p = s_pools[i];
@@ -732,7 +733,7 @@
  }
  
  bool fetch_job(int i, StratumJob &out, JobInfo &info, uint32_t *gen)
-@@ -859,15 +921,24 @@
+@@ -859,15 +922,24 @@
      bool got = false;
      xSemaphoreTake(p.lock, portMAX_DELAY);
      if (p.have_job && p.gen != *gen) {
@@ -759,7 +760,7 @@
          info.session = p.session;
          *gen = p.gen;
          got = true;
-@@ -876,7 +947,13 @@
+@@ -876,7 +948,13 @@
      return got;
  }
  
@@ -774,7 +775,7 @@
  
  bool take_clean_flag(int i)
  {
-@@ -890,8 +967,14 @@
+@@ -890,8 +968,14 @@
  
  void submit(int i, const Work &w, uint32_t nonce, uint32_t version, int chip, bool candidate, const char *hash)
  {
@@ -790,7 +791,7 @@
      p.submit_t_us = esp_timer_get_time();
      if (p.proto == PoolProto::V2) {
          uint8_t en2[32];
-@@ -900,27 +983,41 @@
+@@ -900,27 +984,41 @@
          int n = sv2_build_submit_shares_extended(frame, sizeof(frame), p.channel_id, p.seq++,
                                                   strtoul(w.job_id, NULL, 10), nonce, w.ntime, version, en2,
                                                   (uint8_t) en2_len);
