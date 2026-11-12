@@ -6,6 +6,7 @@
 #include "esp_heap_caps.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "nvs.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -17,6 +18,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <new>
+#include <atomic>
 using namespace intelligence;
 namespace {
 // Versioned because archive records now retain per-metric sample counts.
@@ -41,6 +43,8 @@ static double stable_sum=0;
 static uint32_t last_sample=0,last_day=0;
 static SemaphoreHandle_t mu=nullptr;
 static bool archive_ok=true,task_ok=false;
+static std::atomic<bool> floor_on{false};
+static bool telemetry_fresh(){uint32_t seen=g_state.telemetry_ms.load();return seen&&uint32_t(esp_timer_get_time()/1000)-seen<=3000;}
 static const char *TAG="intel";
 struct Guard {bool ok;Guard(unsigned wait=100):ok(mu&&xSemaphoreTake(mu,pdMS_TO_TICKS(wait))==pdTRUE){}~Guard(){if(ok)xSemaphoreGive(mu);}};
 static bool valid_time(uint32_t t){return t>=1577836800U&&t<4102444800U;}
@@ -49,12 +53,13 @@ static bool write_blob(const char*k,const void*p,size_t n){
  // Keep a whole page available for existing settings/OTA metadata and GC.
  // Refuse a new archive write rather than consume that reserve or erase NVS.
  nvs_stats_t usage{};auto e=nvs_get_stats(nullptr,&usage);
- if(e!=ESP_OK||usage.free_entries<(n+31)/32+128){ESP_LOGW(TAG,"archive write %s refused: NVS reserve",k);return false;}
+ const size_t reserve=strcmp(k,"config")==0?0:128;
+ if(e!=ESP_OK||usage.free_entries<(n+31)/32+reserve+4){ESP_LOGW(TAG,"archive write %s refused: NVS reserve",k);return false;}
  nvs_handle_t h;e=nvs_open("af_intel",NVS_READWRITE,&h);if(e==ESP_OK){e=nvs_set_blob(h,k,p,n);if(e==ESP_OK)e=nvs_commit(h);nvs_close(h);}if(e!=ESP_OK)ESP_LOGW(TAG,"archive write %s: %s (no erase)",k,esp_err_to_name(e));return e==ESP_OK;}
 static void mark_io(bool ok){Guard g;if(g.ok&&!ok)archive_ok=false;}
 static bool row_ok(const Record&r){return valid_time(r.time)&&r.n>0&&r.n<=2880&&(r.step==30||r.step==300||r.step==3600||r.step==86400);}
 static void ring_add(Record *r,int cap,int &head,int &count,const Record&v){r[head]=v;head=(head+1)%cap;if(count<cap)count++;}
-static void values(float *v){const bool mining=g_state.status==SysStatus::Mining;auto set=[&](unsigned i,float n,float lo,float hi){v[i]=range(n,lo,hi)?n:NAN;};
+static void values(float *v){if(!telemetry_fresh()){for(unsigned i=0;i<N;i++)v[i]=NAN;return;}const bool mining=g_state.status==SysStatus::Mining;auto set=[&](unsigned i,float n,float lo,float hi){v[i]=range(n,lo,hi)?n:NAN;};
  v[0]=mining&&hash_ok(g_state.hashrate_ghs)?g_state.hashrate_ghs:NAN;
  set(1,g_state.temp_ok?g_state.chip_temp_max:NAN,0,110);set(2,g_state.vr_temp_ok?g_state.vr_temp:NAN,0,130);
  set(3,g_state.pin,0,50);set(4,g_state.fan_pct,0,100);set(5,g_state.freq_mhz,0,800);set(6,g_state.core_mv,0,1300);set(7,mining?g_state.error_pct:NAN,0,100);set(8,g_state.fan_rpm[0],0,50000);set(9,g_state.vin,0,6);set(10,g_state.vout,0,2);
@@ -90,9 +95,9 @@ static esp_err_t row_json(httpd_req_t*r,const Record&v,bool comma){char a[N][24]
  snprintf(b,sizeof(b),"%s[%llu,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,null,null,null,%s,%s,%s,\"%s\",%u,%u]",comma?",":"",(unsigned long long)v.time*1000,hr,a[1],a[2],a[3],a[12],a[4],a[5],a[6],a[7],a[11],a[8],a[9],mv,std::isfinite(v.diff)?"BTC":"",unsigned(v.n),unsigned(v.step));return chunk(r,b);}
 }
 namespace intel {
-void start(){recent=(Record*)heap_caps_calloc(H,sizeof(Record),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);five=(Record*)heap_caps_calloc(D,sizeof(Record),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);week=(Day*)heap_caps_calloc(W,sizeof(Day),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);save_day=(Day*)heap_caps_malloc(sizeof(Day),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);save_month=(Month*)heap_caps_malloc(sizeof(Month),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!recent||!five||!week||!save_day||!save_month){free(recent);free(five);free(week);free(save_day);free(save_month);recent=five=nullptr;week=nullptr;save_day=nullptr;save_month=nullptr;ESP_LOGE(TAG,"no PSRAM; intelligence disabled");return;}for(int i=0;i<H;i++)new(&recent[i]) Record{};for(int i=0;i<D;i++)new(&five[i]) Record{};for(int i=0;i<W;i++)new(&week[i]) Day{};mu=xSemaphoreCreateMutex();if(!mu){free(recent);free(five);free(week);free(save_day);free(save_month);recent=five=nullptr;week=nullptr;save_day=nullptr;save_month=nullptr;ESP_LOGE(TAG,"no mutex; intelligence disabled");return;}load();task_ok=xTaskCreate(task,"intel",6144,nullptr,2,nullptr)==pdPASS;if(!task_ok){ESP_LOGE(TAG,"no task; archive disabled");archive_ok=false;conf.enabled=conf.restore=0;}}
-float fan_floor(){Config c;{Guard g(0);if(!g.ok)return mu?100:0;c=conf;}if(!c.enabled)return 0;return curve_floor(g_state.temp_ok?g_state.chip_temp_max:NAN,g_state.vr_temp_ok?g_state.vr_temp:NAN,c.curve);}
-bool rollback_point(uint16_t cf,uint16_t cm,uint16_t nf,uint16_t cap,uint16_t &f,uint16_t &mv){Guard g;if(!g.ok||!task_ok||!conf.restore)return false;const Point p=fallback(stable,cf,cm,nf,cap)?stable:prior;if(!fallback(p,cf,cm,nf,cap))return false;if(!g_state.temp_ok||!g_state.vr_temp_ok||!range(g_state.chip_temp_max,0,64.9)||!range(g_state.vr_temp,0,74.9)||!range(g_state.pin,0,cap)||!range(g_state.vin,4.75,5.5))return false;f=p.mhz;mv=p.mv;return true;}
+void start(){recent=(Record*)heap_caps_calloc(H,sizeof(Record),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);five=(Record*)heap_caps_calloc(D,sizeof(Record),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);week=(Day*)heap_caps_calloc(W,sizeof(Day),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);save_day=(Day*)heap_caps_malloc(sizeof(Day),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);save_month=(Month*)heap_caps_malloc(sizeof(Month),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!recent||!five||!week||!save_day||!save_month){free(recent);free(five);free(week);free(save_day);free(save_month);recent=five=nullptr;week=nullptr;save_day=nullptr;save_month=nullptr;ESP_LOGE(TAG,"no PSRAM; intelligence disabled");return;}for(int i=0;i<H;i++)new(&recent[i]) Record{};for(int i=0;i<D;i++)new(&five[i]) Record{};for(int i=0;i<W;i++)new(&week[i]) Day{};mu=xSemaphoreCreateMutex();if(!mu){free(recent);free(five);free(week);free(save_day);free(save_month);recent=five=nullptr;week=nullptr;save_day=nullptr;save_month=nullptr;ESP_LOGE(TAG,"no mutex; intelligence disabled");return;}load();floor_on.store(conf.enabled);task_ok=xTaskCreate(task,"intel",6144,nullptr,2,nullptr)==pdPASS;if(!task_ok){ESP_LOGE(TAG,"no task; archive disabled");archive_ok=false;conf.enabled=conf.restore=0;floor_on.store(false);}}
+float fan_floor(){if(!floor_on.load())return 0;if(!telemetry_fresh())return 100;Config c;{Guard g(0);if(!g.ok)return mu?100:0;c=conf;}if(!c.enabled)return 0;return curve_floor(g_state.temp_ok?g_state.chip_temp_max:NAN,g_state.vr_temp_ok?g_state.vr_temp:NAN,c.curve);}
+bool rollback_point(uint16_t cf,uint16_t cm,uint16_t nf,uint16_t cap,uint16_t &f,uint16_t &mv){Guard g;if(!g.ok||!task_ok||!conf.restore||!telemetry_fresh())return false;const Point p=fallback(stable,cf,cm,nf,cap)?stable:prior;if(!fallback(p,cf,cm,nf,cap))return false;if(!g_state.temp_ok||!g_state.vr_temp_ok||!range(g_state.chip_temp_max,0,64.9)||!range(g_state.vr_temp,0,74.9)||!range(g_state.pin,0,cap)||!range(g_state.vin,4.75,5.5))return false;f=p.mhz;mv=p.mv;return true;}
 esp_err_t get(httpd_req_t*req){char q[32],v[16];unsigned sec=3600;if(httpd_req_get_url_query_str(req,q,sizeof(q))==ESP_OK&&httpd_query_key_value(q,"range",v,sizeof(v))==ESP_OK){unsigned z=unsigned(strtoul(v,nullptr,10));if(z==3600||z==86400||z==604800||z==2592000)sec=z;}
  const int cap=D+W*24+M;Record *rows=(Record*)heap_caps_malloc(sizeof(Record)*cap,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!rows)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"no memory");int count=0;Config c;Point p;uint16_t sn;bool io;uint32_t last;{Guard g;if(!g.ok){free(rows);return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"busy");}c=conf;p=stable;sn=stable_n;io=archive_ok;last=last_sample;
  auto add=[&](const Record&r){if(row_ok(r)&&count<cap)rows[count++]=r;};
@@ -102,5 +107,5 @@ esp_err_t get(httpd_req_t*req){char q[32],v[16];unsigned sec=3600;if(httpd_req_g
  else {for(auto&r:month.row)add(r);}
  }
  uint32_t now=uint32_t(time(nullptr));std::sort(rows,rows+count,[](const Record&a,const Record&b){return a.time<b.time;});httpd_resp_set_type(req,"application/json");httpd_resp_set_hdr(req,"Cache-Control","no-store");char h[512];snprintf(h,sizeof(h),"{\"native\":true,\"time\":%u,\"last\":%u,\"archiveOk\":%s,\"enabled\":%s,\"restore\":%s,\"curve\":[%u,%u,%u,%u],\"stableSamples\":%u,\"point\":[%u,%u,%u,%u,%u],\"rows\":[",now,last,io?"true":"false",c.enabled?"true":"false",c.restore?"true":"false",c.curve[0],c.curve[1],c.curve[2],c.curve[3],sn,p.mhz,p.mv,p.cap,p.ghs,p.time);esp_err_t e=chunk(req,h);bool comma=false;for(int i=0;e==ESP_OK&&i<count;i++)if(rows[i].time<=now&&now-rows[i].time<=sec){e=row_json(req,rows[i],comma);comma=true;}free(rows);if(e!=ESP_OK)return e;e=chunk(req,"]}");return e==ESP_OK?httpd_resp_send_chunk(req,nullptr,0):e;}
-esp_err_t set(httpd_req_t*req){if(!mu||!task_ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"intelligence unavailable");if(req->content_len<=0||req->content_len>256)return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"invalid body");char b[257];int got=0;while(got<req->content_len){int n=httpd_req_recv(req,b+got,req->content_len-got);if(n<=0)return ESP_FAIL;got+=n;}b[got]=0;cJSON*j=cJSON_Parse(b);if(!j)return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"bad json");Config c;auto *on=cJSON_GetObjectItem(j,"enabled"),*a=cJSON_GetObjectItem(j,"curve"),*restore=cJSON_GetObjectItem(j,"restore");bool ok=cJSON_IsBool(on)&&cJSON_IsBool(restore)&&cJSON_IsArray(a)&&cJSON_GetArraySize(a)==4;c.enabled=cJSON_IsTrue(on);c.restore=cJSON_IsTrue(restore);for(int i=0;ok&&i<4;i++){auto*x=cJSON_GetArrayItem(a,i);ok=cJSON_IsNumber(x)&&x->valuedouble>=50&&x->valuedouble<=100&&x->valuedouble==x->valueint;if(ok)c.curve[i]=x->valueint;}cJSON_Delete(j);if(!ok||!curve_ok(c.curve))return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"invalid curve");{Guard g;if(!g.ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"busy");if(!write_blob("config",&c,sizeof(c))){archive_ok=false;return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"storage failed");}conf=c;}return httpd_resp_sendstr(req,"OK");}
+esp_err_t set(httpd_req_t*req){if(!mu||!task_ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"intelligence unavailable");if(req->content_len<=0||req->content_len>256)return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"invalid body");char b[257];int got=0;while(got<req->content_len){int n=httpd_req_recv(req,b+got,req->content_len-got);if(n<=0)return ESP_FAIL;got+=n;}b[got]=0;cJSON*j=cJSON_Parse(b);if(!j)return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"bad json");Config c;auto *on=cJSON_GetObjectItem(j,"enabled"),*a=cJSON_GetObjectItem(j,"curve"),*restore=cJSON_GetObjectItem(j,"restore");bool ok=cJSON_IsBool(on)&&cJSON_IsBool(restore)&&cJSON_IsArray(a)&&cJSON_GetArraySize(a)==4;c.enabled=cJSON_IsTrue(on);c.restore=cJSON_IsTrue(restore);for(int i=0;ok&&i<4;i++){auto*x=cJSON_GetArrayItem(a,i);ok=cJSON_IsNumber(x)&&x->valuedouble>=50&&x->valuedouble<=100&&x->valuedouble==x->valueint;if(ok)c.curve[i]=x->valueint;}cJSON_Delete(j);if(!ok||!curve_ok(c.curve))return httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,"invalid curve");{Guard g;if(!g.ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"busy");if(!write_blob("config",&c,sizeof(c))){archive_ok=false;return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"storage failed");}conf=c;floor_on.store(c.enabled);}return httpd_resp_sendstr(req,"OK");}
 }

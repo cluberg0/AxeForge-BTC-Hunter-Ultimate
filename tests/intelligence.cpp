@@ -7,6 +7,8 @@
 #include "../overlay/main/core/intelligence.cpp"
 MinerState g_state{};
 static Settings cfg{};
+static int64_t clock_us=1000000;
+int64_t esp_timer_get_time(){return clock_us;}
 namespace settings {Settings &get(){return cfg;}}
 static bool locked=false,deny_lock=false,storage_fail=false;
 static size_t available=1000;
@@ -42,17 +44,18 @@ int httpd_resp_set_type(httpd_req_t*,const char*){return ESP_OK;}
 int httpd_resp_set_hdr(httpd_req_t*,const char*,const char*){return ESP_OK;}
 int httpd_req_recv(httpd_req_t*,char*p,size_t n){memcpy(p,body.data(),n);return int(n);}
 static int set_config(){body="valid";httpd_req_t r{int(body.size())};return intel::set(&r);}
+static void fresh_sample(uint32_t now){clock_us+=30000000;g_state.telemetry_ms.store(uint32_t(clock_us/1000));sample(now);}
 int main(){
  (void)TAG;
- intel::start();assert(task_ok&&mu&&save_day&&save_month);assert(!conf.enabled&&!conf.restore);
+ intel::start();assert(task_ok&&mu&&save_day&&save_month);assert(!conf.enabled&&!conf.restore);deny_lock=true;assert(intel::fan_floor()==0);deny_lock=false;
  g_state.status=SysStatus::Mining;g_state.time_synced=g_state.temp_ok=g_state.vr_temp_ok=g_state.pool_connected=g_state.fan_present[0]=true;
  g_state.hashrate_ghs=1550;g_state.expected_ghs=1600;g_state.chip_temp_max=55;g_state.vr_temp=64;g_state.pin=23;g_state.error_pct=.3;g_state.vin=5.1;g_state.vout=1.17;g_state.fan_rpm[0]=5000;g_state.freq_mhz=786;g_state.core_mv=1170;g_state.tuner.phase=TunerPhase::Locked;
  cfg.autotune=true;cfg.tune_goal=1;cfg.power_cap_w=25;
- const uint32_t base=1790002800U/3600*3600;sample(base);assert(rn==1&&stable_n==1);
- for(unsigned i=1;i<=60;i++){sample(base+i*30);}
+ const uint32_t base=1790002800U/3600*3600;fresh_sample(base);assert(rn==1&&stable_n==1);
+ for(unsigned i=1;i<=60;i++){fresh_sample(base+i*30);}
  assert(stable_n==61&&stable.mhz==786&&blobs.count("stable"));
- sample(base+1866);assert(stable_n==1); // a >65 s gap resets the stability window
- sample(base+3600);assert(blobs.count(std::string("d")+std::to_string((base/86400)%W)));
+ fresh_sample(base+1866);assert(stable_n==1); // a >65 s gap resets the stability window
+ fresh_sample(base+3600);assert(blobs.count(std::string("d")+std::to_string((base/86400)%W)));
  auto *stored_day=&week[(base/86400)%W];assert(stored_day->row[(base%86400)/3600].n>0);
  // Per-metric counts prevent one valid hour sample getting the weight of 120.
  Day d;d.day=base/86400;float vals[N];for(auto &x:vals)x=NAN;
@@ -60,15 +63,17 @@ int main(){
  a=Aggregate{};vals[0]=2000;for(int i=0;i<120;i++)a.add(d.day*86400+3600,vals);d.row[1]=a.finish(3600);
  auto daily=rollup(d);assert(daily.n==240&&decode(daily.x[0],0)==1992);
  // NTP backwards reset discards only partial RAM windows, with no duplicate rows.
- sample(base+120);assert(rn==1&&fn==0&&ah.n==1&&stable_n==1);
+ fresh_sample(base+120);assert(rn==1&&fn==0&&ah.n==1&&stable_n==1);
  auto old_conf=conf;available=0;assert(set_config()==500&&conf.enabled==old_conf.enabled);
  available=1000;storage_fail=true;assert(set_config()==500&&conf.enabled==old_conf.enabled);
  storage_fail=false;assert(set_config()==0&&conf.enabled&&conf.restore);
+ clock_us+=4000000;assert(intel::fan_floor()==100);sample(base+150);assert(recent[(rh-1+H)%H].x[0]==Missing);
+ g_state.telemetry_ms.store(uint32_t(clock_us/1000));
  g_state.temp_ok=false;assert(intel::fan_floor()==100);g_state.temp_ok=true;
  deny_lock=true;assert(intel::fan_floor()==100);deny_lock=false;
  uint16_t f=0,mv=0;g_state.vin=4.5;assert(!intel::rollback_point(798,1180,786,25,f,mv));g_state.vin=5.1;
  task_ok=false;assert(set_config()==500&&!intel::rollback_point(798,1180,786,25,f,mv));task_ok=true;
- auto count=blobs.size();available=0;sample(base+7200);assert(!archive_ok&&blobs.size()==count);
+ auto count=blobs.size();available=0;fresh_sample(base+7200);assert(!archive_ok&&blobs.size()==count);
  httpd_req_t req{};response.clear();assert(intel::get(&req)==0&&response.find("\"archiveOk\":false")!=std::string::npos);
  std::cout<<"PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API\n";
  free(recent);free(five);free(week);free(save_day);free(save_month);
