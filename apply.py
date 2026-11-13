@@ -37,4 +37,5 @@ subprocess.run(['git', '-C', str(R), 'apply', str(P/'integration-hardening.patch
 subprocess.run([sys.executable, str(P/'patch_api_safety.py'), str(R)], check=True)
 subprocess.run([sys.executable, str(P/'patch_guardian.py'), str(R)], check=True)
 subprocess.run([sys.executable, str(P/'patch_v2.py'), str(R)], check=True)
+subprocess.run([sys.executable, str(P/'patch_turbo.py'), str(R)], check=True)
 print('Patched pinned upstream. Build Gamma only.')

@@ -4,10 +4,11 @@ root=pathlib.Path(__file__).resolve().parent.parent;ns=json.loads((root/'tests/b
 cfg=ns['cfg'];status=ns['status'];pools=ns['pools'];status['uptime']=36000
 html=(root/'overlay/main/web/index.html').read_text();writes=[];opts={'enabled':False,'restore':False,'curve':[50,55,75,100]};fail=False;hunter_fail=False;http_fail={};auth_required=False;login_fail=False;requests=[];hunter_trial={"state":0,"stage":0,"phase":"idle","totalStages":6,"round":1,"intervalMs":500,"warmupSeconds":300,"measurementSeconds":1800,"elapsed":0,"rates":[0,0,0],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0]};guardian={'enabled':False,'taskOk':True,'state':5,'hash':'','checked':0,'height':0,'inBestChain':False,'error':''}
 network={'version':2,'utcOffsetMinutes':600,'freeInternal':100000,'minimumInternal':90000,'activePool':0,'weatherPolling':False,'mempoolPolling':False,'pools':[{'reconnects':0,'connectErrors':0,'readErrors':0,'writeErrors':0} for _ in range(4)]}
+turbo={'available':True,'armed':False,'state':0,'maxFreq':1000,'requestedPower':30,'effectivePower':25,'voltageLimit':1300,'reason':'none','powerEstimated':True,'persisted':True,'points':[]}
 async def main():
  global fail,hunter_fail,auth_required,login_fail
  async with async_playwright() as p:
-  engine=os.getenv('BROWSER','chromium');b=await (p.webkit.launch() if engine=='webkit' else p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH') or shutil.which('chromium') or None,args=['--no-sandbox']));ctx=await b.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True,accept_downloads=True);page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:print('JS',m.type,m.text) if m.type in ['error','warning'] else None);page.on('dialog',lambda d:d.accept())
+  engine=os.getenv('BROWSER','chromium');b=await (p.webkit.launch() if engine=='webkit' else p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH') or shutil.which('chromium') or None,args=['--no-sandbox']));ctx=await b.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True,accept_downloads=True);page=await ctx.new_page();dialog_reply={'value':''};errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:print('JS',m.type,m.text) if m.type in ['error','warning'] else None);page.on('dialog',lambda d:d.accept(dialog_reply['value'])if d.type=='prompt'else d.accept())
   async def mock(source,req):
    global auth_required
    path=req['path'].split('?')[0];requests.append(req)
@@ -23,12 +24,14 @@ async def main():
      opts.update(d)
     if path=='/api/settings':cfg.update(d)
     if path=='/api/guardian':guardian.update(d)
+    if path=='/api/turbo':turbo.update({'armed':d['enabled'],'state':1 if d['enabled'] else 4,'reason':'none' if d['enabled'] else 'user'})
     if path=='/api/network':network.update(d)
     if path=='/api/hunter':
      if hunter_fail:return {'status':400,'body':'not stable'}
      hunter_trial['state']=1 if d.get('start') else 3;hunter_trial['phase']='warmup' if d.get('start') else 'aborted'
     return {'status':200,'body':'OK'}
-   if path=='/api/guardian':obj=guardian
+   if path=='/api/turbo':obj=turbo
+   elif path=='/api/guardian':obj=guardian
    elif path=='/api/network':obj=network
    elif path=='/api/hunter':
     obj={'native':True,'taskOk':True,'seconds':3600,'pools':[{'work':1337*900,'btcWork':1337*900,'btcAccepted':900,'accepted':900,'rejected':1,'missing':0,'failed':0,'cleanN':10,'cleanMs':40,'cleanMax':100,'connectedSeconds':3500,'disconnectedSeconds':60,'observedSeconds':3560,'unobservedSeconds':40}]+[{'work':0,'btcWork':0,'btcAccepted':0,'accepted':0,'rejected':0,'missing':0,'failed':0,'cleanN':0,'cleanMs':0,'cleanMax':0} for _ in range(3)],'candidate':{'state':3,'pool':0,'hash':'000000000000000000000000000000000000000000000000000000000000abcd','persisted':True},'trial':hunter_trial}
@@ -71,8 +74,12 @@ async def main():
   n=len(writes);await page.evaluate('Promise.all([a10save(),a10save()])');assert len(writes)==n+1
   fail=True;await page.locator('#a8fanbtn').click();await page.wait_for_timeout(200);assert opts['enabled'];fail=False
   await page.evaluate('tab("dash")');await page.locator('#a8recall').click();assert await page.locator('#tuning [name=freq]').input_value()=='786';assert await page.locator('#tuning [name=pcap]').input_value()=='25'
-  n=len(writes);assert await page.locator('#v2turbo').is_disabled();await page.locator('#tuning .prf button').nth(2).click();assert await page.locator('#tuning [name=pcap]').input_value()=='25';assert len(writes)==n
+  n=len(writes);await page.evaluate('turboLoad(true)');await page.wait_for_function('turboData&&!turboBusy');assert not await page.locator('#v2turbo').is_disabled();await page.locator('#tuning .prf button').nth(2).click();assert await page.locator('#tuning [name=pcap]').input_value()=='25';assert len(writes)==n
   await page.evaluate('v2render(S)');assert 'Network Guardian' in await page.locator('#v2network').inner_text();assert await page.locator('#v2graph path').count()==2
+  stock_snapshot={k:cfg[k] for k in ['freq','mv','pcap']};n=len(writes);await page.locator('#turboStart').click();assert len(writes)==n
+  dialog_reply['value']='TURBO1000';http_fail['/api/turbo']=400;await page.locator('#turboStart').click();await page.wait_for_function('!turboCommand');assert not turbo['armed'];http_fail.clear()
+  await page.locator('#turboStart').click();await page.wait_for_function('turboData.armed&&!turboCommand');assert writes[-1]==('/api/turbo',{'enabled':True,'confirm':'TURBO1000','maxFreq':1000,'powerLimit':30});assert {k:cfg[k] for k in ['freq','mv','pcap']}==stock_snapshot;assert await page.locator('#turboMax').is_disabled()
+  await page.locator('#turboStop').click();await page.wait_for_function('!turboData.armed&&!turboCommand');assert writes[-1]==('/api/turbo',{'enabled':False});assert 'пользователем' in await page.locator('#turboStatus').inner_text()
   for w in [320,375,390,430,768]:
    await page.set_viewport_size({'width':w,'height':844})
    for t in ['dash','pools','tuning','display','clock','network','system']:
@@ -134,6 +141,6 @@ async def main():
   await page.evaluate('a10cache={};tab("dash");a8draw()');assert await page.locator('#a8chart [data-a8line]').count()==0
   assert 'Нет замеров' in await page.locator('#a8chart').text_content()
   assert not errors,errors
-  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profiles18/22/25W and blocked TURBO, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors')
+  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profiles18/22/25W and manually confirmed TURBO1000, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors')
   await b.close()
 asyncio.run(main())

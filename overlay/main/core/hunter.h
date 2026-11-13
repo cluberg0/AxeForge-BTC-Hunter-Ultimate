@@ -3,6 +3,9 @@
 #include "esp_http_server.h"
 namespace hunter {
 void start();
+struct WorkSnapshot{double work=0,squared=0,seconds=0;uint32_t accepted=0,rejected=0,missing=0,failed=0;};
+WorkSnapshot work_snapshot(int pool);
+bool benchmark_running();
 void job_sent(int pool,uint32_t generation,int64_t received_us,bool clean);
 // V1 request ledger: records difficulty of the submitted job, not current vardiff.
 void submitted(int pool,uint32_t id,double difficulty,bool candidate,const char *hash,bool btc_network);

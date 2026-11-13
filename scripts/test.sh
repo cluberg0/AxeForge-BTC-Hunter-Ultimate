@@ -34,6 +34,11 @@ python3 tests/service_wakeup.py
 python3 tests/reconnect_actual.py
 python3 tests/counter_actual.py
 python3 tests/v2_guards.py
+python3 tests/pll_turbo.py
+python3 tests/turbo_phase.py
+python3 tests/board_turbo.py
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Itests/turbo-stubs -Itests/guardian-stubs -Itests/stubs -Ioverlay/main -Iupstream/main tests/turbo.cpp -lcjson -o "$T/turbo"
+AXEFORGE_API_JSON=1 "$T/turbo" | tee reports/native-api/turbo.log
 python3 tests/image.py
 python3 tests/target_reference.py
 if [ -d upstream ]; then python3 scripts/check_native_api.py --json-dir reports/native-api; fi

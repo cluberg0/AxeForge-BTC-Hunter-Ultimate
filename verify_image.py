@@ -33,10 +33,10 @@ def verify(b):
     require(struct.unpack_from('<I', b, 32)[0] == 0xabcd5432, 'missing app descriptor')
     require(b[80:112].split(b'\0', 1)[0] == b'axeforge', 'not AxeForge app')
     version = b[48:80].split(b'\0', 1)[0].decode('ascii')
-    require(version == '1.4.10-hunter-ultimate-2.0', 'unexpected firmware version')
+    require(version == '1.4.10-hunter-2.0-TURBO1000', 'unexpected firmware version')
     require(b'AXEFORGE-BOARD:gamma;\0' in b, 'Gamma board tag missing')
     tags = [b'/api/hunter', b'btc_hunter', b'BLOCK CANDIDATE', b'RU-FIX 10 NATIVE',
-            b'/api/intelligence', b'/api/network', b'/api/guardian', b'intelligence: returned to prior measured point']
+            b'/api/intelligence', b'/api/network', b'/api/turbo', b'/api/guardian', b'intelligence: returned to prior measured point']
     for tag in tags:
         require(tag in b, 'integration marker missing: ' + repr(tag))
     require(b'api.open-meteo.com' not in b and b'geocoding-api.open-meteo.com' not in b, 'weather TLS code remains')

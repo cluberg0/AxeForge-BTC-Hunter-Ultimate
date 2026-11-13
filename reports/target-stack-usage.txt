@@ -1,41 +1,134 @@
 Xtensa compiler -fstack-usage frames; static frame sizes, not full task call chains.
 
+core/turbo.cpp
+/workspace/axeforge/upstream/main/core/turbo.cpp:102:11:esp_err_t turbo::get(httpd_req_t*)	736	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:56:6:void turbo::start()	624	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:109:11:esp_err_t turbo::set(httpd_req_t*)	320	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:83:6:bool turbo::window_end(float)	128	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:64:6:bool turbo::begin(Point&)	112	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:71:6:bool turbo::check()	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:94:6:bool turbo::remember(uint16_t, uint16_t, float, float, float, float)	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:82:6:void turbo::window_begin()	80	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:37:8:turbo::Reason turbo::{anonymous}::health()	48	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:59:7:float turbo::power_budget()	48	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:99:7:turbo::Point turbo::fallback(uint16_t, float)	48	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:57:6:bool turbo::pending()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:57:43:bool turbo::active()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:57:80:bool turbo::engaged()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:57:171:bool turbo::cancelled()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:58:10:uint16_t turbo::max_frequency()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:60:6:void turbo::stop(Reason)	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:61:8:turbo::Reason turbo::reason()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:62:6:void turbo::disarm(Reason)	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:63:8:turbo::Reason turbo::monitor_trip()	32	static
+
+core/tuner.cpp
+/workspace/axeforge/upstream/main/core/tuner.cpp:528:13:void tuner_task(void*)	304	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:266:13:bool climb(uint16_t&, uint16_t&, float&)	208	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:184:15:Result measure(int, int, float, float)	112	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:113:13:void note(const char*, float, float)	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:252:13:void lock_point(uint16_t, uint16_t, float)	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:377:13:void lower_chip(int, const char*)	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:662:6:void tuner::start()	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:119:13:bool should_abort()	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:122:14:float power_ceiling()	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:146:13:void set_offsets(const int8_t*)	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:170:13:bool apply(uint16_t, uint16_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:666:6:void tuner::restart()	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:672:6:void tuner::hold(uint16_t)	32	static
+
+core/gates.cpp
+/workspace/axeforge/upstream/main/core/gates.cpp:25:6:bool gates::available()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:31:6:bool gates::active()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:38:10:uint16_t gates::env_freq()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:39:10:uint16_t gates::env_mv()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:40:9:uint8_t gates::env_power_pct()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:46:10:uint16_t gates::stock_max_freq()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:47:10:uint16_t gates::stock_max_mv()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:48:7:float gates::stock_max_power()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:50:10:uint16_t gates::max_freq()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:52:10:uint16_t gates::max_mv()	32	static
+/workspace/axeforge/upstream/main/core/gates.cpp:59:7:float gates::max_power()	32	static
+
+asic/bm13xx.cpp
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:90:13:void send(uint8_t, const uint8_t*, uint8_t)	192	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:231:13:bool send_pll(float, int)	128	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:682:6:bool asic::pll_supported(float, float&)	96	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:341:5:int asic::init(float, int, uint32_t)	96	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:781:6:bool asic::receive(AsicResult&, int)	80	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:324:6:void asic::uart_init()	64	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:640:6:bool asic::set_frequency(float)	64	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:295:13:void apply_offsets()	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:576:6:bool asic::set_vr_freq(uint32_t, bool)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:599:6:void asic::switch_to_fast_baud()	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:652:6:void asic::set_chip_offsets(const int8_t*, bool)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:691:6:void asic::set_version_mask(uint32_t)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:705:6:void asic::set_difficulty_mask(uint32_t)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:814:6:void asic::read_register_all(uint8_t)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:816:6:void asic::reset_register_all(uint8_t)	48	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:672:5:int asic::chip_offset(int)	32	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:674:5:int asic::offset_total()	32	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:681:7:float asic::frequency()	32	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:718:9:uint8_t asic::job_slot(uint32_t)	32	static
+/workspace/axeforge/upstream/main/asic/bm13xx.cpp:730:9:uint8_t asic::send_job(uint32_t, AsicJob&)	32	static
+
+core/board_bitaxe.cpp
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:132:7:board::Error board::init_hardware()	64	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:295:6:void board::read_telemetry()	64	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:113:15:const board::Limits& board::limits()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:114:6:bool board::is_rev7()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:116:10:uint16_t board::clamp_mv(int)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:123:10:uint16_t board::max_mv()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:125:10:uint16_t board::clamp_freq(int)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:253:6:void board::shutdown()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:268:6:bool board::set_core_mv(uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:279:6:bool board::set_freq_mhz(uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:291:10:uint16_t board::core_mv()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:292:10:uint16_t board::freq_mhz()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:293:6:bool board::is_powered()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:194:7:board::Error board::power_up(uint16_t, uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:373:6:void board::log_regulator(const char*)	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:378:7:board::Error board::check_faults()	32	static
+/workspace/axeforge/upstream/main/core/board_bitaxe.cpp:399:13:const char* board::error_text(Error)	32	static
+
 core/hunter.cpp
-/workspace/axeforge/upstream/main/core/hunter.cpp:97:11:esp_err_t hunter::get(httpd_req_t*)	1312	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:113:11:esp_err_t hunter::set(httpd_req_t*)	528	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:99:11:esp_err_t hunter::get(httpd_req_t*)	1312	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:115:11:esp_err_t hunter::set(httpd_req_t*)	528	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:83:8:double hunter::reply(int, uint32_t, bool, bool*)	208	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:66:6:void hunter::{anonymous}::task(void*)	192	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:81:8:double hunter::reply(int, uint32_t, bool, bool*)	192	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:68:6:void hunter::start()	144	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:70:6:void hunter::start()	144	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:34:6:void hunter::{anonymous}::cand(int, uint32_t, const char*, uint8_t, bool)	112	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:95:6:)	80	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:70:6:void hunter::submitted(int, uint32_t, double, bool, const char*, bool)	80	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:97:6:)	80	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:72:6:void hunter::submitted(int, uint32_t, double, bool, const char*, bool)	80	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:36:6:bool hunter::{anonymous}::healthy()	48	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:37:6:void hunter::{anonymous}::_ZN6hunter12_GLOBAL__N_111abort_trialENS0_5AbortE$part$0(Abort)	48	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:68:14:hunter::WorkSnapshot hunter::work_snapshot(int)	48	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:35:5:int hunter::{anonymous}::active_pool()	32	static
 /workspace/axeforge/upstream/main/core/hunter.cpp:33:6:bool hunter::{anonymous}::hash_ok(const char*)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:69:6:void hunter::job_sent(int, uint32_t, int64_t, bool)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:77:6:void hunter::sent(int, uint32_t, bool)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:88:6:void hunter::disconnected(int)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:89:6:void hunter::sv2_candidate(int, const char*, bool, bool)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:90:6:void hunter::unavailable_candidate(int, const char*, bool)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:91:6:bool hunter::candidate_snapshot(char*, int&)	32	static
-/workspace/axeforge/upstream/main/core/hunter.cpp:92:10:uint16_t hunter::interval(uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:69:6:bool hunter::benchmark_running()	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:71:6:void hunter::job_sent(int, uint32_t, int64_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:79:6:void hunter::sent(int, uint32_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:90:6:void hunter::disconnected(int)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:91:6:void hunter::sv2_candidate(int, const char*, bool, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:92:6:void hunter::unavailable_candidate(int, const char*, bool)	32	static
+/workspace/axeforge/upstream/main/core/hunter.cpp:93:6:bool hunter::candidate_snapshot(char*, int&)	32	static
 
 core/intelligence.cpp
-/workspace/axeforge/upstream/main/core/intelligence.cpp:103:11:esp_err_t intel::get(httpd_req_t*)	1648	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:104:11:esp_err_t intel::get(httpd_req_t*)	1648	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:80:13:void {anonymous}::sample(uint32_t)	480	static
-/workspace/axeforge/upstream/main/core/intelligence.cpp:112:11:esp_err_t intel::set(httpd_req_t*)	320	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:113:11:esp_err_t intel::set(httpd_req_t*)	320	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:72:15:intelligence::Record {anonymous}::rollup(const Day&)	304	static
 /workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/xtensa-esp-elf/include/c++/13.2.0/bits/stl_algo.h:1918:5:constexpr void std::__introsort_loop(_RandomAccessIterator, _RandomAccessIterator, _Size, _Compare) [with _RandomAccessIterator = intelligence::Record*; _Size = int; _Compare = __gnu_cxx::__ops::_Iter_comp_iter<intel::get(httpd_req_t*)::<lambda(const intelligence::Record&, const intelligence::Record&)> >]	192	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:100:6:void intel::start()	128	static
 /workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/xtensa-esp-elf/include/c++/13.2.0/bits/stl_heap.h:224:5:constexpr void std::__adjust_heap(_RandomAccessIterator, _Distance, _Distance, _Tp, _Compare) [with _RandomAccessIterator = intelligence::Record*; _Distance = int; _Tp = intelligence::Record; _Compare = __gnu_cxx::__ops::_Iter_comp_iter<intel::get(httpd_req_t*)::<lambda(const intelligence::Record&, const intelligence::Record&)> >]	112	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:53:13:bool {anonymous}::write_blob(const char*, const void*, size_t)	80	static
-/workspace/axeforge/upstream/main/core/intelligence.cpp:101:7:float intel::fan_floor()	64	static
-/workspace/axeforge/upstream/main/core/intelligence.cpp:102:6:bool intel::rollback_point(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t&, uint16_t&)	64	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:102:7:float intel::fan_floor()	64	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:103:6:bool intel::rollback_point(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t&, uint16_t&)	64	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:52:13:bool {anonymous}::read_blob(const char*, void*, size_t)	48	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:61:13:bool {anonymous}::row_ok(const intelligence::Record&)	32	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:60:13:void {anonymous}::mark_io(bool)	32	static
 /workspace/axeforge/upstream/main/core/intelligence.cpp:92:13:void {anonymous}::task(void*)	32	static
+/workspace/axeforge/upstream/main/core/intelligence.cpp:101:6:bool intel::stable_point(uint16_t&, uint16_t&, float&)	32	static
 
 core/guardian.cpp
 /workspace/axeforge/upstream/main/core/guardian.cpp:119:6:void guardian::{anonymous}::tick()	1200	static
@@ -88,15 +181,16 @@ mining/miner.cpp
 stratum/pools.cpp
 /workspace/axeforge/upstream/main/stratum/pools.cpp:841:13:void pool_task(void*)	2176	static
 /workspace/axeforge/upstream/main/stratum/pools.cpp:541:13:constprop(Pool&, sv2_ext_job_t*)	1200	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:993:6:void pools::submit(int, const Work&, uint32_t, uint32_t, int, bool, const char*)	272	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:994:6:void pools::submit(int, const Work&, uint32_t, uint32_t, int, bool, const char*)	272	static
 /workspace/axeforge/upstream/main/stratum/pools.cpp:220:13:void on_share_result(Pool&, bool, const char*, double)	80	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:910:6:void pools::start()	64	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:943:6:bool pools::fetch_job(int, StratumJob&, JobInfo&, uint32_t*)	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:911:6:void pools::start()	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:944:6:bool pools::fetch_job(int, StratumJob&, JobInfo&, uint32_t*)	64	static
 /workspace/axeforge/upstream/main/stratum/pools.cpp:192:13:void publish(Pool&, StratumJob&, const char*, const char*)	48	static
 /workspace/axeforge/upstream/main/stratum/pools.cpp:308:13:bool send_frame(Pool&, const uint8_t*, int, uint32_t)	32	static
 /workspace/axeforge/upstream/main/stratum/pools.cpp:299:13:bool send_line(Pool&, const char*, uint32_t)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:925:6:void pools::reconfigure()	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:934:6:bool pools::ready(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:975:10:uint32_t pools::generation(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:983:6:bool pools::take_clean_flag(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:1048:1:cpp)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:909:10:uint32_t pools::session_id(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:926:6:void pools::reconfigure()	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:935:6:bool pools::ready(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:976:10:uint32_t pools::generation(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:984:6:bool pools::take_clean_flag(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:1049:1:cpp)	32	static

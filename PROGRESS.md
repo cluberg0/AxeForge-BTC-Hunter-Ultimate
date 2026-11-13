@@ -1,14 +1,13 @@
-# BTC HUNTER ULTIMATE2.0 — завершено
+# TURBO1000 — контрольная точка
 
-- База Ultimate1.0/237d3f7, код2.0 в commits33f8709/52f1722; отдельная ветка ultimate-2.0. Дополнительные агенты не запускались.
-- Weather/Open-Meteo/Mempool/market HTTP polling отключены; NTP и manual UTC сохранены; auto external update/check off; Farm/Guardian только по запросу. Рабочие NVS settings не стирались.
-- Исправлены Stratum standby/active timeout, TCP keepalive, IO-restart backoff bypass и healthy reset;30s failback/срочный failover. Добавлена event-based сеть без новой collecting task.
-- Production counter reset теперь сбрасывает связанную error baseline. Синтетический одинаковый trace: Ultimate1 даёт 4294967247 ложныхerror units,2.0 даёт 0; ASIC 1431.656GH/s в обоих. Это не измеренный аппаратный прирост.
-- Stock tuner единственный. Новый auto ceiling25W; сохранённые18/22/25/30W настройки не стираются. TURBO30W заблокирован до hardware validation. Stock hard protections/bootloader/flash/ASIC driver неизменны.
-- Dark RU2.0 UI: real ASIC/accepted-work graph,4вкладки/13шкал/UTC/сеть;18/22/25W staging,30W blocked. Chromium+WebKit на320/375/390/430/768px PASS.
-- Host157/ASan/UBSan/API4/UART/target10007/OTA/NVS/pause/counter/reconnect/services/clock/tuner-guard PASS. Fresh apply334source files byte-equal; UI generator chain byte-equal.
-- ESP-IDF5.3.2/ESP32-S3/Gamma1BM1370 сборка, size/ELF/map/stack/image/esptool/markers/source manifest PASS, compiler warnings0.
-- Итоговый OTA 1 905 696 байт, SHA256 bb59cc8762bc1e9962c6c96b093321a5b7a9caff5834e9f35962f4c001651f28. Предыдущий OTA и SHA сохранены в dist/v2/backup.
-- TEST-REPORT/CHANGELOG/INSTALL-IPHONE/HARDWARE-TEST-PLAN/competitor evidence/исходники готовы; упаковка scripts/package_release.py.
+База23724c5, веткаultimate-2.0-turbo1000. Новые агенты не запускались.
 
-Ограничения: физического Gamma нет; hardware UART/power/thermal/heap/high-water/24h/real OTA/Safari и full live Stratum lifecycle NOT RUN. Нет измеренного выигрыша useful work/day. Вся критическая отправка кандидатов независима от explorer; награда не подтверждается лишьpool ACK. Удалённый GitHub Actions не запускался.
+Выполнено: ручная непостоянная session в штатном tuner; потолок1000MHz, точные PLL ступени12.5MHz/200ms выше800 и tuner25MHz; stock800/1300 и hard68/85 сохранены. Map16 измеренных точек, fresh telemetry, accepted work, PSU/thermal/error/session guards, откат, API+UI3. Запрос30W -> effective<=25W (TPS estimate), <=23W при derating; reserve3W. Настройки/partitions/OTA guard неизменны.
+
+Проверено: IDF5.3.2 build4 exit0, image1925072B, SHA f05a28224dd6be99775bb27dd5d1ea78c3dc9d2928406d2a0161df1e35cc2757. Полный scripts/test.sh PASS (stock157, ASan/UBSan, PLL7201, production tuner/board failure injection,5API,JS). Chromium+WebKit PASS. Clean pinned apply:338файлов совпали. Target stack frames получены; физический high-water не измерен.
+
+Исправления: PLL failure не оставляет устаревшую частоту; voltage/clock writes прекращаются после ошибки, downclock до undervolt; power freshness не обновляется ошибочными reads; user stop не теряется при переходе hold; clock counter rebaseline grace10s только для counter.
+
+Уточнение: legacy806.25MHz поддерживается приблизительно807.14, это не unsupported PLL. Предположение исправлено differential test.
+
+Осталось: актуализировать release docs/metadata, контрольные суммы и упаковка полного source/release с backup2.0. Никакого hardware testing/performance claim; устройство не прошивалось.

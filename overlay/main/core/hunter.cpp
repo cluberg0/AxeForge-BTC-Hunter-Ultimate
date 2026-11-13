@@ -22,7 +22,7 @@ constexpr uint32_t WINDOW=1800,WARMUP=300;
 constexpr unsigned STAGES=6;
 constexpr uint8_t order[STAGES]={0,1,2,2,1,0};
 struct Request {uint32_t id=0; double diff=0; int64_t time=0; bool valid=false,btc=false,timed_out=false,candidate=false,measured=false;uint32_t trial_id=0;uint8_t stage=0;};
-struct Pool {Request pending[PENDING];uint64_t connected_ms=0,disconnected_ms=0,unobserved_ms=0;bool observed=false,was_enabled=false,was_connected=false;unsigned cursor=0;double work=0,btc_work=0;uint32_t btc_accepted=0,accepted=0,rejected=0,missed=0,failed=0,clean_n=0,clean_ms=0,max_ms=0,gen=0;bool gen_valid=false;};
+struct Pool {Request pending[PENDING];uint64_t connected_ms=0,disconnected_ms=0,unobserved_ms=0;bool observed=false,was_enabled=false,was_connected=false;unsigned cursor=0;double work=0,btc_work=0,squared=0;uint32_t btc_accepted=0,accepted=0,rejected=0,missed=0,failed=0,clean_n=0,clean_ms=0,max_ms=0,gen=0;bool gen_valid=false;};
 struct Candidate {uint32_t version=2,id=0;int pool=-1;uint8_t state=0,btc=0;char hash[65]={};};
 // state: 1 queued, 2 sent, 3 accepted, 4 rejected, 5 failed, 6 lost response, 7 SV2 sent (unconfirmed).
 enum class Abort:uint8_t {None,User,Safety,Pool,Config,Temperature,Samples,Controller,Transport,Replies};
@@ -65,6 +65,8 @@ void tick(){int p=active_pool();bool ok=healthy();const auto &c=settings::get();
 }
 void task(void*){while(true){vTaskDelay(pdMS_TO_TICKS(5000));tick();}}
 }
+WorkSnapshot work_snapshot(int p){WorkSnapshot out;if(!valid_pool(p))return out;int64_t now=esp_timer_get_time();portENTER_CRITICAL(&mux);auto&s=ps[p];out={s.work,s.squared,(now-boot)/1e6,s.accepted,s.rejected,s.missed,s.failed};portEXIT_CRITICAL(&mux);return out;}
+bool benchmark_running(){portENTER_CRITICAL(&mux);bool on=trial.state==1;portEXIT_CRITICAL(&mux);return on;}
 void start(){boot=esp_timer_get_time();nvs_handle_t h;if(nvs_open("af_hunter",NVS_READONLY,&h)==ESP_OK){Candidate c;size_t n=sizeof(c);if(nvs_get_blob(h,"candidate",&c,&n)==ESP_OK&&n==sizeof(c)&&c.version==2&&c.btc<=1&&c.state<=7&&valid_pool(c.pool)){c.hash[64]=0;if(!hash_ok(c.hash))c.hash[0]=0;if(c.state==1||c.state==2)c.state=6;last=c;}nvs_close(h);}task_ok=xTaskCreate(task,"btc_hunter",4096,nullptr,2,nullptr)==pdPASS;if(!task_ok)ESP_LOGE("hunter","task start failed");}
 void job_sent(int p,uint32_t gen,int64_t received,bool clean){if(!valid_pool(p)||!clean||received<=0)return;int64_t us=esp_timer_get_time()-received;if(us<0||us>60000000)return;uint32_t ms=us/1000;portENTER_CRITICAL(&mux);auto &m=ps[p];if(!m.gen_valid||m.gen!=gen){m.gen_valid=true;m.gen=gen;m.clean_ms=m.clean_n?(m.clean_ms*7+ms)/8:ms;m.clean_n++;if(ms>m.max_ms)m.max_ms=ms;}portEXIT_CRITICAL(&mux);}
 void submitted(int p,uint32_t id,double diff,bool candidate,const char *hash,bool btc){if(!valid_pool(p))return;int64_t now=esp_timer_get_time();portENTER_CRITICAL(&mux);auto &m=ps[p];int victim=-1;
@@ -78,7 +80,7 @@ void sent(int p,uint32_t id,bool ok){if(!valid_pool(p))return;portENTER_CRITICAL
  // An ACK may arrive on the reader task before send_line returns. In that
  // case reply() already owns the outcome; do not overwrite it or count failure.
  if(pending&&candidate_live&&last.pool==p&&last.id==id&&last.state==1){last.state=ok?2:5;dirty=true;persisted=false;if(!ok)candidate_live=false;}portEXIT_CRITICAL(&mux);}
-double reply(int p,uint32_t id,bool ok,bool *matched){if(matched)*matched=false;if(!valid_pool(p))return 0;double credited=0;bool candidate_reply=false;char hash[65]={};portENTER_CRITICAL(&mux);auto &m=ps[p];bool found=false;for(auto &r:m.pending)if(r.valid&&r.id==id){found=true;if(ok){m.accepted++;m.work+=r.diff;credited=r.diff;if(r.btc){m.btc_work+=r.diff;m.btc_accepted++;}}else m.rejected++;
+double reply(int p,uint32_t id,bool ok,bool *matched){if(matched)*matched=false;if(!valid_pool(p))return 0;double credited=0;bool candidate_reply=false;char hash[65]={};portENTER_CRITICAL(&mux);auto &m=ps[p];bool found=false;for(auto &r:m.pending)if(r.valid&&r.id==id){found=true;if(ok){m.accepted++;m.work+=r.diff;m.squared+=r.diff*r.diff;credited=r.diff;if(r.btc){m.btc_work+=r.diff;m.btc_accepted++;}}else m.rejected++;
  if(r.trial_id&&r.trial_id==trial.id&&r.stage<STAGES&&(trial.state==1||trial.state==2)){auto s=r.stage;
   if(r.measured){if(ok){trial.work[s]+=r.diff;trial.work2[s]+=r.diff*r.diff;trial.replies[s]++;if(trial.elapsed[s]>0)trial.rate[s]=hunter_math::ghs(trial.work[s],trial.elapsed[s]);}else trial.rejected[s]++;}
   else {if(ok)trial.warm_replies[s]++;else trial.warm_rejected[s]++;}

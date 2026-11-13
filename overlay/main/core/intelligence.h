@@ -3,6 +3,7 @@
 #include "esp_http_server.h"
 namespace intel {
 void start();
+bool stable_point(uint16_t &f,uint16_t &mv,float &ghs);
 // Runtime floor only. Does not change saved fan settings or override manual mode.
 float fan_floor();
 // Called ONLY by the original tuner, on an already failed locked window.

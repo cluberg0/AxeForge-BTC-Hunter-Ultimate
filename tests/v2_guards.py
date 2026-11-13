@@ -14,6 +14,7 @@ constexpr int GOAL_POWER_CAP=1;
 struct Settings{int tune_goal=1;float power_cap_w=30;};static Settings cfg;
 namespace settings{Settings&get(){return cfg;}}
 namespace gates{float max_power(){return 40;}}
+namespace turbo{bool active(){return false;}float power_budget(){return 25;}}
 int httpd_resp_send_err(void*,int v,const char*){return v;}
 '''+ceiling+r'''
 static int writes=0;

@@ -1004,6 +1004,203 @@
           }
         }
       }
+    },
+    "/api/turbo": {
+      "get": {
+        "summary": "Manual Turbo session and expanded silicon map; never starts experiment",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Stock800 default; request30W is derated to<=25W on estimated Gamma input; map does not auto-arm. State0off,1queued,2measuring,3holding,4ended,5stopping.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "available",
+                    "armed",
+                    "state",
+                    "maxFreq",
+                    "requestedPower",
+                    "effectivePower",
+                    "voltageLimit",
+                    "reason",
+                    "powerEstimated",
+                    "persisted",
+                    "points"
+                  ],
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "armed": {
+                      "type": "boolean"
+                    },
+                    "state": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "maxFreq": {
+                      "type": "integer",
+                      "minimum": 800,
+                      "maximum": 1000
+                    },
+                    "requestedPower": {
+                      "type": "integer",
+                      "minimum": 18,
+                      "maximum": 30
+                    },
+                    "effectivePower": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 27
+                    },
+                    "voltageLimit": {
+                      "type": "integer",
+                      "enum": [
+                        1300
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "powerEstimated": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "persisted": {
+                      "type": "boolean"
+                    },
+                    "points": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "watts",
+                          "asicGHs",
+                          "acceptedGHs",
+                          "maxAsicC",
+                          "maxVrmC",
+                          "minVin",
+                          "frequency",
+                          "millivolts",
+                          "time",
+                          "powerCap",
+                          "accepted"
+                        ],
+                        "properties": {
+                          "watts": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "asicGHs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "acceptedGHs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "maxAsicC": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "maxVrmC": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "minVin": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "frequency": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "millivolts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "time": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "powerCap": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "accepted": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Explicit TURBO1000 request or stop, executed only by stock tuner task",
+        "security": [
+          {
+            "csrf": [],
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "confirm": {
+                    "type": "string"
+                  },
+                  "maxFreq": {
+                    "type": "integer",
+                    "minimum": 800,
+                    "maximum": 1000,
+                    "multipleOf": 25
+                  },
+                  "powerLimit": {
+                    "type": "integer",
+                    "minimum": 18,
+                    "maximum": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued; no direct frequency write. Activation never persisted."
+          },
+          "400": {
+            "description": "Confirmation/range/stability/power/session preconditions refused"
+          },
+          "500": {
+            "description": "Resource failure; no activation"
+          }
+        }
+      }
     }
   }
 }
