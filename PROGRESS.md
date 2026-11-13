@@ -10,4 +10,4 @@
 
 Уточнение: legacy806.25MHz поддерживается приблизительно807.14, это не unsupported PLL. Предположение исправлено differential test.
 
-Осталось: актуализировать release docs/metadata, контрольные суммы и упаковка полного source/release с backup2.0. Никакого hardware testing/performance claim; устройство не прошивалось.
+Завершено: актуализированы README/CHANGELOG/TEST-REPORT/HARDWARE-TEST-PLAN/INSTALL-IPHONE и build-metadata; полный source/release ZIP с backup2.0 прошёл CRC и сверку вложенных BIN. Суммы SHA проверены hashlib/sha256sum/OpenSSL, source manifest совпадает; UI4-stage reproducible. Код3ebdc22, полный release в dist/turbo. Никакого hardware testing/performance claim; устройство не прошивалось.

@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Package the verified2.0 app, rollback app, GPL source and validation evidence."""
+"""Package verified TURBO1000, rollback2.0, GPL source and validation evidence."""
 from pathlib import Path
 import hashlib
+import json
 import shutil
+import subprocess
 import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from verify_image import verify
-OUT=ROOT/'dist/v2'
-APP=OUT/'axeforge-gamma-BTC-HUNTER-ultimate-2.0.bin'
+OUT=ROOT/'dist/turbo'
+APP=OUT/'axeforge-gamma-BTC-HUNTER-ultimate-2.0-TURBO1000.bin'
 meta=verify(APP.read_bytes())
 listed=(OUT/'SHA256SUMS.txt').read_text().split()[0]
 assert meta['sha256']==listed
-backup=OUT/'backup/axeforge-gamma-BTC-HUNTER-ultimate.bin'
+current=json.loads(subprocess.check_output([sys.executable,str(ROOT/'scripts/source_manifest.py'),str(ROOT/'upstream')],text=True))
+assert current==json.loads((ROOT/'reports/build-inputs.before.json').read_text())==json.loads((ROOT/'reports/build-inputs.after.json').read_text()),'Sources differ from compiled image'
+backup=OUT/'backup/axeforge-gamma-BTC-HUNTER-ultimate-2.0.bin'
 assert hashlib.sha256(backup.read_bytes()).hexdigest()==(backup.parent/'SHA256SUMS.txt').read_text().split()[0]
 for name in ['README.md','LICENSE','CHANGELOG.md','TEST-REPORT.md','INSTALL-IPHONE.md','HARDWARE-TEST-PLAN.md','POOL-ARCHITECTURE.md']:
     shutil.copy2(ROOT/name,OUT/name)
@@ -25,11 +29,11 @@ shutil.copy2(ROOT/'upstream/build_gamma/esp-idf/main/board/core/board_config.h',
 (OUT/'reports').mkdir(exist_ok=True)
 for name in ['image-info.txt','image-verification.txt','size.txt','target-stack-usage.txt','build-inputs.before.json','build-inputs.after.json']:
     shutil.copy2(ROOT/'reports'/name,OUT/'reports'/name)
-for name in ['TESTS.log','BUILD.log','REPRO.log','browser-chromium-final.log','browser-webkit-final.log','build-metadata.json','identical-counter-comparison.log','COMPETITOR-REVIEW.md','competitor-evidence.json']:
-    shutil.copy2(ROOT/'reports/v2'/name,OUT/'reports'/name)
+for name in ['TESTS.log','BUILD.log','REPRO.log','browser-chromium-final.log','browser-webkit-final.log','build-metadata.json']:
+    shutil.copy2(ROOT/'reports/turbo'/name,OUT/'reports'/name)
 shutil.copytree(ROOT/'dist/screenshots',OUT/'screenshots',dirs_exist_ok=True)
-source=OUT/'AxeForge-BTC-HUNTER-ULTIMATE-2.0-source.zip'
-release=OUT/'AxeForge-BTC-HUNTER-ULTIMATE-2.0-release.zip'
+source=OUT/'AxeForge-BTC-HUNTER-ULTIMATE-2.0-TURBO1000-source.zip'
+release=OUT/'AxeForge-BTC-HUNTER-ULTIMATE-2.0-TURBO1000-release.zip'
 with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED,compresslevel=6)as z:
     for p in ROOT.rglob('*'):
         if not p.is_file():continue

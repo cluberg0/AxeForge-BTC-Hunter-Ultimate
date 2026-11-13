@@ -1,0 +1,5 @@
+PASS: package_release.py exit0
+PASS: ZIP CRC for full source and release
+PASS: packaged OTA digest equals SHA256SUMS.txt
+PASS: backup2.0 digest equals its SHA256SUMS.txt
+PASS: current upstream source manifest equals both build manifests

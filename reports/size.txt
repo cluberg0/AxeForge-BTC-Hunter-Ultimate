@@ -2,7 +2,7 @@ Executing action: size
 Running ninja in directory /workspace/axeforge/upstream/build_gamma
 Executing "ninja all"...
 [1/4] cd /workspace/axeforge/upstream/build_gamma/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /workspace/axeforge/upstream/build_gamma/partition_table/partition-table.bin /workspace/axeforge/upstream/build_gamma/axeforge.bin
-axeforge.bin binary size 0x1d1420 bytes. Smallest app partition is 0x400000 bytes. 0x22ebe0 bytes (55%) free.
+axeforge.bin binary size 0x1d5fd0 bytes. Smallest app partition is 0x400000 bytes. 0x22a030 bytes (54%) free.
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /workspace/axeforge/upstream/build_gamma/bootloader/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
 Bootloader binary size 0x5490 bytes. 0x2b70 bytes (34%) free.
@@ -16,16 +16,16 @@ Executing "ninja size"...
 ┃ Memory            ┃              ┃          ┃                ┃               ┃
 ┃ Type/Section      ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
 ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
-│ Flash Code        │      1238032 │          │                │               │
-│    .text          │      1238032 │          │                │               │
-│ Flash Data        │       562244 │          │                │               │
-│    .rodata        │       537112 │          │                │               │
+│ Flash Code        │      1248240 │          │                │               │
+│    .text          │      1248240 │          │                │               │
+│ Flash Data        │       570820 │          │                │               │
+│    .rodata        │       545688 │          │                │               │
 │    .bss           │        24876 │          │                │               │
 │    .appdesc       │          256 │          │                │               │
-│ DIRAM             │       176683 │     51.7 │         165077 │        341760 │
+│ DIRAM             │       177563 │    51.96 │         164197 │        341760 │
 │    .text          │        81319 │    23.79 │                │               │
-│    .bss           │        62872 │     18.4 │                │               │
-│    .data          │        32492 │     9.51 │                │               │
+│    .bss           │        63160 │    18.48 │                │               │
+│    .data          │        33084 │     9.68 │                │               │
 │ IRAM              │        16383 │    99.99 │              1 │         16384 │
 │    .text          │        15356 │    93.73 │                │               │
 │    .vectors       │         1027 │     6.27 │                │               │
@@ -34,7 +34,7 @@ Executing "ninja size"...
 │ RTC FAST          │           24 │     0.29 │           8168 │          8192 │
 │    .rtc_reserved  │           24 │     0.29 │                │               │
 └───────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
-Total image size: 1905594 bytes (.bin may be padded larger)
+Total image size: 1924970 bytes (.bin may be padded larger)
 Note: The reported total sizes may be smaller than those in the technical 
 reference manual due to reserved memory and application configuration. The total
 flash size available for the application is not included by default, as it 

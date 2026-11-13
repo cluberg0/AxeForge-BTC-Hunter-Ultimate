@@ -2,7 +2,7 @@ name: Build Gamma BTC Hunter
 on:
   workflow_dispatch:
   push:
-    paths: ['overlay/**', 'scripts/**', 'tests/**', '*.py', '*.patch', '.github/workflows/build.yml']
+    paths: ['overlay/**', 'scripts/**', 'tests/**', '*.py', '*.inc', '*.patch', '.github/workflows/build.yml']
 permissions:
   contents: read
 jobs:
