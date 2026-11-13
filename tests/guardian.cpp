@@ -21,6 +21,7 @@ static size_t read_pos=0,read_chunk=1024;
 static int64_t read_delay=0;
 static bool disable_during_read=false,replace_during_read=false;
 static bool config_held=false;
+static unsigned config_writes=0;static int task_steps=0;static bool run_worker=false;struct TaskExit{};
 int64_t esp_timer_get_time(){return now_us;}
 namespace wifi {bool connected(){return wifi_on;}}
 namespace hunter {bool candidate_snapshot(char hash[65],int &pool){if(!candidate_available)return false;memcpy(hash,candidate_hash.c_str(),65);pool=0;return true;}}
@@ -42,11 +43,11 @@ int esp_http_client_cleanup(esp_http_client_handle_t){cleanups++;return ESP_OK;}
 SemaphoreHandle_t xSemaphoreCreateMutex(){return reinterpret_cast<void*>(1);}
 int xSemaphoreTake(SemaphoreHandle_t,unsigned){if(config_held)return 0;config_held=true;return pdTRUE;}
 int xSemaphoreGive(SemaphoreHandle_t){assert(config_held);config_held=false;return pdTRUE;}
-void vTaskDelay(unsigned){}
+void vTaskDelay(unsigned){if(run_worker&&++task_steps>1)throw TaskExit{};}
 int xTaskCreatePinnedToCoreWithCaps(void(*)(void*),const char*,unsigned stack,void*,unsigned,void*,int,unsigned cap){assert(stack==8192&&cap==MALLOC_CAP_SPIRAM);return task_success?pdPASS:0;}
 int nvs_open(const char*ns,int,nvs_handle_t*h){assert(!strcmp(ns,"af_guardian"));*h=1;return ESP_OK;}
 int nvs_get_blob(nvs_handle_t,const char*,void*p,size_t*n){if(persisted.size()!=*n)return ESP_FAIL;memcpy(p,persisted.data(),*n);return ESP_OK;}
-int nvs_set_blob(nvs_handle_t,const char*,const void*p,size_t n){if(nvs_fail)return ESP_FAIL;auto b=static_cast<const unsigned char*>(p);persisted={b,b+n};return ESP_OK;}
+int nvs_set_blob(nvs_handle_t,const char*,const void*p,size_t n){config_writes++;if(nvs_fail)return ESP_FAIL;auto b=static_cast<const unsigned char*>(p);persisted={b,b+n};return ESP_OK;}
 int nvs_commit(nvs_handle_t){return nvs_fail?ESP_FAIL:ESP_OK;}
 void nvs_close(nvs_handle_t){}
 static void next_tick(){now_us+=61000000;guardian::tick();}
@@ -79,6 +80,8 @@ int main(){
  request_body="{\"enabled\":0}";httpd_req_t invalid{int(request_body.size())};assert(guardian::set(&invalid)==400);
  guardian::task_ok=false;assert(toggle(false)==500);guardian::task_ok=true;
  request_body=std::string(17,'[')+std::string(17,']');httpd_req_t deep{int(request_body.size())};assert(guardian::set(&deep)==400);
+ unsigned before_writes=config_writes;assert(toggle(true)==0&&config_writes==before_writes);
+ guardian::requested=false;unsigned before_http=http_calls;run_worker=true;task_steps=0;try{guardian::task(nullptr);}catch(TaskExit&){}run_worker=false;assert(http_calls==before_http);
  persisted={1,2};guardian::status=guardian::Observation{};guardian::start();assert(!guardian::status.enabled);
  persisted={1,1};task_success=false;guardian::start();assert(!guardian::task_ok&&guardian::status.enabled&&std::string(guardian::status.error)=="task_unavailable");
  httpd_req_t req{};assert(guardian::get(&req)==0);cJSON*j=cJSON_Parse(response.c_str());assert(j);cJSON_Delete(j);

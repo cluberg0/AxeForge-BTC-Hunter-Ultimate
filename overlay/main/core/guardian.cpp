@@ -15,6 +15,7 @@
 #include "freertos/task.h"
 #include "nvs.h"
 #include <cmath>
+#include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -38,6 +39,7 @@ Observation status;
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 SemaphoreHandle_t config_lock = nullptr;
 bool task_ok = false;
+std::atomic<bool> requested{false};
 uint32_t epoch = 0;
 int64_t next_query = 0, window_start = 0;
 
@@ -184,7 +186,7 @@ void task(void *)
 {
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(5000));
-        tick();
+        if(requested.exchange(false)) tick();
     }
 }
 }
@@ -249,13 +251,16 @@ esp_err_t set(httpd_req_t *req)
     if (xSemaphoreTake(config_lock, pdMS_TO_TICKS(100)) != pdTRUE)
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "settings busy");
     nvs_handle_t handle;
-    bool good = false;
-    if (nvs_open("af_guardian", NVS_READWRITE, &handle) == ESP_OK) {
+    portENTER_CRITICAL(&mux);
+    const bool changed=status.enabled!=enabled;
+    portEXIT_CRITICAL(&mux);
+    bool good = !changed;
+    if (changed && nvs_open("af_guardian", NVS_READWRITE, &handle) == ESP_OK) {
         uint8_t saved[2] = {1, uint8_t(enabled)};
         good = nvs_set_blob(handle, "config", saved, sizeof(saved)) == ESP_OK && nvs_commit(handle) == ESP_OK;
         nvs_close(handle);
     }
-    if (good) {
+    if (good && changed) {
         portENTER_CRITICAL(&mux);
         ++epoch;
         status = Observation{};
@@ -266,6 +271,7 @@ esp_err_t set(httpd_req_t *req)
     }
     xSemaphoreGive(config_lock);
     if (!good) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "settings write failed");
+    if(enabled)requested.store(true); // one explicit request; never automatic explorer polling
     return httpd_resp_sendstr(req, "OK");
 }
 }

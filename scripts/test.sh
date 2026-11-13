@@ -24,6 +24,14 @@ g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-
 "$T/uart_rx"
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Itests/guardian-stubs -Itests/stubs -Ioverlay/main -Iupstream/main -I/usr/include/cjson tests/guardian.cpp -lcjson -o "$T/guardian"
 AXEFORGE_API_JSON=1 "$T/guardian" | tee reports/native-api/guardian.log
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Ioverlay/main tests/net_policy.cpp -o "$T/net_policy"
+"$T/net_policy"
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Itests/network-stubs -Itests/guardian-stubs -Itests/stubs -Ioverlay/main -Iupstream/main tests/net_health.cpp -lcjson -o "$T/net_health"
+AXEFORGE_API_JSON=1 "$T/net_health" | tee reports/native-api/net_health.log
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Itests/clock-stubs -Itests/stubs -Ioverlay/main -Iupstream/main -Iupstream/main/net tests/clock.cpp -o "$T/clock"
+"$T/clock"
+python3 tests/counter_actual.py
+python3 tests/v2_guards.py
 python3 tests/image.py
 python3 tests/target_reference.py
 if [ -d upstream ]; then python3 scripts/check_native_api.py --json-dir reports/native-api; fi

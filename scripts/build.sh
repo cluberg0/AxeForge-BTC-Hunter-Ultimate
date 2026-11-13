@@ -32,6 +32,6 @@ for symbol in ['hunter::start()', 'intel::start()', 'guardian::start()', 'hunter
     assert symbol in s, symbol
 PYTHON
 # Export only the app after every build/image check has succeeded.
-mkdir -p dist
-cp upstream/build_gamma/axeforge.bin dist/axeforge-gamma-BTC-HUNTER-ultimate.bin
-(cd dist && sha256sum axeforge-gamma-BTC-HUNTER-ultimate.bin > SHA256SUMS.txt)
+mkdir -p dist/v2
+cp upstream/build_gamma/axeforge.bin dist/v2/axeforge-gamma-BTC-HUNTER-ultimate-2.0.bin
+(cd dist/v2 && sha256sum axeforge-gamma-BTC-HUNTER-ultimate-2.0.bin > SHA256SUMS.txt)

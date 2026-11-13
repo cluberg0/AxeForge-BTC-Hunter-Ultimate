@@ -1,0 +1,324 @@
+{
+  "observed": "2026-11-12",
+  "method": "Read selected current public source files through GitHub connector. No competitor implementation copied; compare concepts and pinned source lines.",
+  "repos": [
+    {
+      "repo": "bitaxeorg/ESP-Miner",
+      "commit": "e3cfbb3b124585cf5e45a4d4842422cccee69b72",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "components/asic/bm_hashrate.c",
+          "url": "https://github.com/bitaxeorg/ESP-Miner/blob/e3cfbb3b124585cf5e45a4d4842422cccee69b72/components/asic/bm_hashrate.c",
+          "characters": 372,
+          "evidence": [
+            {
+              "line": 5,
+              "text": "float bm_hash_counter_to_ghs(uint64_t duration_us, uint32_t counter)"
+            }
+          ]
+        },
+        {
+          "path": "components/stratum/stratum_socket.c",
+          "url": "https://github.com/bitaxeorg/ESP-Miner/blob/e3cfbb3b124585cf5e45a4d4842422cccee69b72/components/stratum/stratum_socket.c",
+          "characters": 7660,
+          "evidence": [
+            {
+              "line": 167,
+              "text": "// Keepalive"
+            },
+            {
+              "line": 168,
+              "text": "int keepalive = 1;"
+            },
+            {
+              "line": 169,
+              "text": "if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {"
+            },
+            {
+              "line": 170,
+              "text": "ESP_LOGE(TAG, \"Failed to set SO_KEEPALIVE\");"
+            },
+            {
+              "line": 172,
+              "text": "int keepidle = 60;  // seconds before sending keepalive probes"
+            },
+            {
+              "line": 173,
+              "text": "int keepintvl = 10; // seconds between keepalive probes"
+            },
+            {
+              "line": 174,
+              "text": "int keepcnt = 3;    // number of keepalive probes before dropping"
+            },
+            {
+              "line": 175,
+              "text": "if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0) {"
+            },
+            {
+              "line": 176,
+              "text": "ESP_LOGE(TAG, \"Failed to set TCP_KEEPIDLE\");"
+            },
+            {
+              "line": 178,
+              "text": "if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0) {"
+            },
+            {
+              "line": 179,
+              "text": "ESP_LOGE(TAG, \"Failed to set TCP_KEEPINTVL\");"
+            },
+            {
+              "line": 181,
+              "text": "if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) < 0) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "IsSasoriDev/AxeForge",
+      "commit": "e84c651c36a4b5f91c537577704245ded032592d",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "main/core/selftest.cpp",
+          "url": "https://github.com/IsSasoriDev/AxeForge/blob/e84c651c36a4b5f91c537577704245ded032592d/main/core/selftest.cpp",
+          "characters": 6007,
+          "evidence": [
+            {
+              "line": 1,
+              "text": "#include \"selftest.h\""
+            },
+            {
+              "line": 16,
+              "text": "static const char *TAG = \"selftest\";"
+            },
+            {
+              "line": 120,
+              "text": "namespace selftest {"
+            },
+            {
+              "line": 133,
+              "text": "if (xTaskCreateWithCaps(task, \"selftest\", 4096, NULL, 4, NULL, MALLOC_CAP_SPIRAM) != pdPASS) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "heliospool/HexOS",
+      "commit": "cc3b65f72027143be19370501a7c23610e367ed0",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "components/stratum/stratum_api.c",
+          "url": "https://github.com/heliospool/HexOS/blob/cc3b65f72027143be19370501a7c23610e367ed0/components/stratum/stratum_api.c",
+          "characters": 20136,
+          "evidence": [
+            {
+              "line": 23,
+              "text": "#define TRANSPORT_TIMEOUT_MS 5000"
+            },
+            {
+              "line": 151,
+              "text": "nbytes = esp_transport_read(transport, recv_buffer, BUFFER_SIZE - 1, TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 451,
+              "text": "return esp_transport_write(transport, subscribe_msg, strlen(subscribe_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 462,
+              "text": "return esp_transport_write(transport, difficulty_msg, strlen(difficulty_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 473,
+              "text": "return esp_transport_write(transport, extranonce_msg, strlen(extranonce_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 484,
+              "text": "return esp_transport_write(transport, authorize_msg, strlen(authorize_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 495,
+              "text": "return esp_transport_write(transport, pong_msg, strlen(pong_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 516,
+              "text": "int ret = esp_transport_write(transport, submit_msg, strlen(submit_msg), TRANSPORT_TIMEOUT_MS);"
+            },
+            {
+              "line": 531,
+              "text": "return esp_transport_write(transport, configure_msg, strlen(configure_msg), TRANSPORT_TIMEOUT_MS);"
+            }
+          ]
+        },
+        {
+          "path": "components/asic/bm1370.c",
+          "url": "https://github.com/heliospool/HexOS/blob/cc3b65f72027143be19370501a7c23610e367ed0/components/asic/bm1370.c",
+          "characters": 16078,
+          "evidence": [
+            {
+              "line": 113,
+              "text": "buf[4 + data_len] = crc5(buf + 2, data_len + 2);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "DCentralTech/DCENT_OS",
+      "commit": "cbb6c5d58e911e631145e0cbd572786f8e149034",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "DCENT_OS_ESP/dcentaxe-stratum/src/client.rs",
+          "url": "https://github.com/DCentralTech/DCENT_OS/blob/cbb6c5d58e911e631145e0cbd572786f8e149034/DCENT_OS_ESP/dcentaxe-stratum/src/client.rs",
+          "characters": 156594,
+          "evidence": [
+            {
+              "line": 53,
+              "text": "/// Maximum reconnect backoff in seconds."
+            },
+            {
+              "line": 54,
+              "text": "const MAX_BACKOFF_SECS: u64 = 30;"
+            },
+            {
+              "line": 56,
+              "text": "/// Initial reconnect backoff in seconds."
+            },
+            {
+              "line": 57,
+              "text": "const INITIAL_BACKOFF_SECS: u64 = 1;"
+            },
+            {
+              "line": 230,
+              "text": "/// Current reconnect backoff in seconds."
+            },
+            {
+              "line": 231,
+              "text": "backoff_secs: u64,"
+            },
+            {
+              "line": 329,
+              "text": "backoff_secs: INITIAL_BACKOFF_SECS,"
+            },
+            {
+              "line": 515,
+              "text": "status.backoff_secs = self.backoff_secs;"
+            },
+            {
+              "line": 687,
+              "text": "/// operation. On disconnect, it reconnects with exponential backoff."
+            },
+            {
+              "line": 762,
+              "text": "self.backoff_secs = INITIAL_BACKOFF_SECS;"
+            },
+            {
+              "line": 828,
+              "text": "self.do_backoff();"
+            },
+            {
+              "line": 870,
+              "text": "self.backoff_secs = INITIAL_BACKOFF_SECS;"
+            }
+          ]
+        },
+        {
+          "path": "DCENT_OS_ESP/dcentaxe-asic/src/bm1370.rs",
+          "url": "https://github.com/DCentralTech/DCENT_OS/blob/cbb6c5d58e911e631145e0cbd572786f8e149034/DCENT_OS_ESP/dcentaxe-asic/src/bm1370.rs",
+          "characters": 37814,
+          "evidence": [
+            {
+              "line": 13,
+              "text": "use crate::crc::{crc16_false, crc5};"
+            },
+            {
+              "line": 183,
+              "text": "buf[4 + data.len()] = crc5(&buf[2..4 + data.len()]);"
+            },
+            {
+              "line": 287,
+              "text": "if crc5(&buffer[2..received]) != 0 {"
+            },
+            {
+              "line": 300,
+              "text": "// CRC5-valid CHIP_ID frames must not overflow this u8 (debug panic) or"
+            },
+            {
+              "line": 507,
+              "text": "buf[4 + data.len()] = crc5(&buf[2..4 + data.len()]);"
+            },
+            {
+              "line": 575,
+              "text": "if crc5(&rx_buf[2..11]) != 0 {"
+            },
+            {
+              "line": 715,
+              "text": "if n == 11 && crc5(&buf[2..11]) == 0 {"
+            },
+            {
+              "line": 787,
+              "text": "use crate::test_utils::with_valid_crc5;"
+            },
+            {
+              "line": 793,
+              "text": "let frame = with_valid_crc5("
+            },
+            {
+              "line": 838,
+              "text": "/// with `version_raw` and a CRC5-valid + job-flag-set final byte."
+            },
+            {
+              "line": 842,
+              "text": "with_valid_crc5("
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "shufps/ESP-Miner-NerdQAxePlus",
+      "commit": "3f738849c55029351d863a1f4b8fd407001e9ace",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "main/stratum/stratum_manager.cpp",
+          "url": "https://github.com/shufps/ESP-Miner-NerdQAxePlus/blob/3f738849c55029351d863a1f4b8fd407001e9ace/main/stratum/stratum_manager.cpp",
+          "characters": 22410,
+          "evidence": [
+            {
+              "line": 149,
+              "text": "PThreadGuard lock(m_mutex);"
+            },
+            {
+              "line": 278,
+              "text": "PThreadGuard lock(m_mutex);"
+            },
+            {
+              "line": 320,
+              "text": "// so re-entering PThreadGuard on the same non-recursive mutex would deadlock."
+            },
+            {
+              "line": 409,
+              "text": "PThreadGuard lock(m_mutex);"
+            }
+          ]
+        },
+        {
+          "path": "components/bm1397/bm1370.cpp",
+          "url": "https://github.com/shufps/ESP-Miner-NerdQAxePlus/blob/3f738849c55029351d863a1f4b8fd407001e9ace/components/bm1397/bm1370.cpp",
+          "characters": 4222,
+          "evidence": [
+            {
+              "line": 29,
+              "text": "#define REG_NONCE_TOTAL_CNT 0x8c"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

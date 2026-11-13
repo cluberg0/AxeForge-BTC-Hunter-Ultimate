@@ -3,6 +3,7 @@ from playwright.async_api import async_playwright
 root=pathlib.Path(__file__).resolve().parent.parent;ns=json.loads((root/'tests/browser-fixture.json').read_text())
 cfg=ns['cfg'];status=ns['status'];pools=ns['pools'];status['uptime']=36000
 html=(root/'overlay/main/web/index.html').read_text();writes=[];opts={'enabled':False,'restore':False,'curve':[50,55,75,100]};fail=False;hunter_fail=False;http_fail={};auth_required=False;login_fail=False;requests=[];hunter_trial={"state":0,"stage":0,"phase":"idle","totalStages":6,"round":1,"intervalMs":500,"warmupSeconds":300,"measurementSeconds":1800,"elapsed":0,"rates":[0,0,0],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0]};guardian={'enabled':False,'taskOk':True,'state':5,'hash':'','checked':0,'height':0,'inBestChain':False,'error':''}
+network={'version':2,'utcOffsetMinutes':600,'freeInternal':100000,'minimumInternal':90000,'activePool':0,'weatherPolling':False,'mempoolPolling':False,'pools':[{'reconnects':0,'connectErrors':0,'readErrors':0,'writeErrors':0} for _ in range(4)]}
 async def main():
  global fail,hunter_fail,auth_required,login_fail
  async with async_playwright() as p:
@@ -22,11 +23,13 @@ async def main():
      opts.update(d)
     if path=='/api/settings':cfg.update(d)
     if path=='/api/guardian':guardian.update(d)
+    if path=='/api/network':network.update(d)
     if path=='/api/hunter':
      if hunter_fail:return {'status':400,'body':'not stable'}
      hunter_trial['state']=1 if d.get('start') else 3;hunter_trial['phase']='warmup' if d.get('start') else 'aborted'
     return {'status':200,'body':'OK'}
    if path=='/api/guardian':obj=guardian
+   elif path=='/api/network':obj=network
    elif path=='/api/hunter':
     obj={'native':True,'taskOk':True,'seconds':3600,'pools':[{'work':1337*900,'btcWork':1337*900,'btcAccepted':900,'accepted':900,'rejected':1,'missing':0,'failed':0,'cleanN':10,'cleanMs':40,'cleanMax':100,'connectedSeconds':3500,'disconnectedSeconds':60,'observedSeconds':3560,'unobservedSeconds':40}]+[{'work':0,'btcWork':0,'btcAccepted':0,'accepted':0,'rejected':0,'missing':0,'failed':0,'cleanN':0,'cleanMs':0,'cleanMax':0} for _ in range(3)],'candidate':{'state':3,'pool':0,'hash':'000000000000000000000000000000000000000000000000000000000000abcd','persisted':True},'trial':hunter_trial}
    elif path=='/api/intelligence':
@@ -39,6 +42,7 @@ async def main():
   pre="""<script>window.mem={};Object.defineProperty(window,'localStorage',{value:{getItem:k=>mem[k]??null,setItem:(k,v)=>mem[k]=String(v),removeItem:k=>delete mem[k]}});window.fetch=async(u,o={})=>{const r=await mockApi({path:String(u),method:o.method||'GET',body:o.body,headers:o.headers||{}});return new Response(r.body,{status:r.status,headers:{'content-type':'application/json'}})};history.replaceState=()=>{};</script>"""
   await page.route('http://axeforge.test/',lambda route:route.fulfill(status=200,content_type='text/html',body=html.replace('<head>','<head>'+pre,1)));await page.goto('http://axeforge.test/');await page.wait_for_function('typeof a10info!=="undefined" && a10info && cfgReady && !a10busy && P.pools.length===4 && hunterData && !hunterBusy && guardianData && !guardianBusy',timeout=15000)
   assert not writes, writes;assert not errors,errors
+  await page.evaluate('tab("clock")');await page.locator('#v2clockinput').fill('0');await page.locator('[onclick="v2clockSave()"]').click();await page.wait_for_function('v2net&&v2net.utcOffsetMinutes===0');assert writes[-1]==('/api/network',{'utcOffsetMinutes':0});writes.clear();await page.evaluate('tab("dash")')
   assert 'Принят пулом; наблюдение сети отдельно' in await page.locator('#huntercandidate').inner_text()
   assert await page.locator('#odday').inner_text()!='1 из 5,000,000'
   assert '900 / 1' in await page.locator('#hunterstats').inner_text()
@@ -67,7 +71,8 @@ async def main():
   n=len(writes);await page.evaluate('Promise.all([a10save(),a10save()])');assert len(writes)==n+1
   fail=True;await page.locator('#a8fanbtn').click();await page.wait_for_timeout(200);assert opts['enabled'];fail=False
   await page.evaluate('tab("dash")');await page.locator('#a8recall').click();assert await page.locator('#tuning [name=freq]').input_value()=='786';assert await page.locator('#tuning [name=pcap]').input_value()=='25'
-  n=len(writes);await page.locator('#tuning .prf button').last.click();assert await page.locator('#tuning [name=pcap]').input_value()=='30';assert len(writes)==n
+  n=len(writes);assert await page.locator('#v2turbo').is_disabled();await page.locator('#tuning .prf button').nth(2).click();assert await page.locator('#tuning [name=pcap]').input_value()=='25';assert len(writes)==n
+  await page.evaluate('v2render(S)');assert 'Network Guardian' in await page.locator('#v2network').inner_text();assert await page.locator('#v2graph path').count()==2
   for w in [320,375,390,430,768]:
    await page.set_viewport_size({'width':w,'height':844})
    for t in ['dash','pools','tuning','display','clock','network','system']:
@@ -129,6 +134,6 @@ async def main():
   await page.evaluate('a10cache={};tab("dash");a8draw()');assert await page.locator('#a8chart [data-a8line]').count()==0
   assert 'Нет замеров' in await page.locator('#a8chart').text_content()
   assert not errors,errors
-  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profile 30 W, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors')
+  print('PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profiles18/22/25W and blocked TURBO, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors')
   await b.close()
 asyncio.run(main())

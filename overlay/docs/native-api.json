@@ -811,6 +811,199 @@
           }
         }
       }
+    },
+    "/api/network": {
+      "get": {
+        "summary": "Event-driven network diagnostics; no sockets or requests from GET",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Since first connection attempt per slot. Slot totals can include changed hosts; TCP connectivity does not establish Stratum job readiness. Processing time measures CPU handler latency, not ASIC hashing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "weatherPolling",
+                    "mempoolPolling",
+                    "version",
+                    "utcOffsetMinutes",
+                    "activePool",
+                    "freeInternal",
+                    "minimumInternal",
+                    "pools"
+                  ],
+                  "properties": {
+                    "weatherPolling": {
+                      "type": "boolean"
+                    },
+                    "mempoolPolling": {
+                      "type": "boolean"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "enum": [
+                        2
+                      ]
+                    },
+                    "utcOffsetMinutes": {
+                      "type": "integer",
+                      "minimum": -720,
+                      "maximum": 840
+                    },
+                    "activePool": {
+                      "type": "integer",
+                      "minimum": -1,
+                      "maximum": 3
+                    },
+                    "freeInternal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minimumInternal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "pools": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "slot",
+                          "attempts",
+                          "reconnects",
+                          "rxBytes",
+                          "messages",
+                          "connectErrors",
+                          "readErrors",
+                          "writeErrors",
+                          "idleReconnects",
+                          "malformedMessages",
+                          "tcpConnected",
+                          "upSeconds",
+                          "downSeconds",
+                          "meanProcessingMs",
+                          "maxProcessingMs",
+                          "lastRxAgeSeconds"
+                        ],
+                        "properties": {
+                          "slot": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reconnects": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "rxBytes": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "messages": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "connectErrors": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "readErrors": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "writeErrors": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "idleReconnects": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "malformedMessages": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "tcpConnected": {
+                            "type": "boolean"
+                          },
+                          "upSeconds": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "downSeconds": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "meanProcessingMs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "maxProcessingMs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "lastRxAgeSeconds": {
+                            "type": "number",
+                            "minimum": -1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Manual UTC offset in separate af_clock namespace; weather stays disabled",
+        "security": [
+          {
+            "csrf": [],
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "utcOffsetMinutes"
+                ],
+                "properties": {
+                  "utcOffsetMinutes": {
+                    "type": "integer",
+                    "minimum": -720,
+                    "maximum": 840
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Offset saved"
+          },
+          "400": {
+            "description": "Invalid offset"
+          },
+          "500": {
+            "description": "NVS/mutex failure, previous offset remains"
+          }
+        }
+      }
     }
   }
 }

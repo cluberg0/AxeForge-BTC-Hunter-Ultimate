@@ -69,6 +69,7 @@ def check(source_root, json_dir=None):
     assert 'otp::session_ok(tok)' in web and 'origin_matches(v, host)' in web
     for path, methods in reference['paths'].items():
         module = path.rsplit('/', 1)[-1]
+        if module=='network': module='net_health'
         namespace = 'intel' if module == 'intelligence' else module
         source = (source_root / f'main/core/{module}.cpp').read_text()
         for method, spec in methods.items():
