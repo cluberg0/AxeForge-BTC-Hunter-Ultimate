@@ -1,3 +1,13 @@
+# Дополнение2.0 — NOT RUN на устройстве
+
+- При одинаковых786MHz/1170mV и лимите25W сравнить Ultimate1/2 минимум24ч: accepted difficulty/time, uptime, rejected/missing, температуры/ошибки/питание, min/free heap. Никакого утверждения о выигрыше по краткой удаче shares.
+- Проверить отсутствие DNS/HTTP/TLS обращений Open-Meteo/Mempool/price/update при закрытом Safari. NTP остаётся. Manual Guardian и OTA вызываются только вручную.
+- Через контролируемый локальный pool fixture: standby молчит>180s, остаётся подключён до900s; TCP blackhole обнаруживается keepalive; active silence>180s приводит к reconnect. Время зависит от TCP/OS; настоящий пул не ломать.
+- Проверить обрыв write/read, backoff2..60s, healthy reset2s, failover без задержки и30s failback, counters/API network. Не блокировать доступ к реальному найденному кандидату ради теста.
+- Проверить короткий сброс counter baseline на fixture и реальные CRC/UART/PSRAM/stack high-water; reset regression host-test не доказывает поведение BM1370.
+- ECO18/BALANCED22/BTC HUNTER25 выбираются без немедленной записи. TURBO заблокирован UI/API. Настройки30W, сохранённые ранее, остаются, но tuning ceiling25W. Не повышать нагрузку до30W для проверки кнопки.
+- OTA iPhone2.0 и откат на свой рабочий Gamma app: wallet/worker/pools/Wi-Fi сохраняются. Часы: UTC+10 вручную; backup содержит секреты, не публиковать.
+
 # Аппаратные испытания Gamma 601 — RU-FIX10 ULTIMATE
 
 Статус: **план; на физическом устройстве не выполнен**. Исполнитель отмечает для каждой строки PASS / FAIL / NOT RUN, дату, SHA-256 OTA-файла и версию платы. Host-тесты и Chromium/WebKit не заменяют эти испытания. Первый запуск и эксперименты проводятся под наблюдением.

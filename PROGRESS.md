@@ -1,11 +1,14 @@
-# BTC Hunter ULTIMATE 2.0
+# BTC HUNTER ULTIMATE2.0 — завершено
 
-База: commit237d3f7, Ultimate1.0; готовый прежний OTA сохранён в dist/v2/backup.
+- База Ultimate1.0/237d3f7, код2.0 в commits33f8709/52f1722; отдельная ветка ultimate-2.0. Дополнительные агенты не запускались.
+- Weather/Open-Meteo/Mempool/market HTTP polling отключены; NTP и manual UTC сохранены; auto external update/check off; Farm/Guardian только по запросу. Рабочие NVS settings не стирались.
+- Исправлены Stratum standby/active timeout, TCP keepalive, IO-restart backoff bypass и healthy reset;30s failback/срочный failover. Добавлена event-based сеть без новой collecting task.
+- Production counter reset теперь сбрасывает связанную error baseline. Синтетический одинаковый trace: Ultimate1 даёт 4294967247 ложныхerror units,2.0 даёт 0; ASIC 1431.656GH/s в обоих. Это не измеренный аппаратный прирост.
+- Stock tuner единственный. Новый auto ceiling25W; сохранённые18/22/25/30W настройки не стираются. TURBO30W заблокирован до hardware validation. Stock hard protections/bootloader/flash/ASIC driver неизменны.
+- Dark RU2.0 UI: real ASIC/accepted-work graph,4вкладки/13шкал/UTC/сеть;18/22/25W staging,30W blocked. Chromium+WebKit на320/375/390/430/768px PASS.
+- Host157/ASan/UBSan/API4/UART/target10007/OTA/NVS/pause/counter/reconnect/services/clock/tuner-guard PASS. Fresh apply334source files byte-equal; UI generator chain byte-equal.
+- ESP-IDF5.3.2/ESP32-S3/Gamma1BM1370 сборка, size/ELF/map/stack/image/esptool/markers/source manifest PASS, compiler warnings0.
+- Итоговый OTA 1 905 696 байт, SHA256 bb59cc8762bc1e9962c6c96b093321a5b7a9caff5834e9f35962f4c001651f28. Предыдущий OTA и SHA сохранены в dist/v2/backup.
+- TEST-REPORT/CHANGELOG/INSTALL-IPHONE/HARDWARE-TEST-PLAN/competitor evidence/исходники готовы; упаковка scripts/package_release.py.
 
-В работе: отключение native Weather/Mempool/автозапросов, NTP сохранить; Stratum standby timeout/TCP keepalive/backoff/anti-flap; диагностика; UI и 4 профиля; новые host/browser проверки; сборка ESP-IDF5.3.2 и комплект OTA.
-
-Не менять частоту/напряжение рабочего устройства, защиты, bootloader/partitions или NVS пользовательских настроек. Физического Gamma нет; агентам задачи не выдаются. Старые результаты/патчи повторно используются.
-
-Этап1: native Weather/Mempool отключены, NTP и ручной UTC сохранены; Stratum policy/diagnostics/anti-flap, единый tuner25W и UI4профиля реализованы. Host157 + новые ASan/UBSan policy/event diagnostics/NTP/counter/guards/API4 PASS. Проверки Chromium/WebKit и сборка2.0 выполняются.
-
-Этап2: устранён обход backoff при write/restart, восстановление2s после здоровой сессии; price feed и автообновления не опрашивают сеть; Guardian только по ручному запросу. Идентичный synthetic counter trace воспроизводит ложные4294967247 ошибок в Ultimate1 и0 в2.0 при одинаковыхASIC1431.656GH/s. Это функциональное сравнение, не аппаратный прирост. Host/API/ASan/UBSan PASS, clean apply334files PASS. Финальная упаковка и последний UI build выполняются.
+Ограничения: физического Gamma нет; hardware UART/power/thermal/heap/high-water/24h/real OTA/Safari и full live Stratum lifecycle NOT RUN. Нет измеренного выигрыша useful work/day. Вся критическая отправка кандидатов независима от explorer; награда не подтверждается лишьpool ACK. Удалённый GitHub Actions не запускался.

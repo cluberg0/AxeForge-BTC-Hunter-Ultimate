@@ -1,0 +1,5 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+PASS navigation, Hunter, archive, profiles
+PASS OTP and failed-save recovery
+PASS live backgrounds
+PASS: BTC Hunter stats, candidate state, explicit start/stop and server refusal; PASS: four main tabs and four system subpages via actual clicks, no horizontal overflow; PASS: native API, all graph lines, outlier, monthly range, CSV, independent toggles, refusal, staged recall, profiles18/22/25W and blocked TURBO, all original sections on five widths, OTP cancellation/network recovery, failed safeguard rollback, moving backgrounds/reduced motion/hidden pause, empty archive, six-stage Benchmark Lab/warmup/repeats/uncertainty/abort, independent Guardian opt-in and chain observation, 13 aligned physical side scales; no JS errors

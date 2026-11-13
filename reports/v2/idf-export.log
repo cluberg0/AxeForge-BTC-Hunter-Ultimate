@@ -1,0 +1,35 @@
+Setting IDF_PATH to '/workspace/toolchains/esp-idf'
+Detecting the Python interpreter
+Checking "python3" ...
+Python 3.12.14
+"python3" has been detected
+Checking Python compatibility
+Checking other ESP-IDF version.
+Adding ESP-IDF tools to PATH...
+Checking if Python packages are up to date...
+Python requirements are satisfied.
+Constraint file: /workspace/toolchains/idf-tools/espidf.constraints.v5.3.txt
+Requirement files:
+ - /workspace/toolchains/esp-idf/tools/requirements/requirements.core.txt
+Python being checked: /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python
+Added the following directories to PATH:
+  /workspace/toolchains/esp-idf/components/espcoredump
+  /workspace/toolchains/esp-idf/components/partition_table
+  /workspace/toolchains/esp-idf/components/app_update
+  /workspace/toolchains/idf-tools/tools/xtensa-esp-elf-gdb/14.2_20240403/xtensa-esp-elf-gdb/bin
+  /workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin
+  /workspace/toolchains/idf-tools/tools/riscv32-esp-elf/esp-13.2.0_20240530/riscv32-esp-elf/bin
+  /workspace/toolchains/idf-tools/tools/esp32ulp-elf/2.38_20240113/esp32ulp-elf/bin
+  /workspace/toolchains/idf-tools/tools/openocd-esp32/v0.12.0-esp32-20241016/openocd-esp32/bin
+  /workspace/toolchains/idf-tools/tools/xtensa-esp-elf-gdb/14.2_20240403/xtensa-esp-elf-gdb/bin
+  /workspace/toolchains/idf-tools/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin
+  /workspace/toolchains/idf-tools/tools/riscv32-esp-elf/esp-13.2.0_20240530/riscv32-esp-elf/bin
+  /workspace/toolchains/idf-tools/tools/esp32ulp-elf/2.38_20240113/esp32ulp-elf/bin
+  /workspace/toolchains/idf-tools/tools/openocd-esp32/v0.12.0-esp32-20241016/openocd-esp32/bin
+  /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin
+  /workspace/toolchains/esp-idf/tools
+Done! You can now compile ESP-IDF projects.
+Go to the project directory and run:
+
+  idf.py build
+

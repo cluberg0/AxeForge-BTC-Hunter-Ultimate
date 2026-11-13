@@ -1,92 +1,64 @@
 Executing action: all (aliases: build)
 Running ninja in directory /workspace/axeforge/upstream/build_gamma
 Executing "ninja all"...
-[1/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board.cpp.obj
-[2/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_suprahex.cpp.obj
-[3/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/asic/bm13xx.cpp.obj
-[4/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_bitaxe.cpp.obj
-[5/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/gates.cpp.obj
-[6/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/dust.cpp.obj
-[7/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/energy.cpp.obj
-[8/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/guardian.cpp.obj
-[9/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/logbuf.cpp.obj
-[10/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/hunter.cpp.obj
-[11/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/intelligence.cpp.obj
-[12/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/ota_guard.cpp.obj
-[13/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/psu.cpp.obj
-[14/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/monitor.cpp.obj
-[15/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/settings.cpp.obj
-[16/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/selftest.cpp.obj
-[17/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/bap.cpp.obj
-[18/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/i2c_bus.cpp.obj
-[19/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/purifier.cpp.obj
-[20/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/sensors.cpp.obj
-[21/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/ds4432u.cpp.obj
-[22/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/tuner.cpp.obj
-[23/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tmp451.cpp.obj
-[24/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
-[25/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tps53647.cpp.obj
-[26/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tps546.cpp.obj
-[27/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/payout.cpp.obj
-[28/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/stats.cpp.obj
-[29/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/miner.cpp.obj
-[30/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/work.cpp.obj
-[31/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/eth.cpp.obj
-[32/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/captive.cpp.obj
-[33/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/ble_setup.cpp.obj
-[34/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/http_util.cpp.obj
-[35/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/mempool.cpp.obj
-[36/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/notify.cpp.obj
-[37/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/fwupdate.cpp.obj
-[38/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/netping.cpp.obj
-[39/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/otp.cpp.obj
-[40/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/weather.cpp.obj
-[41/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/swarm.cpp.obj
-[42/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/price.cpp.obj
-[43/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/wifi.cpp.obj
-[44/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/layout_store.cpp.obj
-[45/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/web.cpp.obj
-[46/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/theme.cpp.obj
-[47/71] Building ASM object esp-idf/main/CMakeFiles/__idf_main.dir/__/__/index.html.S.obj
-[48/71] Linking C static library esp-idf/app_trace/libapp_trace.a
-[49/71] Linking C static library esp-idf/cmock/libcmock.a
-[50/71] Linking C static library esp-idf/esp_driver_cam/libesp_driver_cam.a
-[51/71] Linking C static library esp-idf/esp_hid/libesp_hid.a
-[52/71] Linking C static library esp-idf/esp_local_ctrl/libesp_local_ctrl.a
-[53/71] Linking C static library esp-idf/espcoredump/libespcoredump.a
-[54/71] Linking C static library esp-idf/fatfs/libfatfs.a
-[55/71] Linking C static library esp-idf/mqtt/libmqtt.a
-[56/71] Linking C static library esp-idf/nvs_sec_provider/libnvs_sec_provider.a
-[57/71] Linking C static library esp-idf/perfmon/libperfmon.a
-[58/71] Linking C static library esp-idf/spiffs/libspiffs.a
-[59/71] Linking C static library esp-idf/touch_element/libtouch_element.a
-[60/71] Linking C static library esp-idf/usb/libusb.a
-[61/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/oled.cpp.obj
-[62/71] Performing build step for 'bootloader'
-[1/3] Linking C executable bootloader.elf
-[2/3] Generating binary image from built executable
-esptool.py v4.13.0
-Creating esp32s3 image...
-Merged 2 ELF sections
-Successfully created esp32s3 image.
-Generated /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
-[3/3] cd /workspace/axeforge/upstream/build_gamma/bootloader/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
+[1/50] Performing build step for 'bootloader'
+[1/1] cd /workspace/axeforge/upstream/build_gamma/bootloader/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
 Bootloader binary size 0x5490 bytes. 0x2b70 bytes (34%) free.
-[63/71] No install step for 'bootloader'
-[64/71] Completed 'bootloader'
-[65/71] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj
-[66/71] Linking C static library esp-idf/main/libmain.a
-[67/71] Generating ld/sections.ld
-[68/71] Building C object CMakeFiles/axeforge.elf.dir/project_elf_src_esp32s3.c.obj
-[69/71] Linking CXX executable axeforge.elf
-[70/71] Generating binary image from built executable
+[2/50] No install step for 'bootloader'
+[3/50] Completed 'bootloader'
+[4/50] Generating ../../index.html.S
+[5/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board.cpp.obj
+[6/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_suprahex.cpp.obj
+[7/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_bitaxe.cpp.obj
+[8/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/dust.cpp.obj
+[9/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/gates.cpp.obj
+[10/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/energy.cpp.obj
+[11/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/asic/bm13xx.cpp.obj
+[12/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/guardian.cpp.obj
+[13/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/hunter.cpp.obj
+[14/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/monitor.cpp.obj
+[15/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/ota_guard.cpp.obj
+[16/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/net_health.cpp.obj
+[17/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/selftest.cpp.obj
+[18/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/psu.cpp.obj
+[19/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/settings.cpp.obj
+[20/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/bap.cpp.obj
+[21/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/intelligence.cpp.obj
+[22/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/i2c_bus.cpp.obj
+[23/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/sensors.cpp.obj
+[24/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tmp451.cpp.obj
+[25/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/tuner.cpp.obj
+[26/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+[27/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/stats.cpp.obj
+[28/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/ble_setup.cpp.obj
+[29/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/eth.cpp.obj
+[30/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/work.cpp.obj
+[31/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/fwupdate.cpp.obj
+[32/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/miner.cpp.obj
+[33/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/mempool.cpp.obj
+[34/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/netping.cpp.obj
+[35/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/notify.cpp.obj
+[36/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/otp.cpp.obj
+[37/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/price.cpp.obj
+[38/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/weather.cpp.obj
+[39/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/swarm.cpp.obj
+[40/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/wifi.cpp.obj
+[41/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/oled.cpp.obj
+[42/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/theme.cpp.obj
+[43/50] Building ASM object esp-idf/main/CMakeFiles/__idf_main.dir/__/__/index.html.S.obj
+[44/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/web.cpp.obj
+[45/50] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj
+[46/50] Linking C static library esp-idf/main/libmain.a
+[47/50] Generating ld/sections.ld
+[48/50] Linking CXX executable axeforge.elf
+[49/50] Generating binary image from built executable
 esptool.py v4.13.0
 Creating esp32s3 image...
 Merged 2 ELF sections
 Successfully created esp32s3 image.
 Generated /workspace/axeforge/upstream/build_gamma/axeforge.bin
-[71/71] cd /workspace/axeforge/upstream/build_gamma/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /workspace/axeforge/upstream/build_gamma/partition_table/partition-table.bin /workspace/axeforge/upstream/build_gamma/axeforge.bin
-axeforge.bin binary size 0x1d0590 bytes. Smallest app partition is 0x400000 bytes. 0x22fa70 bytes (55%) free.
+[50/50] cd /workspace/axeforge/upstream/build_gamma/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /workspace/axeforge/upstream/build_gamma/partition_table/partition-table.bin /workspace/axeforge/upstream/build_gamma/axeforge.bin
+axeforge.bin binary size 0x1d1420 bytes. Smallest app partition is 0x400000 bytes. 0x22ebe0 bytes (55%) free.
 
 Project build complete. To flash, run:
  idf.py flash

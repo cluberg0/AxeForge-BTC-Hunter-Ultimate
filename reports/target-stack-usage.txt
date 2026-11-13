@@ -38,42 +38,65 @@ core/intelligence.cpp
 /workspace/axeforge/upstream/main/core/intelligence.cpp:92:13:void {anonymous}::task(void*)	32	static
 
 core/guardian.cpp
-/workspace/axeforge/upstream/main/core/guardian.cpp:117:6:void guardian::{anonymous}::tick()	1200	static
-/workspace/axeforge/upstream/main/core/guardian.cpp:213:11:esp_err_t guardian::get(httpd_req_t*)	544	static
-/workspace/axeforge/upstream/main/core/guardian.cpp:230:11:esp_err_t guardian::set(httpd_req_t*)	144	static
-/workspace/axeforge/upstream/main/core/guardian.cpp:192:6:void guardian::start()	64	static
-/workspace/axeforge/upstream/main/core/guardian.cpp:183:6:void guardian::{anonymous}::task(void*)	32	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:119:6:void guardian::{anonymous}::tick()	1200	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:215:11:esp_err_t guardian::get(httpd_req_t*)	544	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:232:11:esp_err_t guardian::set(httpd_req_t*)	160	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:194:6:void guardian::start()	64	static
+/workspace/axeforge/upstream/main/core/guardian.cpp:185:6:void guardian::{anonymous}::task(void*)	32	static
+
+core/net_health.cpp
+/workspace/axeforge/upstream/main/core/net_health.cpp:36:11:esp_err_t net_health::get(httpd_req_t*)	768	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:44:11:esp_err_t net_health::set(httpd_req_t*)	144	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:26:6:)	80	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:28:6:void net_health::attempt(int)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:29:6:void net_health::connected(int)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:30:6:void net_health::disconnected(int)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:31:6:void net_health::received(int, uint32_t)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:32:6:void net_health::processed(int, int64_t)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:33:6:void net_health::error(int, Error)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:34:6:void net_health::selected(int)	32	static
+/workspace/axeforge/upstream/main/core/net_health.cpp:35:6:bool net_health::active(int)	32	static
+
+net/weather.cpp
+/workspace/axeforge/upstream/main/net/weather.cpp:26:6:void weather::start()	64	static
+/workspace/axeforge/upstream/main/net/weather.cpp:34:6:bool weather::local_time(tm*)	48	static
+/workspace/axeforge/upstream/main/net/weather.cpp:37:6:bool weather::set_offset_minutes(int)	48	static
+/workspace/axeforge/upstream/main/net/weather.cpp:16:6:void {anonymous}::synced(timeval*)	32	static
+/workspace/axeforge/upstream/main/net/weather.cpp:17:6:void {anonymous}::clock_task(void*)	32	static
+/workspace/axeforge/upstream/main/net/weather.cpp:33:6:void weather::refresh_now()	32	static
+/workspace/axeforge/upstream/main/net/weather.cpp:35:12:const char* weather::describe(int)	32	static
+/workspace/axeforge/upstream/main/net/weather.cpp:36:5:int weather::offset_minutes()	32	static
 
 mining/miner.cpp
-/workspace/axeforge/upstream/main/mining/miner.cpp:160:13:void job_task(void*)	2384	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:343:13:void result_task(void*)	448	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:436:13:void counter_task(void*)	208	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:282:13:void on_counter(int, uint32_t, bool)	80	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:163:13:void job_task(void*)	2384	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:348:13:void result_task(void*)	448	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:441:13:void counter_task(void*)	208	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:286:13:void on_counter(int, uint32_t, bool)	80	static
 /workspace/axeforge/upstream/main/core/hunter_math.h:14:13:bool hunter_math::meets(const uint8_t*, uint32_t)	64	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:570:7:float miner::window_stats(float*, float*)	64	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:531:6:void miner::start()	48	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:587:7:float miner::window_worst_chip_err(int*)	48	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:61:13:void invalidate_pool(int)	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:540:6:void miner::pause(bool)	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:550:6:void miner::kick()	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:555:6:void miner::forget_pool(int)	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:560:6:void miner::reset_window()	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:604:7:float miner::window_chip_ghs(int)	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:614:7:float miner::window_chip_err(int)	32	static
-/workspace/axeforge/upstream/main/mining/miner.cpp:624:1:cpp)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:575:7:float miner::window_stats(float*, float*)	64	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:536:6:void miner::start()	48	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:592:7:float miner::window_worst_chip_err(int*)	48	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:63:13:void invalidate_pool(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:545:6:void miner::pause(bool)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:555:6:void miner::kick()	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:560:6:void miner::forget_pool(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:565:6:void miner::reset_window()	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:609:7:float miner::window_chip_ghs(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:619:7:float miner::window_chip_err(int)	32	static
+/workspace/axeforge/upstream/main/mining/miner.cpp:629:1:cpp)	32	static
 
 stratum/pools.cpp
-/workspace/axeforge/upstream/main/stratum/pools.cpp:825:13:void pool_task(void*)	2144	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:530:13:constprop(Pool&, sv2_ext_job_t*)	1200	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:969:6:void pools::submit(int, const Work&, uint32_t, uint32_t, int, bool, const char*)	272	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:216:13:void on_share_result(Pool&, bool, const char*, double)	80	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:887:6:void pools::start()	64	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:919:6:bool pools::fetch_job(int, StratumJob&, JobInfo&, uint32_t*)	64	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:188:13:void publish(Pool&, StratumJob&, const char*, const char*)	48	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:300:13:bool send_frame(Pool&, const uint8_t*, int, uint32_t)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:291:13:bool send_line(Pool&, const char*, uint32_t)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:902:6:void pools::reconfigure()	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:910:6:bool pools::ready(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:951:10:uint32_t pools::generation(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:959:6:bool pools::take_clean_flag(int)	32	static
-/workspace/axeforge/upstream/main/stratum/pools.cpp:1024:1:cpp)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:841:13:void pool_task(void*)	2176	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:541:13:constprop(Pool&, sv2_ext_job_t*)	1200	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:993:6:void pools::submit(int, const Work&, uint32_t, uint32_t, int, bool, const char*)	272	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:220:13:void on_share_result(Pool&, bool, const char*, double)	80	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:910:6:void pools::start()	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:943:6:bool pools::fetch_job(int, StratumJob&, JobInfo&, uint32_t*)	64	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:192:13:void publish(Pool&, StratumJob&, const char*, const char*)	48	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:308:13:bool send_frame(Pool&, const uint8_t*, int, uint32_t)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:299:13:bool send_line(Pool&, const char*, uint32_t)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:925:6:void pools::reconfigure()	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:934:6:bool pools::ready(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:975:10:uint32_t pools::generation(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:983:6:bool pools::take_clean_flag(int)	32	static
+/workspace/axeforge/upstream/main/stratum/pools.cpp:1048:1:cpp)	32	static

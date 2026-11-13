@@ -1,61 +1,71 @@
-# BTC HUNTER ULTIMATE — TEST REPORT
+# ULTIMATE2.0 — TEST REPORT
 
-Дата: 2026-11-12 UTC. **Сборка и перечисленные программные проверки PASS. Аппаратные испытания NOT RUN.** Это полноценный скомпилированный app OTA; проверенная на реальном Gamma эксплуатационная стабильность не заявляется.
+Дата:2026-11-13 UTC. **Сборка/перечисленные программные проверки PASS. Аппаратные испытания NOT RUN.**
 
-## Артефакт и сборка
+## Сборка и образ
 
-- `axeforge-gamma-BTC-HUNTER-ultimate.bin`, версия `1.4.10-hunter-ultimate`.
-- Размер **1,901,968 байт**; штатный app-раздел 4 194 304 байт; запас 2,292,336 байт.
-- SHA-256: `7dbdeb54ac5f1706709fdc01f26109d3d3d2f1bf523d2eb4c2f89752e1e0afe8`.
-- AxeForge v1.4.10 commit `e84c651c36a4b5f91c537577704245ded032592d`; ESP-IDF **v5.3.2**, `9d7f2d69f50d1288526d4f1027108e314e8c879f`; Xtensa GCC 13.2.0_20240530, ESP32-S3.
-- `sdkconfig.defaults;sdkconfig.defaults.gamma`, `CONFIG_AF_BOARD_BITAXE_GAMMA=y`, сгенерированный `AF_NUM_ASICS=1`, BM1370, tag `AXEFORGE-BOARD:gamma;`.
-- Получен чистый checkout, применены overlay и все патчи. Побайтово совпал **331 исходный файл** с рабочим upstream: `reports/reproducibility.log`.
-- Сборка начата с `ninja -C upstream/build_gamma -t clean`; `bash scripts/build.sh` выполнен до exit 0. Обнаруженный при чистой сборке отсутствующий include настроек Guardian исправлен, сборка продолжена до успешной линковки. Ранние printf/Xtensa и esp_timer ошибки также исправлены; не обходились отключением compiler checks.
-- Итоговые build/image checks: exit 0, предупреждений компилятора в итоговых прогонах нет. `reports/ultimate-clean-build-attempt.log` сохраняет неудачную попытку; `reports/build.log` и `reports/ultimate-build-command.log` — успешное завершение.
-- Source manifest до/после сборки совпал. Проверены присутствие нативных ELF-символов, формат app ESP32-S3, app descriptor/version/board tag, сегменты, границы, XOR и appended SHA-256, отсутствие хвостовых данных. `esptool.py --chip esp32s3 image_info` PASS. Файловый SHA независимо совпал у Python hashlib, sha256sum и OpenSSL.
-- ELF/map/sdkconfig/board header, логи и полный исходник предоставляются вместе с релизом. Ни factory, ни bootloader, ни partition-table binary не предлагаются для OTA.
+- Gamma601, ESP32-S3, один BM1370. AxeForge1.4.10/e84c651, ESP-IDF**5.3.2**/9d7f2d69f50d1288526d4f1027108e314e8c879f, Xtensa GCC13.2.0_20240530.
+- `axeforge-gamma-BTC-HUNTER-ultimate-2.0.bin`, версия `1.4.10-hunter-ultimate-2.0`.
+- Размер**1,905,696байт**; stock app partition4194304; запас2,288,608байт. SHA-256:`bb59cc8762bc1e9962c6c96b093321a5b7a9caff5834e9f35962f4c001651f28`.
+- `bash scripts/build.sh` exit0; `sdkconfig.defaults;sdkconfig.defaults.gamma`; generated Gamma/BM1370/count1, limits800MHz/1300mV/ASIC68°C/VRM85°C проверены.
+- Image descriptor/version/chip/board tag/segments/bounds/XOR/appended SHA/no trailing bytes/ELF symbols/esptool image_info PASS. Отсутствуют Open-Meteo URL и Weather/Mempool/price worker symbols. Manifest source inputs до/после сборки совпал.
+- Python hashlib, sha256sum и OpenSSL дали одинаковый файловый SHA. Резервный Ultimate1.0 прошёл checksum check; он ранее программно проверен, но не является подтверждённым аппаратным recovery image.
+- Финальный build `reports/v2/BUILD.log` exit0, compiler warnings0. В предыдущих попытках исправлен отсутствующий cmath namespace; одна попытка отклонена защитой от изменения source inputs во время сборки. Непроверенные промежуточные app не экспортировались как результат.
+- Чистый pinned checkout + вся цепочка apply/patch_v2 воспроизводит**334 файла** побайтово: REPRO.log. UI генераторы prepare_ui/hunter_ui/v2_ui дают тот же итоговый HTML.
 
-## Результаты проверок
+## Проверки
 
-| Проверка | Фактический результат |
+| Проверка | Результат |
 |---|---|
-| Штатные host-тесты AxeForge | **157 checks, 0 failed**, ASan/UBSan; штатная host board fixture, не реальный Gamma |
-| Native math/intelligence/hunter | PASS, ASan/UBSan и `-Wall -Wextra -Werror`; пропуски/веса/NTP/NVS reserve и ошибки, stale sensors/counters, безопасный rollback/fan floor, task failure |
-| Stratum ledger | PASS: исходная сложность, неизвестные/повторные/поздние ACK, ACK-before-send, disconnect, timeout, send failure, защита candidate pending от ordinary bursts |
-| V1 wire | PASS, production helper + реальный cJSON: uint32 ID/границы/недопустимые значения, JSON escaping/serialization, allocation failures |
-| ASIC UART | PASS, ASan/UBSan: все разбиения кадра, back-to-back, шум, неверный CRC, каждый повреждённый payload bit, overlapping preamble. Потоки синтетические; правило CRC сверено с закреплённым официальным ESP-Miner |
-| Send/pause concurrency | PASS: извлечённый production-код, детерминированные C++ потоки, публикация Work до send, ожидание in-flight send, запрет delayed builder после pause, повторная проверка power/pool; timeout теста 15 s |
-| Target | PASS: Genesis/границы и **10 007** фиксированных/seeded random compact значений против независимой Python 256-bit integer reference, zero/sign/overflow и BTC pow-limit |
-| Benchmark Lab | PASS на симулированном времени: 6 этапов, 2 повтора каждого интервала, исключённый прогрев, sample thresholds, late-ACK attribution, abort/restore, conservative CI/repeat spread. Это не физический 3,5-часовой benchmark |
-| Guardian | PASS с HTTP/NVS/allocator fakes: default off, TLS+no redirects, 404/offline/NTP/OOM, неверный/deep/truncated/oversized JSON, read deadline, retry throttling, смена кандидата/disable race, expiry. Реальный HTTPS Genesis endpoint проверен только с Linux, не ESP32 |
-| OTA/NVS failures | PASS, production handler/branch + fakes: abandoned upload, временные stalls, OOM, dropped connection, wrong size, cleanup и отсутствие reboot/boot selection при ошибке; saved pools query/read/allocation failure без erase |
-| API | PASS штатный api_contract и 3 новых endpoint; реальный JSON host-модулей валидирован OpenAPI; штатный api_guard/Origin/CSRF/2FA wrapper сохранён |
-| JavaScript/Python/generators | PASS node syntax, py_compile, точная регенерация итогового HTML |
-| Chromium | PASS exit 0: все расширенные assertions, 320/375/390/430/768 px |
-| WebKit | PASS exit 0: те же assertions на реальном Linux WebKit engine. Host preflight обойдён после установки недостающих runtime libs; функциональные assertions не пропускались |
+| Штатный AxeForge host suite |157 checks,0failed, ASan/UBSan; стандартная host board fixture, не физический Gamma|
+| Прежние native модули |math/Hunter/Intelligence/Guardian PASS с ASan/UBSan и Wall/Wextra/Werror; сохранены ledger/target/archive/restore/benchmark/failure tests|
+| Stratum wire/ASIC UART |PASS real cJSON ID/escaping/OOM, короткий extranonce, session/ACK invariants; синтетические partial/noise/back-to-back/CRC5/duplicate frames|
+| Bitcoin target |10007 exact integer differential compact vectors + Genesis/границы/PoW limit PASS|
+| Native network policy |active180s/standby900s, TCP-independent silence policy, capped2..60s backoff, immediate failover/30s failback/session change PASS|
+| Production reconnect code |IO restart не обходит задержку, healthy session сбрасывает задержку до2s перед ожиданием, explicit config epoch skips wait PASS|
+| Network event diagnostics |real module + cJSON: reconnects, per-slot TCP up/down, RX, errors, handler mean/max latency, 64-bit>UINT32 counters, stale active selection, UTC validation/write failure PASS|
+| Production services |Farm ждёт explicit task notification; update checker/install только по запросу; price start не создаёт задачу; Guardian idle worker не делает HTTP, повторный manual request не пишет NVS PASS|
+| Clock/Weather/Mempool |реальный service код с fakes: NTP servers/init/callback, init task self-delete, weather invalid/no refresh tasks, Mempool no worker, UTC persistence/unchanged-value no-write/NVS/mutex failure PASS|
+| Hardware counter |production on_counter: uint32 wrap/reset/zero-dt/atomic reset request/error baseline/recovery; настоящие error deltas видны PASS|
+| Tuner/Settings guard |реальный power_ceiling<=25W, saved cap не переписан, explicit30W rejected before mutations, unrelated settings accepted PASS|
+| OTA/NVS/pause |production handlers/branches с allocator/socket/NVS fakes; drop/timeout/OOM/wrong size/no erase/no boot selection on error; deterministic send/pause concurrency PASS|
+| API/static checks |штатный api_contract/flasher check +4 new endpoint schemas и реальный native JSON, stock api_guard/Origin/CSRF/2FA wiring PASS; node syntax/Python compile/generator byte equality PASS|
+| Chromium/WebKit |оба exit0:320/375/390/430/768px, навигация/модалки/2FA/ошибки/backup fixture,13шкал/CSV/пропуски/анимация,18/22/25W staging/TURBO blocked, UTC save, two-series dashboard, Benchmark/Guardian PASS|
 
-Браузерные проверки включают реальные clicks четырёх вкладок/подразделов, все 13 физических цветных шкал, touch layout/CSV/месячный архив/пропуски/выброс, profile staging без записи, 2FA cancellation/network recovery, запрет незагруженных и duplicate saves, отказ API, backup/restore fixture, анимацию на одной странице/reduced-motion/hidden pause, Benchmark Lab и независимый Guardian. Скриншоты в `screenshots/`; fixture не является реальным майнером и не доказывает каждую штатную аппаратную кнопку.
+Команды: `AXEFORGE_HOST_SYSROOT=/workspace/toolchains/host-sysroot bash scripts/test.sh`; `python3 tests/browser.py`; `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 BROWSER=webkit python3 tests/browser.py`; `bash scripts/build.sh`; `python3 scripts/stack_report.py`. Все завершились exit0. WebKit реально работал после установки локальных runtime libs; пропущена только ошибочная host-library preflight, не assertions. Логи TESTS.log/browser-*-final.log/BUILD.log и screenshots приложены. Дополнительно compare counter запускался с кодом Ultimate1 из прежнего архива.
 
-Команды: `AXEFORGE_HOST_SYSROOT=/workspace/toolchains/host-sysroot bash scripts/test.sh`; `python3 tests/browser.py`; `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 BROWSER=webkit python3 tests/browser.py`; `bash scripts/build.sh`; `python3 scripts/stack_report.py`. В CI headers/libs устанавливаются штатными пакетами без AXEFORGE_HOST_SYSROOT. Точные логи: `reports/ultimate-host-tests.log`, `reports/browser-ultimate-*.log`, build/image/metadata/size/stack reports.
+## Одинаковая последовательность для Ultimate1/2
 
-## Память и неизменяемые условия
+На одной синтетической последовательности valid-counter reset и следующего error-counter read:
 
-- Linker DIRAM: 176 427 / 341 760 байт, остаток 165 333. Отдельное IRAM окно 16 383 / 16 384, как видно в полном map/size; это не показатель свободного heap после старта.
-- Наибольшие статические frames в проверенных единицах Xtensa: Hunter 1312, Intelligence 1648, Guardian 1200, miner 2384, pools 2144 байт. Это отдельные frames, не сумма call chain и не RTOS high-water measurement; HTTP stack штатно 8192.
-- Runtime free heap/PSRAM/task high-water/NVS occupancy после загрузки **не измерены**. Новые модули проверяют ошибки выделения/запуска/записи; резерв NVS и отдельные namespaces не означают доказанное наличие места на конкретном майнере.
-- Штатные partitions/default configs/Gamma board/OTA Guard сравнены с pinned upstream. Не менялись bootloader source, разметка, hard cutoffs ASIC 68°C/VRM 85°C, пределы 800 MHz/1300 mV и wallet/pool defaults. Прошивается только app; сохранение NVS подтверждено анализом/моделями, реальный OTA ещё не выполнялся.
+| Значение | Ultimate1 | Ultimate2 |
+|---|---:|---:|
+| ASIC GH/s после нормального окна |1431.656|1431.656|
+| Valid counter units в окне |2000|2000|
+| Ложные error units после reset |4294967247|0|
+| Размер app |1901968|1905696|
+| Static DIRAM |176427|176683|
 
-## Эффект и пределы доказательств
+`identical-counter-comparison.log` получен компиляцией реальных функций обеих версий с одинаковыми входами. Это доказывает исправление reset/underflow accounting. Оно не доказывает причину конкретного ранее наблюдавшегося3933.24TH/s, для которой нет raw trace. Реальные error counts не фильтруются; недостоверные valid-rate samples логируются и не загрязняют историю/tuner.
 
-Исправления устраняют подтверждённые причины потерь UART кадров/некорректного учёта/гонок. Ожидаемый эффект — меньше программных потерь полезной работы и более честная диагностика. **Измеренный прирост TH/s, accepted work/day или вероятности блока отсутствует.** Проверенная пользователем точка 786 MHz / 1170 mV / ~1,55 TH/s не является нашим замером.
+Flash delta+3728байт (~0.2%); static DIRAM+256байт. Linker DIRAM176683/341760, остаток165077; отдельное IRAM window16383/16384 не равно runtime free heap. Целевые stack frames записаны в target-stack-usage.txt; это не измерение полного call-chain/RTOS high-water. Фоновые weather6144B internal, Mempool8192B PSRAM и price8192B PSRAM stacks больше не создаются; NTP init3072B завершается после запуска SNTP. Реальное количество свободного heap/PSRAM на майнере не измерено.
 
-- Полный live V1/TLS/SV2 transport lifecycle, реальные pools/ASIC/reconnect under load, физические UART timing/CRC и reboot/power-loss/OTA **NOT RUN**. Конечные аппаратные job slots не различают произвольно задержанные старые кадры после reuse; software header hash verification сохранена. Исчерпание extranonce контролируется для текущего эквивалентного шаблона, не глобально через все template cycles/reboots.
-- Причина исторического 3933.24 TH/s без raw trace не доказана. Счётчик baseline синхронизирован, недостоверный замер логируется и не загрязняет EMA/tuner/history; реальные error counters не скрываются.
-- Benchmark не повышает voltage/frequency, version rolling штатный; результаты не применяются автоматически. Эксперименты выключены по умолчанию. First hardware trial — ранее проверенные настройки, лимит25 W, наблюдение.
-- Pool stats накоплены по слоту с загрузки и могут включать смену адреса; рекомендации текущему серверу по такой истории не выдаются. Азия-пулы исследованы по официальным источникам, не измерены из Уссурийска; defaults/порядок не изменены. Автопереключения нет.
-- Coin templates не доказывают поддержку любого адреса/Stratum/альтернативной сети. Автоматическая network-specific проверка всех монет не реализована; payout guard сохраняется.
-- Local target hit, pool ACK и HTTPS explorer observation различаются. Explorer не является собственной Bitcoin consensus validation, может ошибаться/быть недоступным и не доказывает reward. Нет guaranteed delivery при разрыве и повторной отправки другому пулу.
-- WebKit Linux не равен Safari/iOS/Low Power Mode. Реальные iPhone OTA, тепловые/электрические защиты, длительная стабильность и все пункты HARDWARE-TEST-PLAN.md **NOT RUN**.
-- CI workflow подготовлен, но удалённый GitHub Actions запуск/публикация не выполнялись: нет подключённого собственного remote/доступа. Локальные файлы полностью предоставлены.
+## Сохранённые условия и пределы
 
-Подробности: CHANGELOG.md, INSTALL-IPHONE.md, HARDWARE-TEST-PLAN.md, POOL-ARCHITECTURE.md и тематические reports/*AUDIT*/integration-audit.md. Аппаратный план не выдаётся за выполненные испытания.
+Побайтовое сравнение с Ultimate1 подтвердило неизменность15 ключевых файлов: partitions/default configs/Gamma board, monitor/board_bitaxe, settings defaults/read, OTA Guard, ASIC driver/header, native Hunter/Intelligence и work builder. Точный список/хеши — build-metadata.json. Изменён только программный tuning ceiling25W, а не штатные hardware hard cutoffs. Нет второго freq/voltage controller, изменения register/baud или автоактивации TURBO. Adaptive Silicon Map остаётся компактным набором текущей/предыдущей проверенной точки; stock tuner применяет fallback только безопасно. Watchdog/self-test/PSU protection не заменялись.
+
+Wi-Fi, кошелёк, worker, pools и сохранённые настройки NVS не стираются app OTA. UTC хранится в новом af_clock; старый city сохранён, но погода больше не определяет timezone. Для Уссурийска указать600мин. Сохранённый cap30W остаётся в NVS, effective auto tuning cap25W; для повторного сохранения/импорта30W надо выбрать допустимый cap<=25W. Профили не применяются при открытии страницы.
+
+Удалены Weather/Mempool/price/automatic update polling. NTP, уведомления о реальных событиях, ICMP diagnostics, manual farm/Guardian/OTA и локальные API остаются. Price-on/auto-update preferences сохраняются для совместимости, но не запускают отключённые действия; ручной tariff/energy учёт сохранён.
+
+- Физического Gamma601 нет. Реальная OTA/rollback/iPhone Safari, UART/CRC на железе, VIN/температуры/PSU, free heap/task high-water,24/7 leak/stability и full live V1/TLS/SV2 lifecycle **NOT RUN**.
+- Причина конкретного idle сообщения без полного timestamped лога и сетевого capture не доказана. Исправлены подтверждённые source defects/policies: одинаковый idle threshold standby/active, backoff reset on mere TCP connect и bypass по IO restart. TCP keepalive проверен сборкой/API; фактические disconnect deadlines зависят от TCP/сети и требуют стенда.
+- HTTP priority3 ниже Stratum5/ASIC12; GET diagnostics не вызывает сетевые операции и не берёт pool IO mutex. Это уменьшает конкуренцию, но не доказывает отсутствие любой задержки в shared lwIP/TLS/flash без нагрузочного теста устройства.
+- Accepted-work estimate отдельно от ASIC counter; это оценка по сложности ACK за uptime, не физически измеренные все SHA-256. SV2 aggregate replies не превращаются в точную V1 статистику.
+- Local candidate/pool accepted/explorer observation разделены. Explorer не consensus/reward proof; нет гарантии доставки при disconnect и resend на другой pool. Нативные candidate send/target/session paths сохранены.
+- Finite job slots не различают произвольно задержанные старые UART frames после reuse; software hash validation сохранена. Template uniqueness ограничена доступными текущими шаблонами/сеансом, не глобальной базой всех работ.
+- 3.5h Benchmark Lab испытан на симулированном времени, не на физическом майнере. Рост useful work/day, реальной вероятности BTC и производительности **не измерен**. Длительное A/B на одинаковых настройках — отдельный HARDWARE-TEST-PLAN.
+- Реальная проверка всех alternate coin/address/pool combinations не добавлялась. Нет автоматической смены монет/пулов по неподтверждённому преимуществу.
+- WebKit Linux не Safari iPhone. GitHub Actions workflow готов, но удалённый запуск/публикация не выполнялись.
+
+Expected effect: меньше необязательных TLS/HTTP операций, меньше ложных reconnect/counter errors и более точная диагностика. Измеренный аппаратный эффект неизвестен. См.CHANGELOG/INSTALL-IPHONE/HARDWARE-TEST-PLAN и reports/v2/COMPETITOR-REVIEW.md с закреплёнными источниками пяти проектов. Нет обещания магического повышения вероятности блока.

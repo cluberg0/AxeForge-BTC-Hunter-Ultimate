@@ -1,0 +1,38 @@
+make: Entering directory '/workspace/axeforge/upstream/test'
+./unit_tests
+157 checks, 0 failed
+make: Leaving directory '/workspace/axeforge/upstream/test'
+source GET /api/status: ok
+source GET /api/settings: ok
+source POST /api/settings: ok
+source GET /api/pools: ok
+source GET /api/swarm: ok
+source GET /api/otp: ok
+source POST /api/otp: ok
+flasher scripts: ok
+PASS: actual OTA handler aborts abandoned upload, tolerates temporary stalls, cleans up dropped/OOM uploads, rejects invalid sizes; no reboot/boot selection on failure
+PASS: actual saved-pools NVS read branch handles allocation/query/read failure without parsing invalid memory or erasing settings
+PASS: actual miner send/pause barrier publishes before send, waits for in-flight send, rejects delayed work after pause and rechecks powered/pool state
+PASS: invalid hashrate, aggregates, missing values, precision, curve, sensor failure, safe fallback
+API_JSON {"native":true,"taskOk":true,"seconds":20914,"samplingSeconds":5,"pools":[{"work":4615800,"btcWork":4615800,"btcAccepted":3465,"accepted":3465,"rejected":1,"missing":202,"failed":2,"cleanN":2,"cleanMs":112,"cleanMax":200,"connectedSeconds":20858,"disconnectedSeconds":15,"observedSeconds":20873,"unobservedSeconds":36},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0},{"work":0,"btcWork":0,"btcAccepted":0,"accepted":0,"rejected":0,"missing":0,"failed":0,"cleanN":0,"cleanMs":0,"cleanMax":0,"connectedSeconds":0,"disconnectedSeconds":0,"observedSeconds":0,"unobservedSeconds":0}],"candidate":{"state":5,"pool":0,"hash":"","persisted":true},"trial":{"state":3,"stage":0,"phase":"aborted","intervalMs":500,"totalStages":6,"round":1,"warmupSeconds":300,"measurementSeconds":1800,"abortReason":"user","elapsed":0,"uncertain":true,"autoApply":false,"confidenceMethod":"weighted_poisson_and_two_repeat_spread","rates":[0.000,0.000,0.000],"ci95Low":[0.000,0.000,0.000],"ci95High":[0.000,0.000,0.000],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0],"stageRates":[0.000,0.000,0.000,0.000,0.000,0.000],"stageAccepted":[0,0,0,0,0,0],"stageRejected":[0,0,0,0,0,0]}}
+PASS: compact BTC pow limit, unknown/rejected duplicate ACK, ACK-before-send, late ACK, throttled NVS retry, exact trial-stage attribution, exact compact target/genesis, outlier, probability, V1 difficulty ledger/duplicate replies, candidate ack/timeout/failed/SV2, flash mock, generation lag, six balanced timed stages with excluded warmup, repeated confidence, abort/restore, candidate snapshot, sampled pool connectivity, API
+PASS: intelligence archive/stable window, exact missing-metric weights, NTP rollback, NVS reserve/failure, atomic config, sensor/lock fail-safe, unavailable task, JSON API
+API_JSON {"native":true,"time":1794527891,"last":1790010000,"archiveOk":false,"enabled":true,"restore":true,"curve":[50,55,75,100],"stableSamples":1,"point":[786,1170,25,1550,1790004600],"rows":[[1794527861000,1.55,55,64,23,14.8,0,786,1170,0.3,null,null,null,null,5000,5.1,1170,"",1,30]]}
+V1 wire: uint32 IDs, fractional/nonfinite rejection, hex validation, exact escaped authorization/submit PASS
+UART RX: BM1370 11-byte and BM1397 9-byte partial/resync/noise/CRC/back-to-back PASS
+API_JSON {"enabled":true,"taskOk":false,"state":4,"hash":"","checked":0,"height":0,"inBestChain":false,"error":"task_unavailable"}
+PASS: guardian defaultoff, config/NVS failures, HTTPS/redirect/404, exact schema, malformed/truncated/deep/oversized responses, deadline, throttling, stale candidate/config race, disable and expiry
+PASS network policy: active/standby real-hang bounds, capped backoff, immediate failover, 30s failback/session anti-flap
+API_JSON {"version":2,"weatherPolling":false,"mempoolPolling":false,"utcOffsetMinutes":840,"activePool":0,"freeInternal":100000,"minimumInternal":90000,"pools":[{"slot":0,"tcpConnected":true,"attempts":2,"reconnects":1,"upSeconds":29.000,"downSeconds":10.000,"rxBytes":4294967395,"lastRxAgeSeconds":39.000,"messages":2,"meanProcessingMs":2.550,"maxProcessingMs":5.000,"connectErrors":1,"readErrors":1,"writeErrors":1,"idleReconnects":1,"malformedMessages":1},{"slot":1,"tcpConnected":false,"attempts":0,"reconnects":0,"upSeconds":0.000,"downSeconds":0.000,"rxBytes":0,"lastRxAgeSeconds":-1.000,"messages":0,"meanProcessingMs":0.000,"maxProcessingMs":0.000,"connectErrors":0,"readErrors":0,"writeErrors":0,"idleReconnects":0,"malformedMessages":0},{"slot":2,"tcpConnected":false,"attempts":0,"reconnects":0,"upSeconds":0.000,"downSeconds":0.000,"rxBytes":0,"lastRxAgeSeconds":-1.000,"messages":0,"meanProcessingMs":0.000,"maxProcessingMs":0.000,"connectErrors":0,"readErrors":0,"writeErrors":0,"idleReconnects":0,"malformedMessages":0},{"slot":3,"tcpConnected":false,"attempts":0,"reconnects":0,"upSeconds":0.000,"downSeconds":0.000,"rxBytes":0,"lastRxAgeSeconds":-1.000,"messages":0,"meanProcessingMs":0.000,"maxProcessingMs":0.000,"connectErrors":0,"readErrors":0,"writeErrors":0,"idleReconnects":0,"malformedMessages":0}]}
+PASS exact event-driven network diagnostics, errors/reconnects/latency, 64-bit counters, activity freshness, UTC validation/write failure
+PASS NTP retained/self-terminating init, persisted/manual UTC, NVS/mutex failures, Weather/Mempool refresh creates no tasks or HTTP
+PASS production counter: genuine uint32 wrap, reset/outlier recovery, zero dt, reset request and visible real errors
+PASS production tuner ceiling<=25W, stored cap unchanged, TURBO request rejected before settings mutations
+Image gate: valid synthetic image + 9 rejection cases PASS
+Independent compact-target reference: 10007 fixed/random vectors PASS; exact 256-bit value, zero/sign/overflow, BTC pow-limit
+native API contract: /api/intelligence source/schema/guard OK; host JSON OK
+native API contract: /api/hunter source/schema/guard OK; host JSON OK
+native API contract: /api/guardian source/schema/guard OK; host JSON OK
+native API contract: /api/network source/schema/guard OK; host JSON OK
+PASS: 4 native endpoints are documented and use the stock API guard
+JavaScript syntax OK

@@ -1,0 +1,4 @@
+{"fixed":false,"validWindow":2000,"resetErrorWindow":4294967247,"asicGHs":1431.656}
+PASS production counter: genuine uint32 wrap, reset/outlier recovery, zero dt, reset request and visible real errors
+{"fixed":true,"validWindow":2000,"resetErrorWindow":0,"asicGHs":1431.656}
+PASS production counter: genuine uint32 wrap, reset/outlier recovery, zero dt, reset request and visible real errors

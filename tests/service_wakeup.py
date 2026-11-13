@@ -4,6 +4,7 @@ import pathlib,tempfile,subprocess
 r=pathlib.Path(__file__).resolve().parents[1]
 s=(r/'upstream/main/net/swarm.cpp').read_text();a=s.index('static void swarm_task(');b=s.index('// ------------------------------------------------------------------ API',a);swarm=s[a:b]
 s=(r/'upstream/main/net/fwupdate.cpp').read_text();a=s.index('static void task(void *)');b=s.index('\nvoid start()',a);updater=s[a:b]
+a=s.index('static bool auto_ok()');b=s.index('// Flash writes',a);auto_guard=s[a:b]
 s=(r/'upstream/main/net/price.cpp').read_text();a=s.index('void start()',s.index('namespace price {'));b=s.index('void refresh_now()',a);price_start=s[a:b]
 code=r'''
 #include <cassert>
@@ -26,7 +27,8 @@ static bool s_check_req=false,s_install_req=false;static char s_failed_tag[24]{}
 static struct{bool newer=false;char latest[24]="release";}s_info;
 static int steps=0,limit=3,checks=0,installs=0;
 void vTaskDelay(unsigned){if(++steps>limit)throw Stop{};}
-void do_check(){checks++;s_info.newer=true;}bool auto_ok(){return false;}void spawn_install(){installs++;}
+void do_check(){checks++;s_info.newer=true;}void spawn_install(){installs++;}
+'''+auto_guard+r'''
 '''+updater+r'''
 }
 namespace price {static float s_now=42;static bool s_have=true,s_pause=true;static char s_err[64];

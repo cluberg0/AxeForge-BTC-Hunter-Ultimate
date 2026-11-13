@@ -1,0 +1,82 @@
+Executing action: all (aliases: build)
+Running ninja in directory /workspace/axeforge/upstream/build_gamma
+Executing "ninja all"...
+[1/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board.cpp.obj
+[2/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_suprahex.cpp.obj
+[3/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/board_bitaxe.cpp.obj
+[4/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/dust.cpp.obj
+[5/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/asic/bm13xx.cpp.obj
+[6/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/gates.cpp.obj
+[7/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/energy.cpp.obj
+[8/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/guardian.cpp.obj
+[9/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/hunter.cpp.obj
+[10/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/monitor.cpp.obj
+[11/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/intelligence.cpp.obj
+[12/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/psu.cpp.obj
+[13/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/ota_guard.cpp.obj
+[14/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/net_health.cpp.obj
+[15/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/selftest.cpp.obj
+[16/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/bap.cpp.obj
+[17/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/settings.cpp.obj
+[18/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/i2c_bus.cpp.obj
+[19/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/tmp451.cpp.obj
+[20/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/hw/sensors.cpp.obj
+[21/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+[22/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/core/tuner.cpp.obj
+[23/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/stats.cpp.obj
+[24/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/work.cpp.obj
+[25/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/eth.cpp.obj
+[26/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/ble_setup.cpp.obj
+[27/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/mempool.cpp.obj
+[28/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/fwupdate.cpp.obj
+[29/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/notify.cpp.obj
+[30/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/netping.cpp.obj
+[31/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/mining/miner.cpp.obj
+[32/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/otp.cpp.obj
+[33/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/weather.cpp.obj
+[34/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/swarm.cpp.obj
+[35/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/price.cpp.obj
+[36/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/wifi.cpp.obj
+[37/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/net/web.cpp.obj
+[38/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/theme.cpp.obj
+[39/48] Performing build step for 'bootloader'
+[1/1] cd /workspace/axeforge/upstream/build_gamma/bootloader/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /workspace/axeforge/upstream/build_gamma/bootloader/bootloader.bin
+Bootloader binary size 0x5490 bytes. 0x2b70 bytes (34%) free.
+[40/48] No install step for 'bootloader'
+[41/48] Completed 'bootloader'
+[42/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/ui/oled.cpp.obj
+[43/48] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/stratum/pools.cpp.obj
+[44/48] Linking C static library esp-idf/main/libmain.a
+[45/48] Generating ld/sections.ld
+[46/48] Linking CXX executable axeforge.elf
+[47/48] Generating binary image from built executable
+esptool.py v4.13.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /workspace/axeforge/upstream/build_gamma/axeforge.bin
+[48/48] cd /workspace/axeforge/upstream/build_gamma/esp-idf/esptool_py && /workspace/toolchains/idf-tools/python_env/idf5.3_py3.12_env/bin/python /workspace/toolchains/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /workspace/axeforge/upstream/build_gamma/partition_table/partition-table.bin /workspace/axeforge/upstream/build_gamma/axeforge.bin
+axeforge.bin binary size 0x1d1f70 bytes. Smallest app partition is 0x400000 bytes. 0x22e090 bytes (54%) free.
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 build_gamma/bootloader/bootloader.bin 0x8000 build_gamma/partition_table/partition-table.bin 0x10000 build_gamma/axeforge.bin 0xc10000 build_gamma/ota_data_initial.bin
+or from the "/workspace/axeforge/upstream/build_gamma" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"
+ESP32-S3 Gamma OTA image OK: {'version': '1.4.10-hunter-ultimate-2.0', 'size': 1908592, 'segments': [(1007878176, 537512), (1070185984, 32492), (1077362688, 19796), (1107296288, 1240784), (1077382484, 77908)], 'sha256': 'f3228b941c7a068b5a90a4a519f084e4e240cbf5cc060d525d4654fe67f761b2'}
+esptool.py v4.13.0
+File size: 1908592 (bytes)
+Image version: 1
+Entry point: 403757b8
+5 segments
+
+Segment 1: len 0x833a8 load 0x3c130020 file_offs 0x00000018 [DROM]
+Segment 2: len 0x07eec load 0x3fc9be00 file_offs 0x000833c8 [BYTE_ACCESSIBLE,MEM_INTERNAL,DRAM]
+Segment 3: len 0x04d54 load 0x40374000 file_offs 0x0008b2bc [MEM_INTERNAL,IRAM]
+Segment 4: len 0x12eed0 load 0x42000020 file_offs 0x00090018 [IROM]
+Segment 5: len 0x13054 load 0x40378d54 file_offs 0x001beef0 [MEM_INTERNAL,IRAM]
+Checksum: 18 (valid)
+Validation Hash: 1b773ec47f5aa24fb62d767a4618f03de2f0e1b688ae6033b14a4dd5314ba03d (valid)
