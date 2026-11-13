@@ -16,7 +16,7 @@ payload = bytearray(65536)
 struct.pack_into('<I', payload, 0, 0xabcd5432)
 payload[16:48] = b'1.4.10-hunter-ultimate-2.0'.ljust(32, b'\0')
 payload[48:80] = b'axeforge'.ljust(32, b'\0')
-markers = b'AXEFORGE-BOARD:gamma;\0/api/hunter\0btc_hunter\0BLOCK CANDIDATE\0RU-FIX 10 NATIVE\0/api/intelligence\0/api/guardian\0intelligence: returned to prior measured point'
+markers = b'AXEFORGE-BOARD:gamma;\0/api/hunter\0btc_hunter\0BLOCK CANDIDATE\0RU-FIX 10 NATIVE\0/api/intelligence\0/api/network\0/api/guardian\0intelligence: returned to prior measured point'
 payload[256:256+len(markers)] = markers
 
 def make(payload=payload, header=header):

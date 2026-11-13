@@ -30,6 +30,8 @@ g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-
 AXEFORGE_API_JSON=1 "$T/net_health" | tee reports/native-api/net_health.log
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -Itests/clock-stubs -Itests/stubs -Ioverlay/main -Iupstream/main -Iupstream/main/net tests/clock.cpp -o "$T/clock"
 "$T/clock"
+python3 tests/service_wakeup.py
+python3 tests/reconnect_actual.py
 python3 tests/counter_actual.py
 python3 tests/v2_guards.py
 python3 tests/image.py

@@ -603,6 +603,7 @@ function v2render(s){
  $('v2graph').innerHTML=svg;
  $('v2network').textContent=v2net?'Network Guardian · переподключений '+v2net.pools.reduce((a,p)=>a+p.reconnects,0)+' · сетевых ошибок '+v2net.pools.reduce((a,p)=>a+p.connectErrors+p.readErrors+p.writeErrors,0)+' · свободно '+Math.round(v2net.freeInternal/1024)+' КБ внутри ESP32 · минимум '+Math.round(v2net.minimumInternal/1024)+' КБ':'Network Guardian: нет данных';
  for(const id of ['wxt','mpheight']){const node=$(id);if(node)node.closest('.card').style.display='none'}
+ for(const name of ['city','mempool','priceon']){const node=document.querySelector('[name="'+name+'"]');if(node)node.closest('.card').style.display='none'}
  for(const name of ['city','mempool','mpurl']){const node=document.querySelector('#clock [name="'+name+'"]');if(node){node.disabled=true;node.title='Фоновый сервис отключён в Ultimate2.0'}}
  $('v2turbo').disabled=true;const auto=$('autoupd');if(auto){auto.disabled=true;auto.title='В2.0 только ручная OTA'}
  $('v2guardiancheck').disabled=!guardianData?.enabled||guardianBusy||guardianCommandBusy;

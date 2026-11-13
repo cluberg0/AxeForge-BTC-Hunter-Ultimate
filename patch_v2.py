@@ -59,7 +59,6 @@ p=r/'main/net/fwupdate.cpp';s=p.read_text();a=s.index('static bool auto_ok()');b
 p=r/'main/stratum/pools.cpp';s=p.read_text();s=s.replace('    if (!ok) p.restart = true;','    if (!ok) { net_health::error(p.idx,net_health::Error::Write); p.restart = true; }');s=s.replace('        set_status(p, "Can\'t connect to %s", cfg.url);','        net_health::error(p.idx,net_health::Error::Connect);\n        set_status(p, "Can\'t connect to %s", cfg.url);');s=s.replace('            if (ready < 0) break;','            if (ready < 0) { net_health::error(p.idx,net_health::Error::Read); break; }');s=s.replace('            if (!v2_recv(p, hdr, buf, &len)) {','            if (!v2_recv(p, hdr, buf, &len)) {\n                net_health::error(p.idx,net_health::Error::Read);');p.write_text(s)
 patch('main/core/tuner.cpp','    float lim = gates::max_power();','    float lim = gates::max_power();\n#if defined(AF_ASIC_BM1370) && AF_NUM_ASICS == 1\n    // Gamma601: 30W operation has no hardware validation in this release.\n    // Preserve saved configuration, constrain only the stock tuning envelope.\n    lim = fminf(lim,25.0f);\n#endif')
 # Reject a new over25W tuning request before mutating any saved settings.
-patch('main/net/web.cpp','static esp_err_t settings_post(httpd_req_t *req)\n{','static esp_err_t settings_post(httpd_req_t *req)\n{') if False else None
 p=r/'main/net/web.cpp';s=p.read_text();a=s.index('static esp_err_t settings_post');b=s.index('\n}',a);part=s[a:b];anchor='    Settings &c = settings::get();';assert part.count(anchor)==1
 part=part.replace(anchor,'''#if defined(AF_ASIC_BM1370) && AF_NUM_ASICS == 1
     cJSON *requested_cap = cJSON_GetObjectItem(j,"pcap");
@@ -73,3 +72,11 @@ part=part.replace(anchor,'''#if defined(AF_ASIC_BM1370) && AF_NUM_ASICS == 1
 patch('main/mining/miner.cpp','        g_state.hash_counter_ms.store(0);\n        ESP_LOGW(TAG, "invalid counter rate','        g_state.hash_counter_ms.store(0);\n        s_prev_err_t[chip]=0; // invalid/reset valid counter also invalidates the error baseline\n        ESP_LOGW(TAG, "invalid counter rate')
 
 patch('main/net/web.cpp','    cfg.stack_size = 8192;','    cfg.stack_size = 8192;\n    cfg.task_priority = 3; // below Stratum5 and ASIC result12; monitor priorities unchanged')
+
+patch('main/stratum/pools.cpp','    std::atomic<bool> restart{false};','    std::atomic<bool> restart{false};\n    std::atomic<uint32_t> config_epoch{0};')
+patch('main/stratum/pools.cpp','        p.restart = false;\n        PoolCfg cfg','        p.restart = false;\n        const uint32_t config_generation=p.config_epoch.load();\n        PoolCfg cfg')
+patch('main/stratum/pools.cpp','        if (!p.restart) {\n            ulTaskNotifyTake','        if (healthy) backoff_s=2;\n        // IO errors also set restart; only a configuration change skips backoff.\n        if (p.config_epoch.load()==config_generation) {\n            ulTaskNotifyTake')
+patch('main/stratum/pools.cpp','        p.restart = true;\n        if (p.task) xTaskNotifyGive(p.task);','        p.config_epoch.fetch_add(1);\n        p.restart = true;\n        if (p.task) xTaskNotifyGive(p.task);')
+
+patch('main/net/price.cpp','static void price_task(void *)','[[maybe_unused]] static void price_task(void *)')
+patch('main/net/price.cpp','    // PSRAM stack: this task only does HTTP, never flash writes\n    xTaskCreatePinnedToCoreWithCaps(price_task, "price", 8192, NULL, 2, &s_task, tskNO_AFFINITY, MALLOC_CAP_SPIRAM);','    // Manual energy tariffs remain; no market HTTP feed or automatic cost-based pause.\n    s_now=NAN;s_have=false;s_pause=false;\n    snprintf(s_err,sizeof(s_err),"Market polling disabled in Ultimate2.0; use manual tariff");')

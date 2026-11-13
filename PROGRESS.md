@@ -7,3 +7,5 @@
 Не менять частоту/напряжение рабочего устройства, защиты, bootloader/partitions или NVS пользовательских настроек. Физического Gamma нет; агентам задачи не выдаются. Старые результаты/патчи повторно используются.
 
 Этап1: native Weather/Mempool отключены, NTP и ручной UTC сохранены; Stratum policy/diagnostics/anti-flap, единый tuner25W и UI4профиля реализованы. Host157 + новые ASan/UBSan policy/event diagnostics/NTP/counter/guards/API4 PASS. Проверки Chromium/WebKit и сборка2.0 выполняются.
+
+Этап2: устранён обход backoff при write/restart, восстановление2s после здоровой сессии; price feed и автообновления не опрашивают сеть; Guardian только по ручному запросу. Идентичный synthetic counter trace воспроизводит ложные4294967247 ошибок в Ultimate1 и0 в2.0 при одинаковыхASIC1431.656GH/s. Это функциональное сравнение, не аппаратный прирост. Host/API/ASan/UBSan PASS, clean apply334files PASS. Финальная упаковка и последний UI build выполняются.

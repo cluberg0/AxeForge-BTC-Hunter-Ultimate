@@ -36,9 +36,11 @@ def verify(b):
     require(version == '1.4.10-hunter-ultimate-2.0', 'unexpected firmware version')
     require(b'AXEFORGE-BOARD:gamma;\0' in b, 'Gamma board tag missing')
     tags = [b'/api/hunter', b'btc_hunter', b'BLOCK CANDIDATE', b'RU-FIX 10 NATIVE',
-            b'/api/intelligence', b'/api/guardian', b'intelligence: returned to prior measured point']
+            b'/api/intelligence', b'/api/network', b'/api/guardian', b'intelligence: returned to prior measured point']
     for tag in tags:
         require(tag in b, 'integration marker missing: ' + repr(tag))
+    require(b'api.open-meteo.com' not in b and b'geocoding-api.open-meteo.com' not in b, 'weather TLS code remains')
+    require(b'/api/v1/fees/mempool-blocks' not in b, 'automatic Mempool client remains')
     return {'version': version, 'size': len(b), 'segments': segments,
             'sha256': hashlib.sha256(b).hexdigest()}
 

@@ -28,8 +28,9 @@ xtensa-esp32s3-elf-nm -C upstream/build_gamma/axeforge.elf > reports/symbols.txt
 python3 - <<'PYTHON'
 from pathlib import Path
 s = Path('reports/symbols.txt').read_text()
-for symbol in ['hunter::start()', 'intel::start()', 'guardian::start()', 'hunter::reply(', 'intel::rollback_point(', 'pools::submit(']:
+for symbol in ['hunter::start()', 'intel::start()', 'guardian::start()', 'net_health::get(', 'hunter::reply(', 'intel::rollback_point(', 'pools::submit(']:
     assert symbol in s, symbol
+assert all(name not in s for name in ['weather_task(', 'mempool_task(', 'price_task('])
 PYTHON
 # Export only the app after every build/image check has succeeded.
 mkdir -p dist/v2

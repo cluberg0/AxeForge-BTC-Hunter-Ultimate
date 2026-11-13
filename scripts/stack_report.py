@@ -11,7 +11,7 @@ import tempfile
 root = pathlib.Path(__file__).resolve().parents[1]
 build = root / 'upstream/build_gamma'
 commands = json.loads((build / 'compile_commands.json').read_text())
-units = ['core/hunter.cpp', 'core/intelligence.cpp', 'core/guardian.cpp', 'mining/miner.cpp', 'stratum/pools.cpp']
+units = ['core/hunter.cpp', 'core/intelligence.cpp', 'core/guardian.cpp', 'core/net_health.cpp', 'net/weather.cpp', 'mining/miner.cpp', 'stratum/pools.cpp']
 lines = ['Xtensa compiler -fstack-usage frames; static frame sizes, not full task call chains.']
 with tempfile.TemporaryDirectory() as temp:
     temp = pathlib.Path(temp)
