@@ -34,6 +34,7 @@ python3 tests/service_wakeup.py
 python3 tests/reconnect_actual.py
 python3 tests/counter_actual.py
 python3 tests/v2_guards.py
+python3 tests/unlock_gates.py
 python3 tests/pll_turbo.py
 python3 tests/turbo_phase.py
 python3 tests/board_turbo.py

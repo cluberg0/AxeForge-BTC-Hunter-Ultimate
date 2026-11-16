@@ -18,9 +18,15 @@ static void run_turbo_phase()
     bool good=climb(f,mv,ghs);
     auto reason=turbo::reason();
     bool can_hold=good&&!turbo::cancelled();
+    if(!can_hold&&board::is_powered()&&(reason==turbo::Reason::Power||reason==turbo::Reason::Errors)){
+        auto prior=turbo::fallback(uint16_t(board::freq_mhz()+1),turbo::power_budget());
+        if(prior.watts<=turbo::power_budget()*.95f&&apply(prior.mhz,prior.mv,true)){
+            f=prior.mhz;mv=prior.mv;ghs=prior.ghs;turbo::holding(reason);can_hold=!turbo::cancelled();
+        }
+    }
     if(can_hold){
         if(!apply(f,mv,true))can_hold=false;
-        else turbo::holding(turbo_wall_reason());
+        else turbo::holding(reason==turbo::Reason::None?turbo_wall_reason():reason);
     }
     while(can_hold&&board::is_powered()&&!s_restart&&settings::get().autotune){
         g_state.tuner.phase=TunerPhase::Locked;

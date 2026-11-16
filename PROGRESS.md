@@ -1,13 +1,7 @@
-# TURBO1000 — контрольная точка
+# TURBO1000 UNLOCK
 
-База23724c5, веткаultimate-2.0-turbo1000. Новые агенты не запускались.
-
-Выполнено: ручная непостоянная session в штатном tuner; потолок1000MHz, точные PLL ступени12.5MHz/200ms выше800 и tuner25MHz; stock800/1300 и hard68/85 сохранены. Map16 измеренных точек, fresh telemetry, accepted work, PSU/thermal/error/session guards, откат, API+UI3. Запрос30W -> effective<=25W (TPS estimate), <=23W при derating; reserve3W. Настройки/partitions/OTA guard неизменны.
-
-Проверено: IDF5.3.2 build4 exit0, image1925072B, SHA f05a28224dd6be99775bb27dd5d1ea78c3dc9d2928406d2a0161df1e35cc2757. Полный scripts/test.sh PASS (stock157, ASan/UBSan, PLL7201, production tuner/board failure injection,5API,JS). Chromium+WebKit PASS. Clean pinned apply:338файлов совпали. Target stack frames получены; физический high-water не измерен.
-
-Исправления: PLL failure не оставляет устаревшую частоту; voltage/clock writes прекращаются после ошибки, downclock до undervolt; power freshness не обновляется ошибочными reads; user stop не теряется при переходе hold; clock counter rebaseline grace10s только для counter.
-
-Уточнение: legacy806.25MHz поддерживается приблизительно807.14, это не unsupported PLL. Предположение исправлено differential test.
-
-Завершено: актуализированы README/CHANGELOG/TEST-REPORT/HARDWARE-TEST-PLAN/INSTALL-IPHONE и build-metadata; полный source/release ZIP с backup2.0 прошёл CRC и сверку вложенных BIN. Суммы SHA проверены hashlib/sha256sum/OpenSSL, source manifest совпадает; UI4-stage reproducible. Код3ebdc22, полный release в dist/turbo. Никакого hardware testing/performance claim; устройство не прошивалось.
+База12b8cbf, веткаturbo1000-unlock; новых агентов нет. Scope только overclock/config/PLL/tuner/API/UI.
+Выполнено: software experimental Gamma profile1000 отдельно от stock800, persistent settings.overclock+typed OVERCLOCK, PSU config NVS validated on boot, default no forced clock/experiment. Manual API>800, user<=30W/max1300; one tuner phase, PLL12.5MHz lattice/rounded labels, voltage minimum+repeat measurements+ACK-adjusted hardware score/map. Safe boot/recovery525/1150 for unvalidated extended clocks; disable returns stock.
+Power: user<=30, declared PSU watts/amps,10%(>=2W) reserve,0.5A reserve,1.5W input-estimate margin, continuous voltage/thermal/unknown derating; no fixed25W in Turbo. Default30W/6A gives25.5W;40W/8A gives30W before dynamic derating. Original hard limits/bootloader/partitions unchanged.
+Проверки: previous iteration full host/ASan/UBSan/5API+JS, Chromium/WebKit PASS; final confirmation running after dynamic budget/PSU hard-rating guard. Native gates and API900/30 vs1001/1301/31 refusal; boot/NVS corruption; best-score preference and PLL7201 covered. Clean apply338files identical before last small hook; recheck needed.
+Осталось: финальные build/tests/repro results, SHA, release docs/package, final Git commit. No physical Gamma/iPhone tests, no measured gain, device not flashed.

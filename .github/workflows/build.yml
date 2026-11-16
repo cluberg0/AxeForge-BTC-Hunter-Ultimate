@@ -30,7 +30,7 @@ jobs:
           target: esp32s3
           command: bash scripts/build.sh
       - name: Verify artifact again
-        run: python3 verify_image.py dist/turbo/axeforge-gamma-BTC-HUNTER-ultimate-2.0-TURBO1000.bin
+        run: python3 verify_image.py dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-UNLOCK.bin
       - uses: actions/upload-artifact@v4
         with:
           name: Gamma-BTC-Hunter-OTA

@@ -6,6 +6,8 @@ namespace turbo {
 using Point=turbo_math::Point;
 enum class Reason:uint8_t{None,Frequency,Power,Thermal,Supply,Errors,Network,Pll,User,Settings,Storage,Telemetry,Samples,Controller,Voltage,Hold};
 void start();
+void sync_cap(uint16_t cap);bool supported();bool unlocked();bool manual_check(float proposed_cap=-1);void safe_boot();bool request_search();
+bool better(float ghs,uint16_t mv);void trial(uint16_t f,uint16_t mv,float ghs,float watts,unsigned verdict);
 bool pending();bool active();bool engaged();bool cancelled();
 uint16_t max_frequency();float power_budget();
 bool begin(Point&anchor);bool check();void changing();void window_begin();bool window_end(float ghs);

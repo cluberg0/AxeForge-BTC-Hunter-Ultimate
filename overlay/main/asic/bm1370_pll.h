@@ -14,5 +14,5 @@ inline Plan solve(float target){
  }
  return q;
 }
-inline unsigned next_point(unsigned current,unsigned maximum){unsigned n=(current/25+1)*25;return n<=maximum&&n<=1000?n:0;}
+inline unsigned next_point(unsigned current,unsigned maximum){unsigned n=unsigned(std::lround((std::floor(float(current)/12.5f)+1)*12.5f));return n<=maximum&&n<=1000?n:0;}
 }

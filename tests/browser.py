@@ -1,10 +1,10 @@
 import asyncio,json,pathlib,time,copy,os,shutil
 from playwright.async_api import async_playwright
 root=pathlib.Path(__file__).resolve().parent.parent;ns=json.loads((root/'tests/browser-fixture.json').read_text())
-cfg=ns['cfg'];status=ns['status'];pools=ns['pools'];status['uptime']=36000
+cfg=ns['cfg'];cfg['overclock'].update({'available':True,'unlocked':False,'active':False});status=ns['status'];pools=ns['pools'];status['uptime']=36000
 html=(root/'overlay/main/web/index.html').read_text();writes=[];opts={'enabled':False,'restore':False,'curve':[50,55,75,100]};fail=False;hunter_fail=False;http_fail={};auth_required=False;login_fail=False;requests=[];hunter_trial={"state":0,"stage":0,"phase":"idle","totalStages":6,"round":1,"intervalMs":500,"warmupSeconds":300,"measurementSeconds":1800,"elapsed":0,"rates":[0,0,0],"accepted":[0,0,0],"rejected":[0,0,0],"repeatsCompleted":[0,0,0]};guardian={'enabled':False,'taskOk':True,'state':5,'hash':'','checked':0,'height':0,'inBestChain':False,'error':''}
 network={'version':2,'utcOffsetMinutes':600,'freeInternal':100000,'minimumInternal':90000,'activePool':0,'weatherPolling':False,'mempoolPolling':False,'pools':[{'reconnects':0,'connectErrors':0,'readErrors':0,'writeErrors':0} for _ in range(4)]}
-turbo={'available':True,'armed':False,'state':0,'maxFreq':1000,'requestedPower':30,'effectivePower':25,'voltageLimit':1300,'reason':'none','powerEstimated':True,'persisted':True,'points':[]}
+turbo={'available':True,'armed':False,'state':0,'maxFreq':1000,'requestedPower':30,'effectivePower':25,'voltageLimit':1300,'reason':'none','powerEstimated':True,'persisted':True,'points':[],'unlocked':False,'activeMaxFreq':800,'userMaxPower':25,'psuWatts':30,'psuAmps':6,'powerReserve':3,'inputMargin':1.5,'budgetReason':'psu_power_reserve_and_input_uncertainty','appliedFreq':786,'bestFreq':0,'bestMv':0,'bestGHs':0,'bestWatts':0,'trials':[]}
 async def main():
  global fail,hunter_fail,auth_required,login_fail
  async with async_playwright() as p:
@@ -22,9 +22,14 @@ async def main():
     if path=='/api/intelligence':
      if fail:return {'status':500,'body':'storage failed'}
      opts.update(d)
-    if path=='/api/settings':cfg.update(d)
+    if path=='/api/settings':
+     if 'overclock'in d:
+      unlocked=d['overclock'];cfg['overclock'].update({'available':True,'active':unlocked,'unlocked':unlocked});cfg['limits'].update({'maxFreq':1000 if unlocked else 800,'maxPower':30 if unlocked else 25});turbo.update({'unlocked':unlocked,'activeMaxFreq':cfg['limits']['maxFreq'],'userMaxPower':cfg['limits']['maxPower']})
+     cfg.update({k:v for k,v in d.items() if k!='overclock'})
     if path=='/api/guardian':guardian.update(d)
-    if path=='/api/turbo':turbo.update({'armed':d['enabled'],'state':1 if d['enabled'] else 4,'reason':'none' if d['enabled'] else 'user'})
+    if path=='/api/turbo':
+     if d.get('action')=='configure':cfg['pcap']=d['powerLimit'];turbo.update({'psuWatts':d['psuWatts'],'psuAmps':d['psuAmps'],'maxFreq':d['maxFreq'],'requestedPower':d['powerLimit'],'effectivePower':min(d['powerLimit'],min(d['psuWatts'],5*d['psuAmps'])*.9-1.5,(d['psuAmps']-.5)*5-1.5)})
+     else:turbo.update({'armed':d['enabled'],'state':1 if d['enabled'] else 4,'reason':'none' if d['enabled'] else 'user'})
     if path=='/api/network':network.update(d)
     if path=='/api/hunter':
      if hunter_fail:return {'status':400,'body':'not stable'}
@@ -76,10 +81,13 @@ async def main():
   await page.evaluate('tab("dash")');await page.locator('#a8recall').click();assert await page.locator('#tuning [name=freq]').input_value()=='786';assert await page.locator('#tuning [name=pcap]').input_value()=='25'
   n=len(writes);await page.evaluate('turboLoad(true)');await page.wait_for_function('turboData&&!turboBusy');assert not await page.locator('#v2turbo').is_disabled();await page.locator('#tuning .prf button').nth(2).click();assert await page.locator('#tuning [name=pcap]').input_value()=='25';assert len(writes)==n
   await page.evaluate('v2render(S)');assert 'Network Guardian' in await page.locator('#v2network').inner_text();assert await page.locator('#v2graph path').count()==2
-  stock_snapshot={k:cfg[k] for k in ['freq','mv','pcap']};n=len(writes);await page.locator('#turboStart').click();assert len(writes)==n
+  assert await page.locator('#turboStart').is_disabled();dialog_reply['value']='OVERCLOCK';await page.locator('#ocbtn').click();await page.wait_for_function('cfg.overclock.unlocked&&turboData.unlocked');assert await page.locator('#fnum').get_attribute('max')=='1000';assert 'Недоступно' not in await page.locator('#ocst').inner_text()
+  await page.locator('#turboPsu').fill('40');await page.locator('#turboAmps').fill('8');await page.locator('#turboPower').fill('30');await page.locator('#turboConfig').click();await page.wait_for_function('!turboCommand&&turboData.effectivePower===30');assert not turbo['armed']
+  stock_snapshot={k:cfg[k] for k in ['freq','mv','pcap']};n=len(writes);dialog_reply['value']='';await page.locator('#turboStart').click();assert len(writes)==n
   dialog_reply['value']='TURBO1000';http_fail['/api/turbo']=400;await page.locator('#turboStart').click();await page.wait_for_function('!turboCommand');assert not turbo['armed'];http_fail.clear()
   await page.locator('#turboStart').click();await page.wait_for_function('turboData.armed&&!turboCommand');assert writes[-1]==('/api/turbo',{'enabled':True,'confirm':'TURBO1000','maxFreq':1000,'powerLimit':30});assert {k:cfg[k] for k in ['freq','mv','pcap']}==stock_snapshot;assert await page.locator('#turboMax').is_disabled()
   await page.locator('#turboStop').click();await page.wait_for_function('!turboData.armed&&!turboCommand');assert writes[-1]==('/api/turbo',{'enabled':False});assert 'пользователем' in await page.locator('#turboStatus').inner_text()
+  await page.locator('#ocbtn').click();await page.wait_for_function('!cfg.overclock.unlocked&&!turboData.unlocked');assert await page.locator('#fnum').get_attribute('max')=='800'
   for w in [320,375,390,430,768]:
    await page.set_viewport_size({'width':w,'height':844})
    for t in ['dash','pools','tuning','display','clock','network','system']:

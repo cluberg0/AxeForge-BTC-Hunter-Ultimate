@@ -1141,6 +1141,66 @@
                           }
                         }
                       }
+                    },
+                    "activeMaxFreq": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "userMaxPower": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "psuWatts": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "psuAmps": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "powerReserve": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "inputMargin": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "appliedFreq": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bestFreq": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bestMv": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bestGHs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bestWatts": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "unlocked": {
+                      "type": "boolean"
+                    },
+                    "budgetReason": {
+                      "type": "string"
+                    },
+                    "trials": {
+                      "type": "array",
+                      "maxItems": 16,
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
                     }
                   }
                 }
@@ -1150,7 +1210,7 @@
         }
       },
       "post": {
-        "summary": "Explicit TURBO1000 request or stop, executed only by stock tuner task",
+        "summary": "Configure declared PSU/search limits or explicitly start/stop in stock tuner; activation not persisted",
         "security": [
           {
             "csrf": [],
@@ -1163,9 +1223,6 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "enabled"
-                ],
                 "properties": {
                   "enabled": {
                     "type": "boolean"
@@ -1176,13 +1233,28 @@
                   "maxFreq": {
                     "type": "integer",
                     "minimum": 800,
-                    "maximum": 1000,
-                    "multipleOf": 25
+                    "maximum": 1000
                   },
                   "powerLimit": {
                     "type": "integer",
                     "minimum": 18,
                     "maximum": 30
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "configure"
+                    ]
+                  },
+                  "psuWatts": {
+                    "type": "number",
+                    "minimum": 15,
+                    "maximum": 120
+                  },
+                  "psuAmps": {
+                    "type": "number",
+                    "minimum": 3,
+                    "maximum": 24
                   }
                 }
               }

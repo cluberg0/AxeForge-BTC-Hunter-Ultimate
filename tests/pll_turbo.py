@@ -28,10 +28,10 @@ int main(){
  assert(ramp_chain(1000)&&s_freq==1000&&delays<=17);assert(writes.front()==812.5f);
  writes.clear();delays=0;assert(ramp_chain(786)&&s_freq==786&&delays<=19);
  s_freq=800;writes.clear();fail_at=850;assert(!ramp_chain(900)&&s_freq==837.5f);fail_at=-1;assert(ramp_chain(786));
- for(unsigned f=800;f<1000;f+=25){assert(bm1370_pll::next_point(f,1000)==f+25);}
- assert(bm1370_pll::next_point(1000,1000)==0);assert(bm1370_pll::next_point(786,1000)==800);assert(bm1370_pll::next_point(525,1000)==550);assert(bm1370_pll::next_point(595,1000)==600);
+ unsigned f=800,count=0;while(f<1000){unsigned n=bm1370_pll::next_point(f,1000);assert(n>f);assert(bm1370_pll::solve(float(n)));f=n;count++;}assert(count==16);
+ assert(bm1370_pll::next_point(1000,1000)==0);assert(bm1370_pll::next_point(786,1000)==788);assert(bm1370_pll::next_point(525,1000)==538);assert(bm1370_pll::next_point(595,1000)==600);
 }
 '''
 with tempfile.TemporaryDirectory()as d:
  p=pathlib.Path(d)/'test.cpp';p.write_text(code);e=pathlib.Path(d)/'test';subprocess.run(['g++','-std=c++17','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-sanitize-recover=all','-I'+str(root/'overlay/main'),str(p),'-o',str(e)],check=True);subprocess.run([str(e)],check=True)
-print('PASS PLL:7201 exact legacy-loop vectors;806.25 approximated,800..1000 by12.5 exact; production ramp, partial-failure recovery,25MHz tuner targets')
+print('PASS PLL:7201 exact legacy-loop vectors;806.25 approximated,800..1000 by12.5 exact; production ramp, partial-failure recovery,12.5MHz PLL lattice (uint16 labels rounded)')
