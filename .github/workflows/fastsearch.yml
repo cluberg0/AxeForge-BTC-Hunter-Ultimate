@@ -1,0 +1,71 @@
+name: Build Gamma FASTSEARCH
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'fastsearch_overlay.py'
+      - '.github/workflows/fastsearch.yml'
+permissions:
+  contents: read
+jobs:
+  gamma:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract verified ONESEARCH base
+        run: |
+          test -f AxeForge-ONESEARCH-build.zip
+          mkdir -p project
+          unzip -q AxeForge-ONESEARCH-build.zip -d project
+          test -f project/one-search.patch
+      - name: Prepare FASTSEARCH and run native regression tests
+        working-directory: project
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
+          bash scripts/prepare.sh
+          python3 ../fastsearch_overlay.py .
+          bash scripts/test.sh
+      - name: Browser regression tests
+        working-directory: project
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install playwright pyyaml jsonschema
+          .venv/bin/python -m playwright install --with-deps chromium webkit
+          .venv/bin/python tests/browser.py
+          BROWSER=webkit .venv/bin/python tests/browser.py
+      - name: Compile ESP32-S3 Gamma FASTSEARCH OTA
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3.2
+          target: esp32s3
+          command: cd project && bash scripts/build.sh
+      - name: Verify and name FASTSEARCH OTA
+        working-directory: project
+        run: |
+          cd dist/unlock
+          sha256sum -c SHA256SUMS.txt
+          mv axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin axeforge-gamma-BTC-HUNTER-TURBO1000-FASTSEARCH.bin
+          sha256sum axeforge-gamma-BTC-HUNTER-TURBO1000-FASTSEARCH.bin > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+          cd ../..
+          python3 verify_image.py dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-FASTSEARCH.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gamma-FASTSEARCH-OTA
+          path: |
+            project/dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-FASTSEARCH.bin
+            project/dist/unlock/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gamma-FASTSEARCH-debug
+          path: |
+            project/upstream/build_gamma/axeforge.elf
+            project/upstream/build_gamma/axeforge.map
+            project/reports/build.log
+            project/reports/image-info.txt
+            project/reports/image-verification.txt
+            project/reports/build-inputs.after.json
+          if-no-files-found: error
