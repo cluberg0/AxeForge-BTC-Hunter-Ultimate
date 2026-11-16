@@ -127,5 +127,16 @@ s = replace_once(s, " reset();scenario=Scenario::Power;", r''' reset();scenario=
  Result final{};assert(turbo_confirm(final,best,best_mv));assert(best_mv==1190&&probe_windows.back()==WINDOW_S);
  reset();scenario=Scenario::Power;''')
 p.write_text(s)
+# The image verifier and synthetic fixtures must enforce the NEW app version.
+# Keep all image header, segment, checksum and partition validation intact.
+old_version = "1.4.10-hunter-T1000-ONESEARCH"
+new_version = "1.4.10-hunter-T1000-FASTSEARCH"
+p = root / "verify_image.py"
+v = p.read_text()
+assert old_version in v, "Expected pinned ONESEARCH image version not found"
+p.write_text(v.replace(old_version, new_version))
+p = root / "tests/image.py"
+v = p.read_text()
+p.write_text(v.replace(old_version, new_version))
 (up / "version.txt").write_text("1.4.10-hunter-T1000-FASTSEARCH\n")
 print("FASTSEARCH overlay applied: 30+120s probes, full final validation, <=3 trim steps, actual 788->800 regression.")
