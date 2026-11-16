@@ -26,7 +26,7 @@ Linux: Git, Python/venv, g++/make, CMake3.x/Ninja, Node; mbedTLS/cJSON headers/l
 bash scripts/bootstrap-idf.sh
 export IDF_TOOLS_PATH="$PWD/.tools/idf-tools"
 source .tools/esp-idf/export.sh
-bash scripts/prepare.sh
+[ -d upstream ] || bash scripts/prepare.sh
 bash scripts/test.sh
 python3 tests/browser.py
 BROWSER=webkit python3 tests/browser.py
@@ -35,7 +35,7 @@ python3 scripts/stack_report.py
 (cd dist/unlock && sha256sum -c SHA256SUMS.txt)
 ```
 
-Для уже установленного IDF активируйте своё окружение ровно5.3.2. `prepare.sh` требует отсутствующего upstream, сверяет pinned commit и применяет все патчи. Удалённый CI настроен в .github/workflows/build.yml, но не запускался/не публиковался в этой сессии.
+Для уже установленного IDF активируйте своё окружение ровно5.3.2. Полный source ZIP уже содержит patched upstream; для Git checkout без него `prepare.sh` требует отсутствующего upstream, сверяет pinned commit и применяет все патчи. Удалённый CI настроен в .github/workflows/build.yml, но не запускался/не публиковался в этой сессии.
 
 Выход: `dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-UNLOCK.bin`. Build script проверяет stock board/partitions/limits, совпадение source inputs до/после, ELF symbols, отсутствие Weather/Mempool/price worker symbols, image/board tag/size/XOR/SHA. Логи в reports и reports/unlock. ELF/map и конфигурация включены в комплект; они не предназначены для OTA.
 
