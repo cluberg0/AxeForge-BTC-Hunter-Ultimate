@@ -1,13 +1,13 @@
 esptool.py v4.13.0
-File size: 1925072 (bytes)
+File size: 1934992 (bytes)
 Image version: 1
 Entry point: 403757b8
 5 segments
 
-Segment 1: len 0x85498 load 0x3c140020 file_offs 0x00000018 [DROM]
-Segment 2: len 0x0813c load 0x3fc9be00 file_offs 0x000854b8 [BYTE_ACCESSIBLE,MEM_INTERNAL,DRAM]
-Segment 3: len 0x02a14 load 0x40374000 file_offs 0x0008d5fc [MEM_INTERNAL,IRAM]
-Segment 4: len 0x130bf0 load 0x42000020 file_offs 0x00090018 [IROM]
-Segment 5: len 0x15394 load 0x40376a14 file_offs 0x001c0c10 [MEM_INTERNAL,IRAM]
-Checksum: bd (valid)
-Validation Hash: acbabe326589bed30420a87c70e64e322c1ffedab9b555b7b55663977cc550de (valid)
+Segment 1: len 0x86568 load 0x3c140020 file_offs 0x00000018 [DROM]
+Segment 2: len 0x0815c load 0x3fc9be00 file_offs 0x00086588 [BYTE_ACCESSIBLE,MEM_INTERNAL,DRAM]
+Segment 3: len 0x01924 load 0x40374000 file_offs 0x0008e6ec [MEM_INTERNAL,IRAM]
+Segment 4: len 0x1321c0 load 0x42000020 file_offs 0x00090018 [IROM]
+Segment 5: len 0x16484 load 0x40375924 file_offs 0x001c21e0 [MEM_INTERNAL,IRAM]
+Checksum: 67 (valid)
+Validation Hash: 57923a86db44cfc42e9ddf6c5fc96794da15a122d27bb0db0661d7f29108eb16 (valid)

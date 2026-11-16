@@ -1,0 +1,5 @@
+PASS package_release.py exit0
+PASS source/release ZIP CRC
+PASS packaged OTA and backup SHA256
+PASS source manifest matches compiled image
+PASS full source and iPhone rollback docs included

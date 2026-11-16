@@ -1,41 +1,41 @@
 Xtensa compiler -fstack-usage frames; static frame sizes, not full task call chains.
 
 core/turbo.cpp
-/workspace/axeforge/upstream/main/core/turbo.cpp:102:11:esp_err_t turbo::get(httpd_req_t*)	736	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:56:6:void turbo::start()	624	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:109:11:esp_err_t turbo::set(httpd_req_t*)	320	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:83:6:bool turbo::window_end(float)	128	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:64:6:bool turbo::begin(Point&)	112	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:71:6:bool turbo::check()	96	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:94:6:bool turbo::remember(uint16_t, uint16_t, float, float, float, float)	96	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:82:6:void turbo::window_begin()	80	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:37:8:turbo::Reason turbo::{anonymous}::health()	48	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:59:7:float turbo::power_budget()	48	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:99:7:turbo::Point turbo::fallback(uint16_t, float)	48	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:57:6:bool turbo::pending()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:57:43:bool turbo::active()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:57:80:bool turbo::engaged()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:57:171:bool turbo::cancelled()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:58:10:uint16_t turbo::max_frequency()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:60:6:void turbo::stop(Reason)	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:61:8:turbo::Reason turbo::reason()	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:62:6:void turbo::disarm(Reason)	32	static
-/workspace/axeforge/upstream/main/core/turbo.cpp:63:8:turbo::Reason turbo::monitor_trip()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:124:11:esp_err_t turbo::get(httpd_req_t*)	800	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:72:6:void turbo::start()	640	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:136:11:esp_err_t turbo::set(httpd_req_t*)	320	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:103:6:bool turbo::window_end(float)	128	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:84:6:bool turbo::begin(Point&)	112	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:43:8:turbo::Reason turbo::{anonymous}::health(bool)	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:75:6:bool turbo::manual_check(float)	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:79:7:float turbo::power_budget()	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:91:6:bool turbo::check()	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:114:6:bool turbo::remember(uint16_t, uint16_t, float, float, float, float)	96	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:102:6:void turbo::window_begin()	80	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:161:23:bool turbo::request_search()	80	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:83:8:turbo::Reason turbo::monitor_trip()	64	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:119:7:turbo::Point turbo::fallback(uint16_t, float)	48	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:120:6:bool turbo::better(float, uint16_t)	48	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:121:6:void turbo::trial(uint16_t, uint16_t, float, float, unsigned int)	48	static
+/workspace/axeforge/upstream/main/core/turbo_math.h:11:15:turbo_math::Budget turbo_math::budget(float, float, float, float, float, float, bool)	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:62:6:void turbo::sync_cap(uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:63:6:bool turbo::supported()	32	static
+/workspace/axeforge/upstream/main/core/turbo.cpp:70:6:bool turbo::unlocked()	32	static
 
 core/tuner.cpp
-/workspace/axeforge/upstream/main/core/tuner.cpp:528:13:void tuner_task(void*)	304	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:266:13:bool climb(uint16_t&, uint16_t&, float&)	208	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:184:15:Result measure(int, int, float, float)	112	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:297:13:bool climb(uint16_t&, uint16_t&, float&)	320	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:566:13:void tuner_task(void*)	304	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:185:15:Result measure(int, int, float, float)	112	static
 /workspace/axeforge/upstream/main/core/tuner.cpp:113:13:void note(const char*, float, float)	48	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:252:13:void lock_point(uint16_t, uint16_t, float)	48	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:377:13:void lower_chip(int, const char*)	48	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:662:6:void tuner::start()	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:259:13:void lock_point(uint16_t, uint16_t, float)	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:409:13:void lower_chip(int, const char*)	48	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:703:6:void tuner::start()	48	static
 /workspace/axeforge/upstream/main/core/tuner.cpp:119:13:bool should_abort()	32	static
 /workspace/axeforge/upstream/main/core/tuner.cpp:122:14:float power_ceiling()	32	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:146:13:void set_offsets(const int8_t*)	32	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:170:13:bool apply(uint16_t, uint16_t, bool)	32	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:666:6:void tuner::restart()	32	static
-/workspace/axeforge/upstream/main/core/tuner.cpp:672:6:void tuner::hold(uint16_t)	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:147:13:void set_offsets(const int8_t*)	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:171:13:bool apply(uint16_t, uint16_t, bool)	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:707:6:void tuner::restart()	32	static
+/workspace/axeforge/upstream/main/core/tuner.cpp:713:6:void tuner::hold(uint16_t)	32	static
 
 core/gates.cpp
 /workspace/axeforge/upstream/main/core/gates.cpp:25:6:bool gates::available()	32	static
