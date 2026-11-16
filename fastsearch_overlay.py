@@ -117,7 +117,7 @@ p = root / "tests/turbo_phase.py"
 s = p.read_text()
 s = replace_once(s, "bool better(float,uint16_t){return true;}", "bool better(float,uint16_t){return true;}void verified(uint16_t,uint16_t,float,float){}")
 s = replace_once(s, "static Result measure(int,int,float,float){", "static std::vector<unsigned> probe_f,probe_mv;static std::vector<int> probe_windows;static Result measure(int,int window,float,float){probe_f.push_back(f);probe_mv.push_back(mv);probe_windows.push_back(window);")
-s = replace_once(s, "calls.clear();g_state.tuner=", "calls.clear();probe_f.clear();probe_mv.clear();probe_windows.clear();g_state.tuner=")
+s = replace_once(s, "static void reset(){", "static void reset(){probe_f.clear();probe_mv.clear();probe_windows.clear();")
 s = replace_once(s, "best==1000&&best_mv==1000&&f==1000", "best==1000&&best_mv==1170&&f==1000")
 s = replace_once(s, " reset();scenario=Scenario::Power;", r''' reset();scenario=Scenario::Frequency;f=788;mv=1220;best=788;best_mv=1220;ghs=0;
  assert(climb(best,best_mv,ghs)&&best==1000);
