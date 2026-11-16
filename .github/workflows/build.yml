@@ -1,43 +1,64 @@
-name: Build Gamma BTC Hunter
+name: Build Gamma ONESEARCH
 on:
   workflow_dispatch:
   push:
-    paths: ['overlay/**', 'scripts/**', 'tests/**', '*.py', '.github/workflows/build.yml']
+    paths: ['AxeForge-ONESEARCH-build.zip']
 permissions:
   contents: read
 jobs:
   gamma:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Check project source is present
+      - name: Extract corrected source package
         run: |
-          test -f scripts/prepare.sh
-          test -f scripts/test.sh
-          test -f scripts/build.sh
-          test -f verify_image.py
-      - name: Prepare pinned source
-        run: bash scripts/prepare.sh
-      - name: Host and browser tests
+          test -f AxeForge-ONESEARCH-build.zip
+          mkdir -p project
+          unzip -q AxeForge-ONESEARCH-build.zip -d project
+          test -f project/one-search.patch
+      - name: Prepare and test pinned source
+        working-directory: project
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev
+          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
+          bash scripts/prepare.sh
           bash scripts/test.sh
+      - name: Browser regression tests
+        working-directory: project
+        run: |
           python3 -m venv .venv
-          .venv/bin/pip install playwright
-          .venv/bin/python -m playwright install --with-deps chromium
+          .venv/bin/pip install playwright pyyaml jsonschema
+          .venv/bin/python -m playwright install --with-deps chromium webkit
           .venv/bin/python tests/browser.py
+          BROWSER=webkit .venv/bin/python tests/browser.py
       - name: Compile ESP32-S3 Gamma OTA
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.3.2
           target: esp32s3
-          command: bash scripts/build.sh
-      - name: Verify artifact
-        run: python3 verify_image.py dist/axeforge-gamma-RU-fix10-btc-hunter.bin
+          command: cd project && bash scripts/build.sh
+      - name: Verify OTA again
+        working-directory: project
+        run: |
+          python3 verify_image.py dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin
+          cd dist/unlock
+          sha256sum -c SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Gamma-BTC-Hunter-OTA
-          path: dist/*
+          name: Gamma-ONESEARCH-OTA
+          path: |
+            project/dist/unlock/axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin
+            project/dist/unlock/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gamma-ONESEARCH-debug
+          path: |
+            project/upstream/build_gamma/axeforge.elf
+            project/upstream/build_gamma/axeforge.map
+            project/reports/build.log
+            project/reports/image-info.txt
+            project/reports/image-verification.txt
+            project/reports/build-inputs.after.json
           if-no-files-found: error
