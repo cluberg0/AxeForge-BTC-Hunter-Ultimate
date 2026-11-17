@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
-p=Path(sys.argv[1])/"upstream/main/web/index.html"
+root=Path(sys.argv[1])
+p=root/"upstream/main/web/index.html"
 s=p.read_text()
 def patch(a,b):
  global s
