@@ -44,6 +44,10 @@ jobs:
       - name: Verify and name FASTSEARCH OTA
         working-directory: project
         run: |
+          # ESP-IDF CI action creates the dist directory as root in its Docker container.
+          # Restore ownership before renaming or writing the checksum in the host runner.
+          sudo chown -R "$(id -u):$(id -g)" dist/unlock
+          chmod -R u+rwX dist/unlock
           cd dist/unlock
           sha256sum -c SHA256SUMS.txt
           mv axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin axeforge-gamma-BTC-HUNTER-TURBO1000-FASTSEARCH.bin
