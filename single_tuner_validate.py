@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 from html.parser import HTMLParser
 s=Path("upstream/main/web/index.html").read_text()
+assert s==Path("overlay/main/web/index.html").read_text(), "Browser and firmware web asset mismatch"
 cpp=Path("upstream/main/net/web.cpp").read_text()
 tuner=Path("upstream/main/core/tuner.cpp").read_text()
 assert 'FASTSEARCH · управление' in s
