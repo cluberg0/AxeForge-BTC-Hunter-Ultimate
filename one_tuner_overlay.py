@@ -43,6 +43,22 @@ replacement = """        // On a Gamma the only AUTO engine is FASTSEARCH. In pa
             continue;
         }
         if(turbo::supported() && cfg.autotune){
+            // Old stock tuning may leave a seed with excessive hardware errors.
+            // Without the stock tuner, recover ONCE to the conservative 525 MHz
+            // starting point so the guarded FASTSEARCH preflight can pass.
+            static bool gamma_seed_recovered = false;
+            if(!gamma_seed_recovered && !gamma_search_started &&
+               turbo::unlocked() && board::is_powered() &&
+               g_state.hash_counter_ms.load() && g_state.error_pct >= 1.0f){
+                gamma_seed_recovered = true;
+                if(board::freq_mhz()>525){
+                    note("FASTSEARCH: recovering unstable seed at stock clock");
+                    if(!apply(525,1150,true))board::shutdown();
+                    miner::reset_window();
+                }
+                vTaskDelay(pdMS_TO_TICKS(30000));
+                continue;
+            }
             const bool first = !gamma_search_started;
             const bool retry_network = gamma_network_failure_tick!=0 &&
                 (TickType_t)(xTaskGetTickCount()-gamma_network_failure_tick)>=pdMS_TO_TICKS(120000);
