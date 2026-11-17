@@ -1,0 +1,46 @@
+name: Inspect tuner sources for consolidation
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-tuner.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare full current source
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
+          mkdir -p project
+          unzip -q AxeForge-ONESEARCH-build.zip -d project
+          cd project
+          bash scripts/prepare.sh
+          python3 ../fastsearch_overlay.py .
+      - name: Print the real startup and tuner control paths
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('project/upstream/main')
+          for path in [root/'core/tuner.cpp',root/'core/tuner.h',root/'core/turbo.cpp',root/'core/turbo.h']:
+              if not path.exists(): continue
+              ls=path.read_text(errors='replace').splitlines()
+              print('===== FILE',path,'LINES',len(ls),'=====',flush=True)
+              for i,line in enumerate(ls):
+                  print(f'{i+1:04d}: {line}',flush=True)
+          terms=['tuner::','tuner_', 'tuner.', 'tuneStart','autotune', 'autoTune', 'auto_tune', 'run_turbo', 'run_tuner','turbo::','phase=']
+          print('====== STARTUP AND NETWORK REFERENCES ======',flush=True)
+          for p in root.rglob('*'):
+              if p.suffix not in ['.cpp','.c','.h']:continue
+              if p in [root/'core/tuner.cpp',root/'core/tuner.h',root/'core/turbo.cpp',root/'core/turbo.h']:continue
+              try:ls=p.read_text(errors='replace').splitlines()
+              except:continue
+              matched=[(i+1,x.strip()) for i,x in enumerate(ls) if any(t.lower() in x.lower() for t in terms)]
+              if matched:
+                  print('---',p,len(matched),'matches---',flush=True)
+                  for i,x in matched[:35]:print(f'{i}: {x[:240]}',flush=True)
+          PY
