@@ -10,6 +10,7 @@ on:
       - 'fastsearch_overlay.py'
       - '.github/workflows/single-tuner-v2.yml'
       - 'single_tuner_validate.py'
+      - 'single_tuner_browser_test.py'
 permissions:
   contents: read
 jobs:
@@ -37,6 +38,7 @@ jobs:
           python3 ../single_tuner_backend.py .
           python3 ../single_tuner_version.py .
           python3 ../single_tuner_validate.py .
+          python3 ../single_tuner_browser_test.py .
           bash scripts/test.sh
       - name: Browser regression tests
         working-directory: project
