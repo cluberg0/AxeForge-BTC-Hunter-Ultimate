@@ -29,4 +29,5 @@ assert s.count('id="turboStart"')==1
 assert s.count('id="turboStop"')==1
 assert s.count('data-legacy-tuner="hidden"')==1
 p.write_text(s)
+(root/"overlay/main/web/index.html").write_text(s)
 print("ONE-TUNER UI has one visible search card")
