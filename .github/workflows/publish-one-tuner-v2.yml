@@ -1,0 +1,76 @@
+name: Publish ONE-TUNER V2 firmware release
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/publish-one-tuner-v2.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download exact tested OTA from successful run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          gh run download 44030611799 --repo "$GH_REPO" --name Gamma-ONE-TUNER-V2-OTA --dir release
+          test -s release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin
+          test -s release/SHA256SUMS.txt
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          test "$(stat -c '%s' release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin)" -eq 1937072
+          printf '%s  %s\n' '6f8120c1d4977a75f29718ac885d87842d4e3f9800e608de0d6014936b1fbafa' 'release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin' | sha256sum -c -
+          strings release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin | grep -Fq '1.4.10-hunter-T1000-ONE-V2'
+          cd release && zip -q Gamma-ONE-TUNER-V2-OTA.zip axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin SHA256SUMS.txt
+      - name: Publish stable tagged GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG='v1.4.10-hunter-T1000-ONE-V2'
+          SOURCE_SHA='f3350030171951aa2d6aea6338b46a7a400ec56c'
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing overwrite."
+            exit 1
+          fi
+          cat > release/RELEASE_NOTES.md <<'NOTES'
+          ## AxeForge BTC Hunter ONE-TUNER V2 · Bitaxe Gamma 601 (BM1370)
+
+          **Firmware version:** `1.4.10-hunter-T1000-ONE-V2`
+          **Verified build:** [GitHub Actions #44030611799](https://github.com/cluberg0/AxeForge-BTC-Hunter-Ultimate/actions/runs/44030611799)
+          **Build source commit:** `f3350030171951aa2d6aea6338b46a7a400ec56c`
+
+          - ONE-TUNER: FASTSEARCH is the sole automatic frequency search on Gamma, without the old stock auto-tuning loop.
+          - Unified Russian-language overclock panel, one start/stop controller and one power-cap input.
+          - Restores an appropriate safe mode after aborted search; bounded retry for temporary network problems.
+          - Preserves PSU/current, thermal, fan, PLL, ASIC error and telemetry limits.
+          - Clearly shows both the PSU's nominal wattage and the *lower usable power budget* calculated with safety reserve.
+          - Example observed on one Gamma 601: held **825 MHz / 1210 mV**, approximately **1.65 TH/s** at **24.1–24.5 W**, within the observed 25.5 W effective budget. Hardware-specific, not a guaranteed result.
+
+          ### Install
+          Download `axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin` and flash using OTA under System. Do not flash the ZIP. Save settings and maintain stable power during the update.
+
+          ### Safety
+          - Tested by automated native checks, Chromium/WebKit UI tests, ESP-IDF build and OTA-image verification. Long-duration stability, overclock potential, and fault recovery on physical hardware **are not certified by CI**.
+          - A configured 30 W / 6 A power supply has a nominal rating of 30 W, **not** 30 W guaranteed ASIC budget. Do not bypass voltage/current/thermal protections or raise PSU settings beyond verified hardware.
+          - SHA-256 of the BIN is available in `SHA256SUMS.txt`.
+          NOTES
+          gh release create "$TAG" \
+            release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin \
+            release/SHA256SUMS.txt \
+            release/Gamma-ONE-TUNER-V2-OTA.zip \
+            --repo "$GH_REPO" \
+            --target "$SOURCE_SHA" \
+            --title 'Bitaxe Gamma 601 · ONE-TUNER V2 (FASTSEARCH)' \
+            --notes-file release/RELEASE_NOTES.md \
+            --latest
+          gh release view "$TAG" --repo "$GH_REPO" --json url,name,tagName,assets,isDraft,isPrerelease
