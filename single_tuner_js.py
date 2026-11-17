@@ -26,4 +26,5 @@ if(turboData?.available){
  if(!x.armed)$('tnote').textContent='Штатный автотюнер отключён. Причина: '+(turboReasons[x.reason]||x.reason);
 }""")
 p.write_text(s)
+(root/"overlay/main/web/index.html").write_text(s)
 print("Dashboard and power budget now show one FASTSEARCH engine")
