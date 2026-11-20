@@ -18,6 +18,10 @@ patch("else $('turboStatus').textContent='FASTSEARCH API недоступен';"
  $('onePowerNote').textContent=d
  ? 'Номинал БП '+d.psuWatts+' Вт / '+d.psuAmps+' А; ваш запрос '+d.requestedPower+' Вт; реально доступно '+d.effectivePower+' Вт. Резерв БП обязателен. '+(budgetReasons[d.budgetReason]||d.budgetReason)
  : 'Нет данных о питании: разгон недоступен.';""")
+# Storage failure is distinct from a hardware trip and must remain visible
+# while a safe verified setting continues running in RAM.
+patch("(turboReasons[d.reason]||d.reason);}",
+      "(turboReasons[d.reason]||d.reason)+(d.persisted===false?' · NVS: результат не сохранён'+(d.storageError?' (код '+d.storageError+')':''):'');}")
 patch("$('tsteps').textContent=t.steps;",
  """$('tsteps').textContent=t.steps;
 if(turboData?.available){

@@ -30,13 +30,14 @@ static bool turbo_confirm(Result &r,uint16_t f,uint16_t &mv)
     };
     r=full(mv);
     if(r.verdict!=Verdict::Stable || turbo::cancelled())return false;
+    // Bound total throughput loss to measurement noise, not 2% per trim step.
+    const float minimum_ghs=r.ghs*.98f;
     // Bounded final-only voltage trim. Every retained setting is fully measured.
     for(unsigned i=0;i<3 && mv>=board::clamp_mv(0)+MV_STEP;i++){
         const uint16_t prior=mv,candidate=uint16_t(mv-MV_STEP);
-        const float previous_ghs=r.ghs;
         if(!apply(f,candidate))return false;
         Result lower=full(candidate);
-        if(lower.verdict==Verdict::Stable&&!turbo::cancelled()&&lower.ghs>=previous_ghs*.98f){
+        if(lower.verdict==Verdict::Stable&&!turbo::cancelled()&&lower.ghs>=minimum_ghs){
             mv=candidate;r=lower;continue;
         }
         // Never recover from a fatal, user, sensor, thermal or PSU fault.
@@ -51,7 +52,7 @@ static bool turbo_confirm(Result &r,uint16_t f,uint16_t &mv)
         if(turbo::cancelled())turbo::holding(turbo::Reason::Errors);
         if(turbo::cancelled())return false;
         r=full(prior);
-        if(r.verdict!=Verdict::Stable||turbo::cancelled())return false;
+        if(r.verdict!=Verdict::Stable||turbo::cancelled()||r.ghs<minimum_ghs)return false;
         break;
     }
     return true;
@@ -126,6 +127,17 @@ s = replace_once(s, " reset();scenario=Scenario::Power;", r''' reset();scenario=
  assert(best_mv==1220); // no per-frequency trimming
  Result final{};assert(turbo_confirm(final,best,best_mv));assert(best_mv==1190&&probe_windows.back()==WINDOW_S);
  reset();scenario=Scenario::Power;''')
+# Regress actual final validation: repeated trims cannot accumulate throughput
+# loss, and a thermal/user fault can never be cleared by voltage recovery.
+s = replace_once(s, "NeedVoltage};", "NeedVoltage,TrimDroop,TrimFatal};")
+s = replace_once(s, "return r;}\n", "if(scenario==Scenario::TrimDroop)r.ghs*=1.f-.0015f*float(1220-mv);if(scenario==Scenario::TrimFatal&&mv<1220){turbo::stop(turbo::Reason::Thermal);r.verdict=Verdict::Aborted;}return r;}\n")
+s = replace_once(s, " reset();scenario=Scenario::Power;best=", r''' reset();scenario=Scenario::TrimDroop;f=850;mv=1220;best_mv=1220;
+ Result droop{};assert(turbo_confirm(droop,850,best_mv));
+ assert(best_mv==1210&&mv==1210&&droop.ghs>=1700*.98f); // total loss bounded, not compounded
+ reset();scenario=Scenario::TrimFatal;f=850;mv=1220;best_mv=1220;
+ Result fatal{};assert(!turbo_confirm(fatal,850,best_mv));
+ assert(turbo::cancelled()&&turbo::reason()==turbo::Reason::Thermal&&mv==1210); // no recovery write after real fault
+ reset();scenario=Scenario::Power;best=''')
 p.write_text(s)
 # The image verifier and synthetic fixtures must enforce the NEW app version.
 # Keep all image header, segment, checksum and partition validation intact.

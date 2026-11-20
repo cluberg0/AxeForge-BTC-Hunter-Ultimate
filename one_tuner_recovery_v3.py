@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""Conservative recovery: preserve verified result; debounce one-sample PSU spikes."""
+"""Retain confirmed results across searches without restoring probe clocks."""
 from pathlib import Path
 import sys
-p=Path(sys.argv[1])/'upstream/main/core/turbo.cpp'
-s=p.read_text()
-a='std::atomic<unsigned> limit{1000},requested_cap{30},state{0};'
-assert s.count(a)==1
-s=s.replace(a,a+'\nstd::atomic<unsigned> power_watch_samples{0};')
-a='if(std::isfinite(g_state.pin)&&g_state.pin>std::min(float(requested_cap.load()),std::min(psu_watts.load(),5.f*psu_amps.load())))return Reason::Power;'
-b='''// Debounce a single ADC spike; sustained excess still trips.
- float cap=std::min(float(requested_cap.load()),std::min(psu_watts.load(),5.f*psu_amps.load()));
- if(std::isfinite(g_state.pin)&&g_state.pin>cap){
-   if(++power_watch_samples>=2)return Reason::Power;
- }else power_watch_samples=0;'''
-assert s.count(a)==1
-s=s.replace(a,b)
-a='best_score=0;best_f=0;best_mv=0;best_watts=0;trial_count=0;'
-assert s.count(a)==1
-s=s.replace(a,'trial_count=0;power_watch_samples=0;')
-p.write_text(s)
-print('V3: PSU spike debounce and verified result retention')
+
+root = Path(sys.argv[1])
+for base in (root / 'upstream/main', root / 'overlay/main'):
+    p = base / 'core/turbo.cpp'
+    s = p.read_text()
+    old = 'Point anchor_point,seed;'
+    assert s.count(old) == 1
+    s = s.replace(old, 'Point confirmed_point,anchor_point,seed;')
+    old = 'void verified(uint16_t f,uint16_t mv,float ghs,float watts){best_f=f;best_mv=mv;best_score=ghs;best_watts=watts;}'
+    new = '''void verified(uint16_t f,uint16_t mv,float ghs,float watts){
+ Guard g;if(!g.ok)return;
+ // Only remember()'s fully validated archive can become a retained winner.
+ // better() also sees short probes, which must not survive the next search.
+ for(const auto&p:archive.points)if(turbo_math::valid(p)&&p.mhz==f&&p.mv==mv&&p.cap==requested_cap.load()){
+  confirmed_point=p;best_f=f;best_mv=mv;best_score=ghs;best_watts=watts;return;
+ }
+}'''
+    assert s.count(old) == 1
+    s = s.replace(old, new)
+    p.write_text(s)
+print('V3 recovery: retain confirmed result metadata, remeasure seeds, preserve immediate PSU guards')

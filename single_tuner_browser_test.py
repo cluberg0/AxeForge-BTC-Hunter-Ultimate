@@ -13,5 +13,14 @@ new="dialog_reply['value']='FASTSEARCH';http_fail['/api/turbo']=400"
 assert s.count(old)==1
 s=s.replace(old,new)
 s=s.replace('profiles18/22/25W and manually confirmed TURBO1000','ONE-TUNER single-panel UI and manually confirmed FASTSEARCH')
+# Exercise the real render path with an active, safe tuner and failed storage.
+old="  await page.locator('#turboStop').click();"
+new="""  await page.evaluate("turboData.persisted=false;turboData.storageError=4357;turboRender()")
+  assert 'результат не сохранён' in await page.locator('#turboStatus').inner_text()
+  assert '4357' in await page.locator('#turboStatus').inner_text()
+  assert not await page.locator('#turboStop').is_disabled()
+  await page.locator('#turboStop').click();"""
+assert s.count(old)==1
+s=s.replace(old,new)
 p.write_text(s)
 print('Browser test now verifies no second tuner UI and the same API safeguards')
