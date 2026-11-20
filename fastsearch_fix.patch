@@ -1,0 +1,373 @@
+--- a/main/core/tuner.cpp
++++ b/main/core/tuner.cpp
+@@ -200,6 +200,7 @@
+         p_ceil=power_ceiling(); // live user/PSU/thermal derating, not a frozen 10-minute budget
+         if ((turbo::active()&&!turbo::check()) || should_abort()) {
+             r.verdict = Verdict::Aborted;
++            if(std::isfinite(g_state.pin)&&g_state.pin>r.pmax)r.pmax=g_state.pin;
+             if(turbo::active())turbo::trial(board::freq_mhz(),board::core_mv(),r.ghs,r.pmax,unsigned(r.verdict));
+             return r;
+         }
+@@ -272,44 +273,14 @@
+ }
+ 
+ // Same stock tuner task and apply/measure functions; no additional controller.
+-// The climb uses short probes; only the selected point is fully validated.
+-// Keep every original measurement/telemetry/PSU/temperature/PLL guard.
++// Once the search ends, validate a fixed candidate without further overclocking.
+ static bool turbo_confirm(Result &r,uint16_t f,uint16_t &mv)
+ {
+-    auto full=[&](uint16_t voltage){
+-        g_state.tuner.phase=TunerPhase::Measuring;
+-        note("Final verify %.0f MHz @ %.0f mV",f,voltage);
+-        Result x=measure(WARMUP_S,WINDOW_S,MAX_ERR_PCT,WORST_CHIP_PCT);
+-        g_state.tuner.steps_done++;peaks(x);
+-        return x;
+-    };
+-    r=full(mv);
+-    if(r.verdict!=Verdict::Stable || turbo::cancelled())return false;
+-    // Bounded final-only voltage trim. Every retained setting is fully measured.
+-    for(unsigned i=0;i<3 && mv>=board::clamp_mv(0)+MV_STEP;i++){
+-        const uint16_t prior=mv,candidate=uint16_t(mv-MV_STEP);
+-        const float previous_ghs=r.ghs;
+-        if(!apply(f,candidate))return false;
+-        Result lower=full(candidate);
+-        if(lower.verdict==Verdict::Stable&&!turbo::cancelled()&&lower.ghs>=previous_ghs*.98f){
+-            mv=candidate;r=lower;continue;
+-        }
+-        // Never recover from a fatal, user, sensor, thermal or PSU fault.
+-        // Only an ordinary error/throughput failure during an intentional trim
+-        // may restore the last fully verified voltage at the same frequency.
+-        const auto why=turbo::reason();
+-        bool recoverable=lower.verdict==Verdict::Errors ||
+-            (lower.verdict==Verdict::Stable&&!turbo::cancelled()) ||
+-            (lower.verdict==Verdict::Aborted&&why==turbo::Reason::Errors);
+-        if(!recoverable || (turbo::cancelled()&&why!=turbo::Reason::Errors))return false;
+-        if(!apply(f,prior,true))return false;
+-        if(turbo::cancelled())turbo::holding(turbo::Reason::Errors);
+-        if(turbo::cancelled())return false;
+-        r=full(prior);
+-        if(r.verdict!=Verdict::Stable||turbo::cancelled())return false;
+-        break;
+-    }
+-    return true;
++    g_state.tuner.phase=TunerPhase::Measuring;
++    note("Final verify %.0f MHz @ %.0f mV",f,mv);
++    r=measure(WARMUP_S,WINDOW_S,MAX_ERR_PCT,WORST_CHIP_PCT);
++    g_state.tuner.steps_done++;peaks(r);
++    return r.verdict==Verdict::Stable&&!turbo::cancelled()&&turbo::headroom(r.pmax);
+ }
+ 
+ // Phase 1: climb. Returns false if aborted.
+@@ -335,6 +306,7 @@
+                  verdict_text(r.verdict), r.ghs, r.err, r.worst_chip, r.tmax, r.vrmax, r.pmax);
+ 
+         if (r.verdict == Verdict::Stable) {
++            if(turbo::active())turbo::probe(f,mv,r.ghs,r.pmax,r.tmax,r.vrmax);
+             float jth = joules_per_th(r);
+             // a step only counts as better or worse beyond the noise of one window;
+             // in between, the climb goes on without counting it either way
+@@ -536,6 +508,35 @@
+     default:return turbo::Reason::Frequency;
+     }
+ }
++// Finite candidate set; each (frequency, voltage) can be tried only once per
++// search. HOLD recovery also requires a lower frequency, preventing oscillation.
++static bool turbo_select(uint16_t &f,uint16_t &mv,float &ghs,turbo::Reason wall_reason,uint16_t below=1001)
++{
++    turbo::Point candidate;
++    while(turbo::recovery_ready()&&turbo::next_candidate(candidate,below)){
++        if(held(candidate.mhz)!=candidate.mhz)continue;
++        if(!apply(candidate.mhz,candidate.mv,true))return false;
++        turbo::resume();
++        if(turbo::cancelled())return false;
++        uint16_t voltage=candidate.mv;
++        Result verified{};
++        if(!turbo_confirm(verified,candidate.mhz,voltage)||verified.ghs<candidate.ghs*.95f){
++            // Soft power/error failures reject this candidate, never resume
++            // climbing. All latched hardware/user faults terminate selection.
++            if(verified.verdict==Verdict::Thermal){turbo::stop(turbo::Reason::Thermal);return false;}
++            if(!turbo::recovery_ready())return false;
++            continue;
++        }
++        if(!turbo::remember(candidate.mhz,voltage,verified.ghs,verified.pmax,verified.tmax,verified.vrmax))return false;
++        if(!turbo::recovery_ready())return false;
++        f=candidate.mhz;mv=voltage;ghs=verified.ghs;
++        g_state.tuner.best_freq=f;g_state.tuner.best_mv=mv;g_state.tuner.best_ghs=ghs;
++        turbo::verified(f,mv,ghs,verified.pmax);
++        turbo::holding(wall_reason);
++        return !turbo::cancelled();
++    }
++    return false;
++}
+ static void run_turbo_phase()
+ {
+     turbo::Point anchor;if(!turbo::begin(anchor))return;
+@@ -543,34 +544,10 @@
+     uint16_t f=anchor.mhz,mv=anchor.mv;float ghs=0;
+     const auto seed=turbo::start_point();
+     fresh_readout();
+-    bool good=apply(seed.mhz,seed.mv)&&climb(f,mv,ghs);
++    if(apply(seed.mhz,seed.mv))climb(f,mv,ghs);
+     auto reason=turbo::reason();
+-    bool can_hold=good&&ghs>0&&!turbo::cancelled();
+-    // A power/error wall may terminate a short probe. Restore the best measured
+-    // candidate, then validate it fully before allowing a sustained hold.
+-    if(!can_hold&&ghs>0&&board::is_powered()&&(reason==turbo::Reason::Power||reason==turbo::Reason::Errors)){
+-        if(apply(f,mv,true)){
+-            turbo::holding(reason);
+-            can_hold=!turbo::cancelled();
+-        }
+-    }
+-    if(can_hold){
+-        if(!apply(f,mv,true))can_hold=false;
+-        else {
+-            Result verified{};
+-            if(!turbo_confirm(verified,f,mv)){
+-                can_hold=false;
+-                if(turbo::reason()!=turbo::Reason::None)reason=turbo::reason();
+-            }else if(!turbo::remember(f,mv,verified.ghs,verified.pmax,verified.tmax,verified.vrmax)){
+-                can_hold=false;reason=turbo::reason();
+-            }else{
+-                ghs=verified.ghs;
+-                g_state.tuner.best_freq=f;g_state.tuner.best_mv=mv;g_state.tuner.best_ghs=ghs;
+-                turbo::verified(f,mv,ghs,verified.pmax);
+-                turbo::holding(reason==turbo::Reason::None?turbo_wall_reason():reason);
+-            }
+-        }
+-    }
++    if(reason==turbo::Reason::None)reason=turbo_wall_reason();
++    bool can_hold=turbo_select(f,mv,ghs,reason,uint16_t(board::freq_mhz()+1));
+     while(can_hold&&board::is_powered()&&!s_restart&&settings::get().autotune){
+         g_state.tuner.phase=TunerPhase::Locked;
+         snprintf(g_state.tuner.note,sizeof(g_state.tuner.note),"FASTSEARCH held %u MHz @ %u mV; safety watchdog active",f,mv);
+@@ -579,12 +556,7 @@
+         reason=turbo::reason();
+         if(reason==turbo::Reason::None||reason==turbo::Reason::Frequency||reason==turbo::Reason::Voltage||reason==turbo::Reason::Hold)
+             reason=r.verdict==Verdict::Power?turbo::Reason::Power:r.verdict==Verdict::Thermal?turbo::Reason::Thermal:turbo::Reason::Errors;
+-        if(reason==turbo::Reason::Errors||reason==turbo::Reason::Power){
+-            auto prior=turbo::fallback(f,turbo::power_budget());
+-            if(prior.mhz<f&&prior.ghs>0&&prior.watts>0&&prior.watts<=turbo::power_budget()*.95f&&apply(prior.mhz,prior.mv,true)){
+-                f=prior.mhz;mv=prior.mv;turbo::holding(reason);continue;
+-            }
+-        }
++        if((reason==turbo::Reason::Errors||reason==turbo::Reason::Power)&&turbo_select(f,mv,ghs,reason,f))continue;
+         break;
+     }
+     if(reason==turbo::Reason::None)reason=turbo::reason();
+@@ -593,7 +565,7 @@
+     if(board::is_powered()&&!apply(anchor.mhz,anchor.mv,true))board::shutdown();
+     turbo::finish();
+     if(board::is_powered())g_state.tuner=previous;
+-    // Never persist a Turbo frequency, cap or armed flag into stock settings.
++    // Never persist a Turbo frequency into stock settings or erase user NVS.
+ }
+ 
+ static void tuner_task(void *)
+--- a/main/core/turbo.cpp
++++ b/main/core/turbo.cpp
+@@ -24,6 +24,9 @@
+ namespace turbo {
+ namespace {
+ struct Archive{uint32_t magic=0x54554232;Point points[turbo_math::MapSize];};
++// Short probes stay in RAM; only fully verified points enter the NVS archive.
++Point probes[turbo_math::MapSize];unsigned probe_count=0;
++struct Attempt{uint16_t f,mv;};Attempt attempted[turbo_math::MapSize*2];unsigned attempted_count=0;
+ Archive archive;uint32_t point_generation[turbo_math::MapSize]={};
+ struct Config{uint32_t magic=0x554e4c31;float watts=30,amps=6;uint16_t maximum=1000,cap=30;};
+ Config config;
+@@ -34,25 +37,31 @@
+ std::atomic<bool> queued{false},running{false},cancel{false};
+ std::atomic<unsigned> limit{1000},requested_cap{30},state{0};
+ std::atomic<unsigned> power_watch_samples{0};
++std::atomic<uint32_t> error_settle_until{0};
+ std::atomic<Reason> why{Reason::None},fatal_reason{Reason::None};std::atomic<uint32_t> heartbeat{0},clock_change_ms{0};
+ Point anchor_point,seed;std::atomic<bool> persisted{true};uint32_t generation=0,session=0;int pool=-1;uint16_t original_f=0,original_mv=0;
+ float last_score=0;float baseline_useful=0,window_min_vin=0,last_useful=0;unsigned last_replies=0,over_power=0;int64_t window_started=0;
+ hunter::WorkSnapshot initial{},first{};
+-const char*text(Reason r){switch(r){case Reason::Frequency:return "frequency";case Reason::Power:return "power";case Reason::Thermal:return "temperature";case Reason::Supply:return "supply";case Reason::Errors:return "errors";case Reason::Network:return "network";case Reason::Pll:return "pll";case Reason::User:return "user";case Reason::Settings:return "settings";case Reason::Storage:return "storage";case Reason::Telemetry:return "telemetry";case Reason::Samples:return "insufficient_accepted_work";case Reason::Controller:return "controller";case Reason::Voltage:return "voltage";case Reason::Hold:return "fault_hold";default:return "none";}}
++const char*text(Reason r){switch(r){case Reason::Frequency:return "frequency";case Reason::Power:return "power";case Reason::HardwarePower:return "hardware_power";case Reason::Thermal:return "temperature";case Reason::Supply:return "supply";case Reason::Errors:return "errors";case Reason::Network:return "network";case Reason::Pll:return "pll";case Reason::User:return "user";case Reason::Settings:return "settings";case Reason::Storage:return "storage";case Reason::Telemetry:return "telemetry";case Reason::Samples:return "insufficient_accepted_work";case Reason::Controller:return "controller";case Reason::Voltage:return "voltage";case Reason::Hold:return "fault_hold";default:return "none";}}
+ struct Guard{bool ok;Guard():ok(mu&&xSemaphoreTake(mu,pdMS_TO_TICKS(100))==pdTRUE){}~Guard(){if(ok)xSemaphoreGive(mu);}};
+ int active_pool(){int p=-1;for(int i=0;i<4;i++)if(g_state.pools[i].connected&&g_state.pools[i].work_pct==100){if(p>=0)return -1;p=i;}return p;}
+ bool fresh(){uint32_t now=uint32_t(esp_timer_get_time()/1000),s=g_state.telemetry_ms.load(),h=g_state.hash_counter_ms.load();return s&&now-s<=3000&&((h&&now-h<=10000)||(unlocked()&&clock_change_ms.load()&&now-clock_change_ms.load()<=10000))&&g_state.power_sample_ms.load()&&now-g_state.power_sample_ms.load()<=3000;}
+ Reason health(bool search=true){
+  if(!board::is_powered()||g_state.status!=SysStatus::Mining)return Reason::Supply;
+  if(!g_state.time_synced||time(nullptr)<1577836800 || time(nullptr)>=4102444800LL)return Reason::Telemetry;
+- if(!fresh()||!g_state.temp_ok||!g_state.vr_temp_ok||!std::isfinite(g_state.pin)||g_state.pin<=0||!std::isfinite(g_state.iin)||g_state.iin<=0||!std::isfinite(g_state.iout)||g_state.iout<=0||!std::isfinite(g_state.vin)||!std::isfinite(g_state.vout)||g_state.vout<.8f||g_state.vout>1.32f||g_state.core_mv>1300)return Reason::Telemetry;
++ if(!fresh()||!std::isfinite(g_state.chip_temp_max)||!std::isfinite(g_state.vr_temp)||!g_state.temp_ok||!g_state.vr_temp_ok||!std::isfinite(g_state.pin)||g_state.pin<=0||!std::isfinite(g_state.iin)||g_state.iin<=0||!std::isfinite(g_state.iout)||g_state.iout<=0||!std::isfinite(g_state.vin)||!std::isfinite(g_state.vout)||g_state.vout<.8f||g_state.vout>1.32f||g_state.core_mv>1300)return Reason::Telemetry;
+  if(g_state.chip_temp_max>=65||g_state.vr_temp>=75||!g_state.fan_present[0]||g_state.fan_rpm[0]<600)return Reason::Thermal;
+  auto level=psu::state().level;
+  if(g_state.vin<4.85f||g_state.vin>5.35f||g_state.iin>turbo_math::budget(30,psu_watts.load(),psu_amps.load(),g_state.vin,0,0,true).current_limit||g_state.iout>24.f||level==psu::Level::Weak||level==psu::Level::Bad)return Reason::Supply;
+- if(!std::isfinite(g_state.error_pct)||g_state.error_pct<0||g_state.error_pct>=(active()?4:1))return Reason::Errors;
+  if(!g_state.pool_connected||active_pool()<0)return Reason::Network;
+  auto&cfg=settings::get();if(search&&(!cfg.autotune||cfg.chip_tune||cfg.pool_mode!=PoolMode::Failover))return Reason::Settings;
+  for(auto off:cfg.chip_off)if(search&&off)return Reason::Settings;
++ // Run every network/settings guard even if the previous PLL point left errors.
++ if(!std::isfinite(g_state.error_pct)||g_state.error_pct<0)return Reason::Telemetry;
++ const uint32_t now=uint32_t(esp_timer_get_time()/1000);
++ const uint32_t until=error_settle_until.load();
++ const bool settling=active()&&until&&int32_t(until-now)>0;
++ if(!settling&&g_state.error_pct>=(active()?4:1))return Reason::Errors;
+  return Reason::None;
+ }
+ std::atomic<int> storage_error{0};
+@@ -81,9 +90,28 @@
+ }
+ bool unlocked(){return supported()&&settings::get().overclock;}
+ void safe_boot(){auto&c=settings::get();if(!supported())c.overclock=false;if(c.freq_mhz>800||c.tuned_freq>800){c.freq_mhz=525;c.core_mv=1150;c.tuned_freq=0;c.tuned_mv=0;}/* leave unlock, PSU and user cap intact; no NVS erase */}
+-void start(){mu=xSemaphoreCreateMutex();if(!mu)return;nvs_handle_t h;if(nvs_open("af_turbo",NVS_READONLY,&h)==ESP_OK){Archive loaded;size_t n=sizeof(loaded);if(nvs_get_blob(h,"map",&loaded,&n)==ESP_OK&&n==sizeof(loaded)&&loaded.magic==archive.magic){archive=loaded;for(auto&p:archive.points)if(!turbo_math::valid(p))p=Point{};}
+- Config c;n=sizeof(c);auto e=nvs_get_blob(h,"config",&c,&n);if(e==ESP_OK){if(n==sizeof(c)&&c.magic==config.magic&&turbo_math::psu_valid(c.watts,c.amps)&&turbo_math::max_valid(c.maximum,c.cap))config=c;else {settings::get().overclock=false;persisted=false;why=Reason::Storage;}}nvs_close(h);}
+- psu_watts=config.watts;psu_amps=config.amps;limit=config.maximum;requested_cap=config.cap;sync_cap(settings::get().power_cap_w);safe_boot();}
++void start(){
++ mu=xSemaphoreCreateMutex();if(!mu)return;
++ nvs_handle_t h;esp_err_t e=nvs_open("af_turbo",NVS_READONLY,&h);
++ archive=Archive{};persisted=true;storage_error=0;
++ auto load_error=[&](esp_err_t err){persisted=false;storage_error=int(err);};
++ if(e==ESP_OK){
++  Archive loaded;size_t n=sizeof(loaded);e=nvs_get_blob(h,"map",&loaded,&n);
++  if(e==ESP_OK){
++   bool valid=n==sizeof(loaded)&&loaded.magic==archive.magic;
++   if(valid)for(const auto &p:loaded.points)if(p.mhz&&!turbo_math::valid(p)){valid=false;break;}
++   if(valid)archive=loaded;else load_error(ESP_FAIL);
++  }else if(e!=ESP_ERR_NVS_NOT_FOUND)load_error(e);
++  Config c;n=sizeof(c);e=nvs_get_blob(h,"config",&c,&n);
++  if(e==ESP_OK){
++   if(n==sizeof(c)&&c.magic==config.magic&&turbo_math::psu_valid(c.watts,c.amps)&&turbo_math::max_valid(c.maximum,c.cap))config=c;
++   else {settings::get().overclock=false;load_error(ESP_FAIL);why=Reason::Storage;}
++  }else if(e!=ESP_ERR_NVS_NOT_FOUND){settings::get().overclock=false;load_error(e);why=Reason::Storage;}
++  nvs_close(h);
++ }else if(e!=ESP_ERR_NVS_NOT_FOUND){settings::get().overclock=false;load_error(e);why=Reason::Storage;}
++ psu_watts=config.watts;psu_amps=config.amps;limit=config.maximum;requested_cap=config.cap;
++ sync_cap(settings::get().power_cap_w);safe_boot();
++}
+ bool manual_check(float proposed_cap){auto r=health(false);if(r!=Reason::None){why=r;return false;}float cap=proposed_cap<0?float(settings::get().power_cap_w):proposed_cap;if(cap==0)cap=30;auto budget=turbo_math::budget(cap,psu_watts.load(),psu_amps.load(),g_state.vin,g_state.chip_temp_max,g_state.vr_temp,psu::state().level==psu::Level::Ok);if(!std::isfinite(cap)||cap>30||g_state.pin>budget.effective){why=Reason::Power;return false;}return true;}
+ 
+ bool pending(){return queued.load();}bool active(){return running.load();}bool engaged(){unsigned s=state.load();return pending()||active()||s==1||s==2||s==3||s==5;}bool cancelled(){return cancel.load()||fatal_reason.load()!=Reason::None;}
+@@ -93,9 +121,9 @@
+ Reason reason(){auto r=fatal_reason.load();return r==Reason::None?why.load():r;}
+ void disarm(Reason r){bool owner=engaged();fatal_reason=r;stop(r);running=false;queued=false;state=owner?5:4;auto&c=settings::get();c.freq_mhz=525;c.core_mv=1150;c.tuned_freq=c.tuned_mv=0;}
+ Reason monitor_trip(){if(!active()&&!unlocked())return Reason::None;uint32_t now=uint32_t(esp_timer_get_time()/1000);if(active()&&now-heartbeat.load()>10000)return Reason::Controller;// Debounce a single ADC spike; sustained excess still trips.
+- float cap=std::min(float(requested_cap.load()),std::min(psu_watts.load(),5.f*psu_amps.load()));
++ float cap=std::min(30.f,std::min(psu_watts.load(),5.f*psu_amps.load()));
+  if(std::isfinite(g_state.pin)&&g_state.pin>cap){
+-   if(++power_watch_samples>=2)return Reason::Power;
++   if(++power_watch_samples>=2)return Reason::HardwarePower;
+  }else power_watch_samples=0;if(std::isfinite(g_state.iin)&&g_state.iin>std::min(psu_amps.load(),6.8f))return Reason::Supply;return Reason::None;}
+ bool begin(Point&a){
+  if(!unlocked()||!queued.exchange(false))return false;
+@@ -116,12 +144,14 @@
+  // Reuse previously measured stock-range points, but remeasure every seed.
+  // Keep the original safe rollback anchor separate from the candidate.
+  {Guard g;if(g.ok)for(const auto&p:archive.points)if(turbo_math::valid(p)&&p.mhz<=800&&p.mhz>=seed.mhz&&p.mhz<=unsigned(seed.mhz)+25&&p.watts<=power_budget()*.90f&&g_state.chip_temp_max<=p.max_asic+5&&g_state.vr_temp<=p.max_vr+5){if(p.mhz>seed.mhz||p.ghs>seed.ghs)seed=p;}}
+- pool=active_pool();session=pools::session_id(pool);original_f=settings::get().freq_mhz;original_mv=settings::get().core_mv;initial=hunter::work_snapshot(pool);++generation;trial_count=0;power_watch_samples=0;baseline_useful=0;clock_change_ms=0;window_min_vin=g_state.vin;over_power=0;why=Reason::None;heartbeat=uint32_t(esp_timer_get_time()/1000);state=2;running=true;return true;
++ pool=active_pool();session=pools::session_id(pool);original_f=settings::get().freq_mhz;original_mv=settings::get().core_mv;initial=hunter::work_snapshot(pool);++generation;trial_count=0;power_watch_samples=0;probe_count=attempted_count=0;error_settle_until=0;baseline_useful=0;clock_change_ms=0;window_min_vin=g_state.vin;over_power=0;why=Reason::None;heartbeat=uint32_t(esp_timer_get_time()/1000);state=2;running=true;return true;
+ }
+ Point start_point(){return seed;}
+ bool check(){
+  heartbeat=uint32_t(esp_timer_get_time()/1000);if(cancelled())return false;
+  auto r=health();if(r!=Reason::None){stop(r);return false;}
++ const float hard=std::min(30.f,std::min(psu_watts.load(),5.f*psu_amps.load()));
++ if(g_state.pin>hard){stop(Reason::HardwarePower);return false;}
+  if(pool!=active_pool()||session!=pools::session_id(pool)){stop(Reason::Network);return false;}
+  auto&cfg=settings::get();if(cfg.freq_mhz!=original_f||cfg.core_mv!=original_mv){stop(Reason::Settings);return false;}
+  auto w=hunter::work_snapshot(pool);if(w.failed!=initial.failed||w.missing!=initial.missing){stop(Reason::Network);return false;}
+@@ -155,6 +185,59 @@
+  if(!persisted)ESP_LOGW("turbo","NVS save failed, continuing with volatile measurement");
+  return true;
+ }
++bool headroom(float peak){
++ const float cap=power_budget();
++ return std::isfinite(peak)&&peak>0&&peak<=cap-std::max(.5f,cap*.02f);
++}
++void probe(uint16_t f,uint16_t mv,float ghs,float watts,float chip,float vr){
++ Point p{f,mv,watts,ghs,last_useful,uint32_t(time(nullptr)),uint16_t(requested_cap.load()),0,chip,vr,window_min_vin};
++ if(!turbo_math::valid(p))return;
++ Guard g;if(!g.ok)return;
++ probes[probe_count++%turbo_math::MapSize]=p;
++}
++bool next_candidate(Point &out,uint16_t below){
++ Guard g;if(!g.ok||attempted_count>=turbo_math::MapSize*2)return false;
++ const auto now=uint32_t(time(nullptr));bool found=false;
++ auto consider=[&](const Point &p){
++  if(!turbo_math::valid(p)||p.mhz>=below||p.mhz>max_frequency()||p.mv>g_state.core_mv||p.time>now||now-p.time>86400||
++     !headroom(p.watts)||g_state.chip_temp_max>p.max_asic+5||g_state.vr_temp>p.max_vr+5||
++     g_state.vin<p.min_vin-.1f)return;
++  for(unsigned i=0;i<attempted_count;i++)if(attempted[i].f==p.mhz&&attempted[i].mv==p.mv)return;
++  // Rank measured throughput first; prefer power headroom when scores tie.
++  if(!found||p.ghs>out.ghs||(p.ghs==out.ghs&&p.watts<out.watts)){out=p;found=true;}
++ };
++ for(unsigned i=0;i<std::min(probe_count,turbo_math::MapSize);i++)consider(probes[i]);
++ for(const auto &p:archive.points)consider(p);
++ if(found)attempted[attempted_count++]={out.mhz,out.mv};
++ return found;
++}
++bool recovery_ready(){
++ if(fatal_reason.load()!=Reason::None)return false;
++ if(cancel.load()&&why.load()!=Reason::Power&&why.load()!=Reason::Errors)return false;
++ auto r=health();
++ // Errors from the failed point must be measured again at the lower point.
++ // Sensors, temperature, PSU, settings and network are never bypassed.
++ if(r!=Reason::None&&r!=Reason::Errors){stop(r);return false;}
++ if(pool!=active_pool()||session!=pools::session_id(pool)){stop(Reason::Network);return false;}
++ auto &cfg=settings::get();
++ if(cfg.freq_mhz!=original_f||cfg.core_mv!=original_mv){stop(Reason::Settings);return false;}
++ const auto w=hunter::work_snapshot(pool);
++ if(w.failed!=initial.failed||w.missing!=initial.missing){stop(Reason::Network);return false;}
++ // Hardware watt/current limits are independent of the software search wall.
++ const float hard=std::min(30.f,std::min(psu_watts.load(),5.f*psu_amps.load()));
++ if(g_state.pin>hard){stop(Reason::HardwarePower);return false;}
++ return true;
++}
++void resume(){
++ if(fatal_reason.load()!=Reason::None)return;
++ if(cancel.load()&&why.load()!=Reason::Power&&why.load()!=Reason::Errors)return;
++ // Global error_pct is published once per second by counter_task. Allow at
++ // most two seconds for the previous clock's value to be replaced. All other
++ // health checks and the hardware monitor remain active; the full candidate
++ // measurement still enforces ASIC error/throughput limits after warmup.
++ error_settle_until=uint32_t(esp_timer_get_time()/1000)+2000;
++ cancel=false;over_power=0;why=Reason::None;state=2;
++}
+ Point fallback(uint16_t failed,float cap){Point p=anchor_point;Guard g;if(!g.ok)return p;for(unsigned i=0;i<turbo_math::MapSize;i++){auto&v=archive.points[i];if(point_generation[i]==generation&&v.mhz<failed&&v.ghs>p.ghs&&v.watts<=cap*.95f&&v.mv<=g_state.core_mv)p=v;}return p;}
+ void verified(uint16_t f,uint16_t mv,float ghs,float watts){best_f=f;best_mv=mv;best_score=ghs;best_watts=watts;}
+ bool better(float ghs,uint16_t mv){float score=std::min(ghs,last_score);if(score>best_score.load()*1.01f || (score>=best_score.load()*.99f&&mv<best_mv.load())){best_score=score;best_f=g_state.freq_mhz;best_mv=mv;best_watts=g_state.pin;return true;}return false;}
+@@ -162,14 +245,14 @@
+ void holding(Reason r){if(fatal_reason.load()!=Reason::None)return;why=r;state=3;cancel=false;over_power=0;}
+ void finish(){running=false;queued=false;cancel=false;state=4;}
+ esp_err_t get(httpd_req_t*req){
+- Archive copy;{Guard g;if(!g.ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"turbo unavailable");copy=archive;}
++ Archive copy;unsigned total_steps=0;{Guard g;if(!g.ok)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"turbo unavailable");copy=archive;}
+  char*b=static_cast<char*>(malloc(12288));if(!b)return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"no memory");
+  int n=snprintf(b,12288,"{\"available\":true,\"armed\":%s,\"state\":%u,\"maxFreq\":%u,\"requestedPower\":%u,\"effectivePower\":%.2f,\"voltageLimit\":1300,\"reason\":\"%s\",\"powerEstimated\":true,\"persisted\":%s",engaged()?"true":"false",state.load(),limit.load(),requested_cap.load(),double(power_budget()),text(reason()),persisted.load()?"true":"false");
+  float applied=0;asic::pll_supported(asic::frequency(),applied);
+  auto budget=turbo_math::budget(unlocked()?float(requested_cap.load()):25.f,psu_watts.load(),psu_amps.load(),g_state.vin,g_state.chip_temp_max,g_state.vr_temp,psu::state().level==psu::Level::Ok);
+  n+=snprintf(b+n,12288-size_t(n),",\"unlocked\":%s,\"activeMaxFreq\":%u,\"userMaxPower\":%u,\"psuWatts\":%.1f,\"psuAmps\":%.1f,\"powerReserve\":%.2f,\"inputMargin\":%.2f,\"budgetReason\":\"%s\",\"appliedFreq\":%.3f,\"bestFreq\":%u,\"bestMv\":%u,\"bestGHs\":%.3f,\"bestWatts\":%.3f,\"trials\":[",unlocked()?"true":"false",unlocked()&&psu::state().level!=psu::Level::Weak&&psu::state().level!=psu::Level::Bad?1000u:800u,unlocked()?30u:25u,double(psu_watts.load()),double(psu_amps.load()),double(budget.reserve),double(budget.margin),budget.reason,double(applied),best_f.load(),best_mv.load(),double(best_score.load()),double(best_watts.load()));
+- {Guard g;if(!g.ok){free(b);return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"busy");}unsigned count=std::min(trial_count,16u);for(unsigned i=0;i<count;i++){auto&t=trials[(trial_count-count+i)%16];n+=snprintf(b+n,12288-size_t(n),"%s[%u,%u,%.3f,%.3f,%u]",i?",":"",unsigned(t.f),unsigned(t.mv),double(t.gh),double(t.w),t.verdict);}}
+- n+=snprintf(b+n,12288-size_t(n),"],\"points\":[");
++ {Guard g;if(!g.ok){free(b);return httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"busy");}total_steps=trial_count;unsigned count=std::min(trial_count,16u);for(unsigned i=0;i<count;i++){auto&t=trials[(trial_count-count+i)%16];n+=snprintf(b+n,12288-size_t(n),"%s[%u,%u,%.3f,%.3f,%u]",i?",":"",unsigned(t.f),unsigned(t.mv),double(t.gh),double(t.w),t.verdict);}}
++ n+=snprintf(b+n,12288-size_t(n),"],\"storageError\":%d,\"totalSteps\":%u,\"points\":[",storage_error.load(),total_steps);
+  bool comma=false;for(auto&p:copy.points)if(turbo_math::valid(p)&&n>0&&n<11500){n+=snprintf(b+n,12288-size_t(n),"%s{\"frequency\":%u,\"millivolts\":%u,\"watts\":%.3f,\"asicGHs\":%.3f,\"acceptedGHs\":%.3f,\"time\":%lu,\"powerCap\":%u,\"accepted\":%u,\"maxAsicC\":%.2f,\"maxVrmC\":%.2f,\"minVin\":%.3f}",comma?",":"",unsigned(p.mhz),unsigned(p.mv),double(p.watts),double(p.ghs),double(p.useful_ghs),(unsigned long)p.time,unsigned(p.cap),unsigned(p.replies),double(p.max_asic),double(p.max_vr),double(p.min_vin));comma=true;}
+  esp_err_t out;if(n<=0||n>=12285)out=httpd_resp_send_err(req,HTTPD_500_INTERNAL_SERVER_ERROR,"response overflow");else {snprintf(b+n,12288-size_t(n),"]}");httpd_resp_set_type(req,"application/json");httpd_resp_set_hdr(req,"Cache-Control","no-store");out=httpd_resp_sendstr(req,b);}free(b);return out;
+ }
+--- a/main/core/turbo.h
++++ b/main/core/turbo.h
+@@ -4,7 +4,7 @@
+ #include "core/turbo_math.h"
+ namespace turbo {
+ using Point=turbo_math::Point;
+-enum class Reason:uint8_t{None,Frequency,Power,Thermal,Supply,Errors,Network,Pll,User,Settings,Storage,Telemetry,Samples,Controller,Voltage,Hold};
++enum class Reason:uint8_t{None,Frequency,Power,Thermal,Supply,Errors,Network,Pll,User,Settings,Storage,Telemetry,Samples,Controller,Voltage,Hold,HardwarePower};
+ void start();
+ void sync_cap(uint16_t cap);bool supported();bool unlocked();bool manual_check(float proposed_cap=-1);void safe_boot();bool request_search();
+ void verified(uint16_t f,uint16_t mv,float ghs,float watts);
+@@ -14,6 +14,10 @@
+ bool begin(Point&anchor);Point start_point();bool check();void changing();void window_begin();bool window_end(float ghs);
+ bool remember(uint16_t f,uint16_t mv,float ghs,float watts,float chip=-1,float vr=-1);
+ Point fallback(uint16_t failed,float budget);
++// Candidates are revalidated in the sole tuner task before entering HOLD.
++void probe(uint16_t f,uint16_t mv,float ghs,float watts,float chip,float vr);
++bool next_candidate(Point &point,uint16_t below=1001);
++bool recovery_ready();void resume();bool headroom(float peak);
+ void holding(Reason reason);void stop(Reason reason);void finish();Reason reason();
+ Reason monitor_trip();void disarm(Reason reason);
+ esp_err_t get(httpd_req_t*);esp_err_t set(httpd_req_t*);
