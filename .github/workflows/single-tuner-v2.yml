@@ -1,8 +1,9 @@
-name: Build Gamma FASTSEARCH FIXED
+name: Build Gamma FASTSEARCH NVS V4
 on:
   workflow_dispatch:
   push:
     paths:
+      - 'one_tuner_nvs_v4.py'
       - 'fastsearch_fix.patch'
       - 'fastsearch_regression.py'
       - 'single_tuner_ui.py'
@@ -42,6 +43,7 @@ jobs:
           python3 ../single_tuner_backend.py .
           python3 ../one_tuner_recovery_v3.py .
           python3 ../one_tuner_nvs_v3.py .
+          python3 ../one_tuner_nvs_v4.py .
           python3 ../single_tuner_version.py .
           python3 ../single_tuner_validate.py .
           python3 ../single_tuner_browser_test.py .
@@ -70,16 +72,16 @@ jobs:
           chmod -R u+rwX dist/unlock
           cd dist/unlock
           sha256sum -c SHA256SUMS.txt
-          mv axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin axeforge-gamma-FASTSEARCH-FIXED-OTA.bin
-          sha256sum axeforge-gamma-FASTSEARCH-FIXED-OTA.bin > SHA256SUMS.txt
+          mv axeforge-gamma-BTC-HUNTER-TURBO1000-ONESEARCH.bin axeforge-gamma-FASTSEARCH-NVS-V4-OTA.bin
+          sha256sum axeforge-gamma-FASTSEARCH-NVS-V4-OTA.bin > SHA256SUMS.txt
           sha256sum -c SHA256SUMS.txt
           cd ../..
-          python3 verify_image.py dist/unlock/axeforge-gamma-FASTSEARCH-FIXED-OTA.bin
+          python3 verify_image.py dist/unlock/axeforge-gamma-FASTSEARCH-NVS-V4-OTA.bin
       - uses: actions/upload-artifact@v4
         with:
-          name: Gamma-FASTSEARCH-FIXED-OTA
+          name: Gamma-FASTSEARCH-NVS-V4-OTA
           path: |
-            project/dist/unlock/axeforge-gamma-FASTSEARCH-FIXED-OTA.bin
+            project/dist/unlock/axeforge-gamma-FASTSEARCH-NVS-V4-OTA.bin
             project/dist/unlock/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
