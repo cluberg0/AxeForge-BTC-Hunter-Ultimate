@@ -35,3 +35,11 @@ new='''persisted=save();
 assert s.count(old)==1;s=s.replace(old,new)
 p.write_text(s)
 print("V3 NVS: removed false free-space gate, logged ESP errors, no unsafe storage abort")
+
+# Apply the bounded candidate-selection fix to the exact V3 sources.
+import subprocess
+subprocess.run(["git", "apply", "--check", str(Path(__file__).with_name("fastsearch_fix.patch").resolve())], cwd=root/"upstream", check=True)
+subprocess.run(["git", "apply", str(Path(__file__).with_name("fastsearch_fix.patch").resolve())], cwd=root/"upstream", check=True)
+# Native tests must exercise the same complete module that firmware compiles.
+for name in ("turbo.cpp", "turbo.h"):
+ (root/"overlay/main/core"/name).write_text((root/"upstream/main/core"/name).read_text())
