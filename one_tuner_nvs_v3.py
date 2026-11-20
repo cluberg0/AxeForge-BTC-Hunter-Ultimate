@@ -3,6 +3,7 @@
 from pathlib import Path
 import sys
 root=Path(sys.argv[1]);p=root/'upstream/main/core/turbo.cpp';s=p.read_text()
+s='#include "esp_log.h"\n'+s
 old='''bool save(){
  nvs_stats_t st{};if(nvs_get_stats(nullptr,&st)!=ESP_OK||st.free_entries<128+(sizeof(archive)+31)/32+4)return false;
  nvs_handle_t h;if(nvs_open("af_turbo",NVS_READWRITE,&h)!=ESP_OK)return false;
