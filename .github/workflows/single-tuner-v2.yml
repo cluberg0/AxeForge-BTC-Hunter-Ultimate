@@ -1,4 +1,4 @@
-name: Build Gamma ONE-TUNER V2
+name: Build Gamma ONE-TUNER V3 NVS
 on:
   workflow_dispatch:
   push:
@@ -10,6 +10,7 @@ on:
       - 'fastsearch_overlay.py'
       - '.github/workflows/single-tuner-v2.yml'
       - 'one_tuner_recovery_v3.py'
+      - 'one_tuner_nvs_v3.py'
       - 'single_tuner_validate.py'
       - 'single_tuner_browser_test.py'
 permissions:
@@ -38,6 +39,7 @@ jobs:
           python3 ../single_tuner_js.py .
           python3 ../single_tuner_backend.py .
           python3 ../one_tuner_recovery_v3.py .
+          python3 ../one_tuner_nvs_v3.py .
           python3 ../single_tuner_version.py .
           python3 ../single_tuner_validate.py .
           python3 ../single_tuner_browser_test.py .
