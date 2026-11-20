@@ -34,7 +34,7 @@ jobs:
         working-directory: project
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
+          sudo apt-get install -y -qq gdb g++ make libmbedtls-dev libcjson-dev python3-yaml python3-jsonschema
           bash scripts/prepare.sh
           python3 ../fastsearch_overlay.py .
           python3 ../one_tuner_overlay.py .
@@ -48,6 +48,9 @@ jobs:
           python3 ../single_tuner_validate.py .
           python3 ../single_tuner_browser_test.py .
           python3 ../fastsearch_regression.py .
+          echo '=== Turbo native test source and runner ==='
+          sed -n '1,100p' scripts/test.sh
+          echo '=== Native test run ==='
           bash scripts/test.sh
       - name: Browser regression tests
         working-directory: project
