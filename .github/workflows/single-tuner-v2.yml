@@ -51,7 +51,13 @@ jobs:
           echo '=== Turbo native test source and runner ==='
           sed -n '1,100p' scripts/test.sh
           echo '=== Native test run ==='
-          bash scripts/test.sh
+          if ! bash scripts/test.sh; then
+            echo '=== Reproduce native turbo failure with backtrace ==='
+            find . -type f -name turbo -perm /111 -print
+            testbin=$(find . -type f -name turbo -perm /111 | head -n 1)
+            if [ -n "$testbin" ]; then gdb -batch -ex run -ex 'thread apply all bt 15' --args "$testbin" || true; fi
+            exit 1
+          fi
       - name: Browser regression tests
         working-directory: project
         run: |
