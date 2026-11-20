@@ -1,9 +1,8 @@
-name: Publish ONE-TUNER V2 firmware release
+name: Publish FASTSEARCH FIXED firmware release
 on:
   workflow_dispatch:
   push:
-    paths:
-      - '.github/workflows/publish-one-tuner-v2.yml'
+    paths: ['.github/workflows/publish-one-tuner-v2.yml']
 permissions:
   contents: write
   actions: read
@@ -15,62 +14,61 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Download exact tested OTA from successful run
+      - name: Verify exact successful build and publish its OTA
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          RUN=44721362715
+          SOURCE_SHA=42bca7ad3210d5f15733a0873618be601c45009d
+          TAG=v1.4.10-fastsearch-fixed
+          BIN=axeforge-gamma-FASTSEARCH-FIXED-OTA.bin
+          EXPECTED=9c0a159171d33c8e62770146be4885ab2c156d3228abd3f10412b808f8725625
+          test "$(gh run view "$RUN" --json conclusion --jq .conclusion)" = success
+          test "$(gh run view "$RUN" --json headSha --jq .headSha)" = "$SOURCE_SHA"
           mkdir -p release
-          gh run download 44030611799 --repo "$GH_REPO" --name Gamma-ONE-TUNER-V2-OTA --dir release
-          test -s release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin
-          test -s release/SHA256SUMS.txt
+          gh run download "$RUN" --name Gamma-FASTSEARCH-FIXED-OTA --dir release
           (cd release && sha256sum -c SHA256SUMS.txt)
-          test "$(stat -c '%s' release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin)" -eq 1937072
-          printf '%s  %s\n' '6f8120c1d4977a75f29718ac885d87842d4e3f9800e608de0d6014936b1fbafa' 'release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin' | sha256sum -c -
-          strings release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin | grep -Fq '1.4.10-hunter-T1000-ONE-V2'
-          cd release && zip -q Gamma-ONE-TUNER-V2-OTA.zip axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin SHA256SUMS.txt
-      - name: Publish stable tagged GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          TAG='v1.4.10-hunter-T1000-ONE-V2'
-          SOURCE_SHA='f3350030171951aa2d6aea6338b46a7a400ec56c'
-          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; refusing overwrite."
+          test "$(stat -c '%s' "release/$BIN")" -eq 1940160
+          printf '%s  %s\n' "$EXPECTED" "release/$BIN" | sha256sum -c -
+          python3 - <<'PY'
+          import pathlib,struct
+          b=pathlib.Path('release/axeforge-gamma-FASTSEARCH-FIXED-OTA.bin').read_bytes()
+          assert b[0]==0xe9 and struct.unpack_from('<H',b,12)[0]==9
+          assert b[48:80].split(b'\0',1)[0]==b'1.4.10-FASTSEARCH-FIXED'
+          assert b'AXEFORGE-BOARD:gamma;\0' in b
+          PY
+          cat > release/BUILD-REPORT.txt <<'REPORT'
+          Target: Bitaxe Gamma 601 / ESP32-S3 / single BM1370
+          Image: OTA application, 1940160 bytes, unchanged 4 MiB app partitions
+          Version: 1.4.10-FASTSEARCH-FIXED
+          Source: 42bca7ad3210d5f15733a0873618be601c45009d
+          Upstream: e84c651c36a4b5f91c537577704245ded032592d
+          Build: ESP-IDF 5.3.2 / GCC 13.2.0, successful compile and link
+          Verified run: https://github.com/cluberg0/AxeForge-BTC-Hunter-Ultimate/actions/runs/44721362715
+          Tests: full native suite, ASan/UBSan; full Chromium and WebKit browser suites
+          Regressions: software budget vs hardware fault; candidate retries; all fail rollback; monitored HOLD; NVS errors; reboot; history/steps
+          Image checks: ESP32-S3, Gamma tag, app descriptor, segments, XOR, appended SHA256, stock partition size, unchanged source manifest
+          SHA256: 9c0a159171d33c8e62770146be4885ab2c156d3228abd3f10412b808f8725625
+          Physical hardware / long-duration validation: not performed
+          REPORT
+          cat > release/RELEASE_NOTES.md <<'NOTES'
+          ## Gamma 601 · FASTSEARCH FIXED OTA
+
+          Software power-budget exhaustion now ends the climb and selects the best eligible measured mode with peak-power reserve (at least max(0.5 W, 2% effectivePower)). Every candidate receives fresh telemetry checks, controlled application, 120s warmup and 300s verification before monitored HOLD. Failed candidates are excluded; HOLD recovery only moves to a lower revalidated frequency. Exhausted candidates retain safe rollback.
+
+          Hardware power, current, temperature, supply, sensor, PLL and watchdog safeguards remain active. Gamma retains one automatic tuner and manual settings. NVS stores only fully verified points, reports read/write/commit failures without erasing Wi-Fi/pool/wallet settings. The dashboard now uses the complete attempt count with a chronological 16-entry history.
+
+          **Validation:** [successful ESP-IDF 5.3.2 build and full native + Chromium/WebKit tests](https://github.com/cluberg0/AxeForge-BTC-Hunter-Ultimate/actions/runs/44721362715), independent OTA format/digest/board/size verification. Source commit `42bca7ad3210d5f15733a0873618be601c45009d`. Physical device and long-duration tests were not performed.
+
+          Install **axeforge-gamma-FASTSEARCH-FIXED-OTA.bin** through System → OTA. This is the app image; retain your previously working OTA BIN for rollback through the same interface. Checksum and build report are attached. Prerelease marks the outstanding physical-device validation.
+          NOTES
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; refusing overwrite.' >&2
             exit 1
           fi
-          cat > release/RELEASE_NOTES.md <<'NOTES'
-          ## AxeForge BTC Hunter ONE-TUNER V2 · Bitaxe Gamma 601 (BM1370)
-
-          **Firmware version:** `1.4.10-hunter-T1000-ONE-V2`
-          **Verified build:** [GitHub Actions #44030611799](https://github.com/cluberg0/AxeForge-BTC-Hunter-Ultimate/actions/runs/44030611799)
-          **Build source commit:** `f3350030171951aa2d6aea6338b46a7a400ec56c`
-
-          - ONE-TUNER: FASTSEARCH is the sole automatic frequency search on Gamma, without the old stock auto-tuning loop.
-          - Unified Russian-language overclock panel, one start/stop controller and one power-cap input.
-          - Restores an appropriate safe mode after aborted search; bounded retry for temporary network problems.
-          - Preserves PSU/current, thermal, fan, PLL, ASIC error and telemetry limits.
-          - Clearly shows both the PSU's nominal wattage and the *lower usable power budget* calculated with safety reserve.
-          - Example observed on one Gamma 601: held **825 MHz / 1210 mV**, approximately **1.65 TH/s** at **24.1–24.5 W**, within the observed 25.5 W effective budget. Hardware-specific, not a guaranteed result.
-
-          ### Install
-          Download `axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin` and flash using OTA under System. Do not flash the ZIP. Save settings and maintain stable power during the update.
-
-          ### Safety
-          - Tested by automated native checks, Chromium/WebKit UI tests, ESP-IDF build and OTA-image verification. Long-duration stability, overclock potential, and fault recovery on physical hardware **are not certified by CI**.
-          - A configured 30 W / 6 A power supply has a nominal rating of 30 W, **not** 30 W guaranteed ASIC budget. Do not bypass voltage/current/thermal protections or raise PSU settings beyond verified hardware.
-          - SHA-256 of the BIN is available in `SHA256SUMS.txt`.
-          NOTES
-          gh release create "$TAG" \
-            release/axeforge-gamma-BTC-HUNTER-TURBO1000-ONE-TUNER-V2.bin \
-            release/SHA256SUMS.txt \
-            release/Gamma-ONE-TUNER-V2-OTA.zip \
-            --repo "$GH_REPO" \
-            --target "$SOURCE_SHA" \
-            --title 'Bitaxe Gamma 601 · ONE-TUNER V2 (FASTSEARCH)' \
-            --notes-file release/RELEASE_NOTES.md \
-            --latest
-          gh release view "$TAG" --repo "$GH_REPO" --json url,name,tagName,assets,isDraft,isPrerelease
+          gh release create "$TAG" "release/$BIN" release/SHA256SUMS.txt release/BUILD-REPORT.txt \
+            --target "$SOURCE_SHA" --title 'Gamma 601 · FASTSEARCH FIXED OTA' \
+            --notes-file release/RELEASE_NOTES.md --prerelease --latest=false
+          gh release view "$TAG" --json url,assets,isDraft,isPrerelease
