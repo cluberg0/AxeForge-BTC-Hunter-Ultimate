@@ -32,14 +32,5 @@ new='''persisted=save();
  if(!persisted)ESP_LOGW("turbo","NVS save failed, continuing with volatile measurement");
  return true;'''
 assert s.count(old)==1;s=s.replace(old,new)
-# expose precise error in JSON response without changing existing response shape
-old='"\\\"persisted\\\":%s"'
-# Existing JSON is assembled in snprintf with a larger literal; add field to first segment.
-needle='\\\"persisted\\\":%s"'
-assert needle in s
-s=s.replace(needle,'\\\"persisted\\\":%s,\\\"storageError\\\":%d"',1)
-needle='persisted.load()?"true":"false");'
-assert s.count(needle)==1
-s=s.replace(needle,'persisted.load()?"true":"false",storage_error.load());',1)
 p.write_text(s)
 print("V3 NVS: removed false free-space gate, logged ESP errors, no unsafe storage abort")
