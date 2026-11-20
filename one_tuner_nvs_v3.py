@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import sys
+import yaml
 
 root = Path(sys.argv[1])
 
@@ -96,8 +97,8 @@ void retry_storage(){
     p.write_text(s)
 
 # Keep strict native API contracts synchronized with the actual firmware.
-for p in (root / 'overlay/docs/native-api.json', root / 'upstream/docs/native-api.json'):
-    doc = json.loads(p.read_text())
+for p in (root / 'overlay/docs/native-api.json', root / 'upstream/docs/native-api.json', root / 'upstream/docs/openapi.yaml'):
+    doc = yaml.safe_load(p.read_text()) if p.suffix == '.yaml' else json.loads(p.read_text())
     def extend(obj):
         if isinstance(obj, dict):
             props = obj.get('properties', {})
@@ -112,7 +113,7 @@ for p in (root / 'overlay/docs/native-api.json', root / 'upstream/docs/native-ap
             for value in obj:
                 extend(value)
     extend(doc)
-    p.write_text(json.dumps(doc, indent=2) + '\n')
+    p.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False) if p.suffix == '.yaml' else json.dumps(doc, indent=2) + '\n')
 
 # Existing host tests include overlay turbo.cpp: fault-inject the real code.
 p = root / 'tests/stubs/nvs.h'
