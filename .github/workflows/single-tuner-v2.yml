@@ -53,18 +53,7 @@ jobs:
           echo '=== Turbo native test source and runner ==='
           sed -n '1,100p' scripts/test.sh
           echo '=== Native test run ==='
-          # Run the exact failing native test under gdb. The test runner uses
-          # a temporary directory and removes it on exit, so postmortem find
-          # cannot locate the executable after scripts/test.sh has exited.
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path("scripts/test.sh")
-          s=p.read_text()
-          needle='AXEFORGE_API_JSON=1 "$T/turbo"'
-          assert s.count(needle)==1, s.count(needle)
-          s=s.replace(needle, 'AXEFORGE_API_JSON=1 gdb -batch -return-child-result -ex run -ex "thread apply all bt 30" --args "$T/turbo"')
-          p.write_text(s)
-          PY
+          # Run sanitizer-enabled tests directly: LeakSanitizer cannot run under ptrace.
           # Preserve failing test's source location and verify NVS fixture preconditions.
           sed -i 's/-std=c++17 -Wall -Wextra -Werror/-std=c++17 -g -O0 -Wall -Wextra -Werror/' scripts/test.sh
           python3 - <<'PY'
