@@ -7,6 +7,7 @@ on:
       - 'fastsearch_fix.patch'
       - 'fastsearch_regression.py'
       - 'single_tuner_ui.py'
+      - 'diagnostics_share.py'
       - 'single_tuner_js.py'
       - 'single_tuner_backend.py'
       - 'single_tuner_version.py'
@@ -40,6 +41,7 @@ jobs:
           python3 ../one_tuner_overlay.py .
           python3 ../single_tuner_ui.py .
           python3 ../single_tuner_js.py .
+          python3 ../diagnostics_share.py .
           python3 ../single_tuner_backend.py .
           python3 ../one_tuner_recovery_v3.py .
           python3 ../one_tuner_nvs_v3.py .
