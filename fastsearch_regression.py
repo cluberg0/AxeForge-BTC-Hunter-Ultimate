@@ -86,13 +86,13 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  // persisted=false; a failed commit must not replace the last durable map.
  reset();begin();turbo::archive=turbo::Archive{};
  assert(turbo::remember(800,1170,1600,23.5f,55,60));
- const auto durable=saved["map"];
+ const auto durable=saved["map_v4"];
  write_fail=true;assert(turbo::remember(825,1200,1650,24,55,60));
  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK&&!turbo::cancelled());
- assert(saved["map"]==durable);
+ assert(saved["map_v4"]==durable);
  write_fail=false;commit_fail=true;
  assert(turbo::remember(850,1220,1670,24.6f,55,60));
- assert(!turbo::persisted&&turbo::storage_error!=ESP_OK&&saved["map"]==durable);
+ assert(!turbo::persisted&&turbo::storage_error!=ESP_OK&&saved["map_v4"]==durable);
  commit_fail=false;
  turbo::finish();turbo::archive=turbo::Archive{};
  turbo::start();assert(!turbo::engaged());begin();
@@ -102,9 +102,9 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK&&!cfg.overclock);
  open_fail=false;reset();read_fail=true;turbo::start();
  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK&&!cfg.overclock);
- read_fail=false;reset();saved["map"][0]^=1;turbo::start();
+ read_fail=false;reset();assert(saved.count("map_v4")&&!saved.at("map_v4").empty());saved.at("map_v4")[0]^=1;turbo::start();
  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK);
- saved["map"]=durable;reset();turbo::start();assert(turbo::persisted&&turbo::storage_error==ESP_OK);
+ saved["map_v4"]=durable;reset();turbo::start();assert(turbo::persisted&&turbo::storage_error==ESP_OK);
 
  // The API reports the complete attempt count while preserving a bounded,
  // chronological ring for the browser even beyond sixteen attempts.
