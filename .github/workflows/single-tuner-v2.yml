@@ -65,6 +65,17 @@ jobs:
           s=s.replace(needle, 'AXEFORGE_API_JSON=1 gdb -batch -ex run -ex "thread apply all bt 30" -ex "quit 1" --args "$T/turbo"')
           p.write_text(s)
           PY
+          # Preserve failing test's source location and verify NVS fixture preconditions.
+          sed -i 's/-std=c++17 -Wall -Wextra -Werror/-std=c++17 -g -O0 -Wall -Wextra -Werror/' scripts/test.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("tests/turbo.cpp")
+          s=p.read_text()
+          needle='saved["config"][0]^=1;'
+          assert s.count(needle)==1
+          s=s.replace(needle, 'assert(saved.count("config") && !saved.at("config").empty() && "NVS config fixture missing");saved.at("config")[0]^=1;')
+          p.write_text(s)
+          PY
           bash scripts/test.sh
 
       - name: Browser regression tests
