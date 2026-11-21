@@ -62,7 +62,7 @@ jobs:
           s=p.read_text()
           needle='AXEFORGE_API_JSON=1 "$T/turbo"'
           assert s.count(needle)==1, s.count(needle)
-          s=s.replace(needle, 'AXEFORGE_API_JSON=1 gdb -batch -ex run -ex "thread apply all bt 30" -ex "quit 1" --args "$T/turbo"')
+          s=s.replace(needle, 'AXEFORGE_API_JSON=1 gdb -batch -return-child-result -ex run -ex "thread apply all bt 30" --args "$T/turbo"')
           p.write_text(s)
           PY
           # Preserve failing test's source location and verify NVS fixture preconditions.
