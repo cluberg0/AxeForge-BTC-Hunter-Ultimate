@@ -63,8 +63,8 @@ struct X1Turn: Sendable {
         }
         // Some GGUFs use Jinja beyond the minimal built-in llama_chat_apply_template API.
         return turns.map { turn in
-            "[\\\\(turn.role.uppercased())]\\\\n\\\\(turn.content)\\\\n"
-        }.joined() + "[ASSISTANT]\\\\n"
+            "[\\(turn.role.uppercased())]\\n\\(turn.content)\\n"
+        }.joined() + "[ASSISTANT]\\n"
     }
 
     func completion_init(turns: [X1Turn]) {
@@ -101,11 +101,11 @@ struct X1Turn: Sendable {
             // too verbose, retain the final tokens of the latest user message.
             let latest = selected.last?.content ?? ""
             var tail = String(latest.suffix(200))
-            var fallback = "[USER]\\\\n\\\\(tail)\\\\n[ASSISTANT]\\\\n"
+            var fallback = "[USER]\\n\\(tail)\\n[ASSISTANT]\\n"
             var fitted = tokenize(text: fallback, add_bos: true)
             while fitted.count > promptBudget && tail.count > 20 {
                 tail = String(tail.suffix(max(20, tail.count / 2)))
-                fallback = "[USER]\\\\n\\\\(tail)\\\\n[ASSISTANT]\\\\n"
+                fallback = "[USER]\\n\\(tail)\\n[ASSISTANT]\\n"
                 fitted = tokenize(text: fallback, add_bos: true)
             }
             tokens = Array(fitted.suffix(promptBudget))
@@ -124,7 +124,7 @@ struct X1Turn: Sendable {
             let idx = llama_batch_add(batch, tokens[i], Int32(i), 0,
                                       i == tokens.count - 1)
             if idx < 0 {
-                print("llama_batch_add failed at \\\\(i): \\\\(idx)")
+                print("llama_batch_add failed at \\(i): \\(idx)")
                 is_done = true
                 return
             }
@@ -132,7 +132,7 @@ struct X1Turn: Sendable {
 
         let status = llama_process(context, LLAMA_PROCESS_TYPE_DECODE, batch)
         if status != 0 {
-            print("llama_process prefill failed: \\\\(status)")
+            print("llama_process prefill failed: \\(status)")
             is_done = true
             return
         }
@@ -149,14 +149,14 @@ def patch_state():
     s=state.read_text(encoding="utf-8")
     s=swap(s,"func complete(text: String) async {","func complete(turns: [X1Turn]) async {")
     s=swap(s,"await llamaContext.completion_init(text: text)","await llamaContext.completion_init(turns: turns)")
-    s=swap(s,'messageLog += "\\\\(text)"','messageLog += "\\\\(turns.last?.content ?? "")"')
+    s=swap(s,'messageLog += "\\(text)"','messageLog += "\\(turns.last?.content ?? "")"')
     # Reset generation flag when the batch cannot be started, and don't loop on a
     # dead or never-prefilled context.
     s=swap(s,
-'''        messageLog += "\\\\(turns.last?.content ?? "")"
+'''        messageLog += "\\(turns.last?.content ?? "")"
 
         Task.detached {''',
-'''        messageLog += "\\\\(turns.last?.content ?? "")"
+'''        messageLog += "\\(turns.last?.content ?? "")"
         if await llamaContext.is_done {
             isGenerating = false
             loadError = "Не удалось подготовить контекст модели. Уменьши контекст или проверь GGUF."
