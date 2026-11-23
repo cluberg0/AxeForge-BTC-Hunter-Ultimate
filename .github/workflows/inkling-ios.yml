@@ -1,0 +1,75 @@
+name: Build InklingRunner unsigned IPA
+
+on:
+  push:
+    branches: [inkling-ios-app-build]
+    paths:
+      - '.github/workflows/inkling-ios.yml'
+      - 'inkling-ios/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-iphone-ipa:
+    name: Build llama.cpp Metal + iOS app
+    runs-on: macos-15
+    timeout-minutes: 110
+    steps:
+      - name: Checkout build configuration
+        uses: actions/checkout@v4
+
+      - name: Clone current llama.cpp with Inkling 2 support
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git llama-src
+          echo "llama.cpp commit: $(git -C llama-src rev-parse HEAD)"
+          if ! git -C llama-src grep -qi inkling2_loop; then
+            echo 'ERROR: Source does not expose inkling2_loop; refuse unsupported build.'
+            exit 1
+          fi
+
+      - name: Compile iOS-device Metal-enabled llama.xcframework
+        working-directory: llama-src
+        run: |
+          chmod +x ./build-xcframework.sh
+          ./build-xcframework.sh ios-device
+
+      - name: Apply InklingRunner UI and memory settings
+        run: python3 inkling-ios/patch.py llama-src
+
+      - name: Build unsigned app for physical iPhone
+        run: |
+          xcodebuild \
+            -project llama-src/examples/llama.swiftui/llama.swiftui.xcodeproj \
+            -scheme llama.swiftui \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$PWD/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            PRODUCT_BUNDLE_IDENTIFIER=com.cluberg0.inklingrunner \
+            INFOPLIST_KEY_CFBundleDisplayName=InklingRunner \
+            INFOPLIST_KEY_UIFileSharingEnabled=YES \
+            INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace=YES \
+            build
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          app="$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d -print -quit)"
+          test -n "$app"
+          mkdir -p Payload
+          ditto "$app" Payload/InklingRunner.app
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName InklingRunner' Payload/InklingRunner.app/Info.plist || true
+          plutil -p Payload/InklingRunner.app/Info.plist | head -40
+          zip -qry InklingRunner-unsigned.ipa Payload
+          ls -lh InklingRunner-unsigned.ipa
+
+      - name: Upload IPA for SideStore signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: InklingRunner-iOS-unsigned-IPA
+          path: InklingRunner-unsigned.ipa
+          retention-days: 14
+          if-no-files-found: error
