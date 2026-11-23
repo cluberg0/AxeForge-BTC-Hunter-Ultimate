@@ -1,0 +1,362 @@
+import Foundation
+import SwiftUI
+import Combine
+import AVFoundation
+import Speech
+import Vision
+import PDFKit
+import UIKit
+import CoreImage
+import Darwin
+
+// The system, not a fake animated gauge, supplies these measurements.
+@MainActor final class X1DeviceMonitor: ObservableObject {
+    @Published var cpuPercentage: Double = 0          // App CPU, 100% = one core
+    @Published var memoryMB: Double = 0                // Current process resident memory
+    @Published var batteryPercentage: Int = 0
+    @Published var charging = false
+    @Published var thermal = "Нормальная"
+    @Published var freeDiskGB: Double = 0
+    @Published var availableMemoryMB: Double = 0
+
+    private var previousTime = ProcessInfo.processInfo.systemUptime
+    private var previousCPUTime: Double = 0
+
+    init() {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        refresh()
+    }
+
+    func refresh() {
+        var usage = rusage()
+        if getrusage(RUSAGE_SELF, &usage) == 0 {
+            let time = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1e6
+                + Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1e6
+            let now = ProcessInfo.processInfo.systemUptime
+            let interval = now - previousTime
+            if interval > 0.2, previousCPUTime > 0 {
+                cpuPercentage = min(999, max(0, (time - previousCPUTime) / interval * 100))
+            }
+            previousCPUTime = time
+            previousTime = now
+        }
+
+        var basic = mach_task_basic_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info_data_t>.size / MemoryLayout<natural_t>.size)
+        let result: kern_return_t = withUnsafeMutablePointer(to: &basic) { ptr in
+            ptr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        if result == KERN_SUCCESS { memoryMB = Double(basic.resident_size) / 1048576.0 }
+
+        let battery = UIDevice.current.batteryLevel
+        batteryPercentage = battery >= 0 ? Int((battery * 100).rounded()) : 0
+        charging = UIDevice.current.batteryState == .charging
+            || UIDevice.current.batteryState == .full
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal: thermal = "Нормальная"
+        case .fair: thermal = "Нагрев"
+        case .serious: thermal = "Сильный нагрев"
+        case .critical: thermal = "Критический!"
+        @unknown default: thermal = "Неизвестно"
+        }
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+        if let free = values?.volumeAvailableCapacityForImportantUsage {
+            freeDiskGB = Double(free) / 1e9
+        }
+    }
+}
+
+// Speech recognition stays on device; if offline dictation is unavailable, show a real error.
+@MainActor final class X1Speech: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    @Published var listening = false
+    @Published var speaking = false
+    @Published var error = ""
+    @Published var transcript = ""
+
+    private let synthesizer = AVSpeechSynthesizer()
+    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ru-RU"))
+    private let engine = AVAudioEngine()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+
+    override init() {
+        super.init()
+        synthesizer.delegate = self
+    }
+
+    func speak(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        synthesizer.stopSpeaking(at: .immediate)
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch { error = "Аудиовывод: \(error.localizedDescription)" }
+        let sentence = AVSpeechUtterance(string: text)
+        sentence.voice = AVSpeechSynthesisVoice(language: "ru-RU")
+        sentence.rate = 0.5
+        synthesizer.speak(sentence)
+        speaking = true
+    }
+
+    func stopSpeaking() {
+        synthesizer.stopSpeaking(at: .immediate)
+        speaking = false
+    }
+
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
+                                       didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in self.speaking = false }
+    }
+
+    func beginListening(onUpdate: @escaping (String) -> Void) {
+        guard !listening else { return }
+        error = ""
+        SFSpeechRecognizer.requestAuthorization { status in
+            DispatchQueue.main.async {
+                guard status == .authorized else {
+                    self.error = "Разреши распознавание речи в настройках iOS."
+                    return
+                }
+                AVAudioSession.sharedInstance().requestRecordPermission { allowed in
+                    DispatchQueue.main.async {
+                        guard allowed else {
+                            self.error = "Разреши доступ к микрофону."
+                            return
+                        }
+                        self.startOnDevice(onUpdate: onUpdate)
+                    }
+                }
+            }
+        }
+    }
+
+    private func startOnDevice(onUpdate: @escaping (String) -> Void) {
+        guard let recognizer, recognizer.isAvailable else {
+            error = "Распознавание речи недоступно."
+            return
+        }
+        guard recognizer.supportsOnDeviceRecognition else {
+            error = "На этом устройстве нет офлайн-распознавания русского языка. Голос не отправляется в облако."
+            return
+        }
+        stopListening()
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            let bufferRequest = SFSpeechAudioBufferRecognitionRequest()
+            bufferRequest.shouldReportPartialResults = true
+            bufferRequest.requiresOnDeviceRecognition = true
+            request = bufferRequest
+            let input = engine.inputNode
+            let format = input.outputFormat(forBus: 0)
+            input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+                self?.request?.append(buffer)
+            }
+            engine.prepare()
+            try engine.start()
+            listening = true
+            task = recognizer.recognitionTask(with: bufferRequest) { [weak self] result, error in
+                if let result {
+                    let recognized = result.bestTranscription.formattedString
+                    DispatchQueue.main.async {
+                        self?.transcript = recognized
+                        onUpdate(recognized)
+                    }
+                }
+                if let error {
+                    DispatchQueue.main.async { self?.error = error.localizedDescription; self?.stopListening() }
+                }
+            }
+        } catch {
+            self.error = "Микрофон: \(error.localizedDescription)"
+            stopListening()
+        }
+    }
+
+    func stopListening() {
+        if engine.isRunning { engine.stop() }
+        engine.inputNode.removeTap(onBus: 0)
+        request?.endAudio()
+        task?.cancel()
+        task = nil
+        request = nil
+        listening = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+}
+
+enum X1FileReader {
+    static func extract(_ url: URL) throws -> String {
+        let granted = url.startAccessingSecurityScopedResource()
+        defer { if granted { url.stopAccessingSecurityScopedResource() } }
+        let ext = url.pathExtension.lowercased()
+        var output: String
+        switch ext {
+        case "pdf":
+            guard let pdf = PDFDocument(url: url) else {
+                throw NSError(domain: "x1er_ai", code: 1, userInfo: [NSLocalizedDescriptionKey: "PDF не открывается"])
+            }
+            output = (0..<min(pdf.pageCount, 24)).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+        case "txt", "md", "json", "csv", "log", "xml", "yaml", "yml", "py", "js", "html", "swift", "sh":
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            guard data.count < 20_000_000,
+                  let string = String(data: data, encoding: .utf8) else {
+                throw NSError(domain: "x1er_ai", code: 2, userInfo: [NSLocalizedDescriptionKey: "Нужен UTF-8 текст размером до 20 МБ"])
+            }
+            output = string
+        case "png", "jpg", "jpeg", "heic", "webp":
+            let data = try Data(contentsOf: url)
+            guard let image = UIImage(data: data)?.cgImage else {
+                throw NSError(domain: "x1er_ai", code: 3, userInfo: [NSLocalizedDescriptionKey: "Изображение не удалось прочитать"])
+            }
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            let handler = VNImageRequestHandler(cgImage: image, options: [:])
+            try handler.perform([request])
+            let recognized = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+            output = recognized.isEmpty ? "Текст на изображении не найден. Для настоящего визуального понимания нужен mmproj + libmtmd." :
+                "Текст, распознанный на изображении через Apple Vision:\n" + recognized.joined(separator: "\n")
+        default:
+            throw NSError(domain: "x1er_ai", code: 4,
+                          userInfo: [NSLocalizedDescriptionKey: "Тип файла \(ext) пока не поддерживается. Поддерживаются текст, PDF и изображения (OCR)."])
+        }
+        guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw NSError(domain: "x1er_ai", code: 5,
+                          userInfo: [NSLocalizedDescriptionKey: "Не удалось извлечь текст; сканированный PDF пока требует OCR страниц."])
+        }
+        return String(output.prefix(7000))
+    }
+}
+
+// Live preview: a bounded, sampled Apple Vision analysis to avoid overloading the iPhone.
+// No misleading claim that sampled frames are fed as vision embeddings to the GGUF model.
+final class X1Camera: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+    @Published var running = false
+    @Published var observation = ""
+    @Published var error = ""
+    @Published var snapshot: UIImage?
+
+    let session = AVCaptureSession()
+    private let captureQueue = DispatchQueue(label: "com.x1er.camera.session")
+    private let frameQueue = DispatchQueue(label: "com.x1er.camera.frames")
+    private let ci = CIContext()
+    private var lastAnalysisTime: TimeInterval = 0
+    private var snapshotRequested = false
+    private var configured = false
+
+    func start() {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            guard granted else {
+                DispatchQueue.main.async { self.error = "Разреши доступ к камере в Настройках iPhone" }
+                return
+            }
+            self.captureQueue.async {
+                if !self.configured {
+                    self.session.beginConfiguration()
+                    self.session.sessionPreset = .medium
+                    guard let device = AVCaptureDevice.default(.builtInWideAngleCamera,
+                                                               for: .video, position: .back),
+                          let input = try? AVCaptureDeviceInput(device: device),
+                          self.session.canAddInput(input) else {
+                        self.session.commitConfiguration()
+                        DispatchQueue.main.async { self.error = "Камера недоступна" }
+                        return
+                    }
+                    self.session.addInput(input)
+                    let output = AVCaptureVideoDataOutput()
+                    output.alwaysDiscardsLateVideoFrames = true
+                    output.setSampleBufferDelegate(self, queue: self.frameQueue)
+                    if self.session.canAddOutput(output) { self.session.addOutput(output) }
+                    self.session.commitConfiguration()
+                    self.configured = true
+                }
+                if !self.session.isRunning { self.session.startRunning() }
+                DispatchQueue.main.async { self.running = self.session.isRunning }
+            }
+        }
+    }
+
+    func stop() {
+        captureQueue.async {
+            if self.session.isRunning { self.session.stopRunning() }
+            DispatchQueue.main.async { self.running = false }
+        }
+    }
+
+    func takePhoto() {
+        frameQueue.async { self.snapshotRequested = true }
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
+                       from connection: AVCaptureConnection) {
+        guard let pixel = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        if snapshotRequested {
+            snapshotRequested = false
+            if let cg = ci.createCGImage(CIImage(cvPixelBuffer: pixel), from: CIImage(cvPixelBuffer: pixel).extent) {
+                let img = UIImage(cgImage: cg)
+                DispatchQueue.main.async { self.snapshot = img }
+            }
+        }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - lastAnalysisTime < 2.5 { return }
+        lastAnalysisTime = now
+        let classify = VNClassifyImageRequest()
+        let ocr = VNRecognizeTextRequest()
+        ocr.recognitionLevel = .fast
+        do {
+            let request = VNImageRequestHandler(cvPixelBuffer: pixel, orientation: .right, options: [:])
+            try request.perform([classify, ocr])
+            let labels = (classify.results ?? []).prefix(3)
+                .filter { $0.confidence > 0.12 }
+                .map { "\($0.identifier) (\(Int($0.confidence * 100))%)" }
+            let text = (ocr.results ?? []).prefix(6).compactMap { $0.topCandidates(1).first?.string }
+            let parts = [
+                labels.isEmpty ? "" : "Объекты (Apple Vision): " + labels.joined(separator: ", "),
+                text.isEmpty ? "" : "Надписи: " + text.joined(separator: "; ")
+            ].filter { !$0.isEmpty }
+            let summary = parts.isEmpty ? "Пока объекты и текст не распознаны" : parts.joined(separator: "\n")
+            DispatchQueue.main.async { self.observation = summary }
+        } catch {
+            DispatchQueue.main.async { self.error = "Vision: \(error.localizedDescription)" }
+        }
+    }
+}
+
+final class X1CameraPreviewView: UIView {
+    override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+    var videoLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+}
+
+struct X1CameraPreview: UIViewRepresentable {
+    let session: AVCaptureSession
+    func makeUIView(context: Context) -> X1CameraPreviewView {
+        let view = X1CameraPreviewView()
+        view.videoLayer.session = session
+        view.videoLayer.videoGravity = .resizeAspectFill
+        return view
+    }
+    func updateUIView(_ uiView: X1CameraPreviewView, context: Context) {}
+}
+
+enum X1BackgroundHandler {
+    static var completion: (() -> Void)?
+    static func complete() {
+        DispatchQueue.main.async {
+            completion?()
+            completion = nil
+        }
+    }
+}
+
+final class X1AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     handleEventsForBackgroundURLSession identifier: String,
+                     completionHandler: @escaping () -> Void) {
+        X1BackgroundHandler.completion = completionHandler
+    }
+}
