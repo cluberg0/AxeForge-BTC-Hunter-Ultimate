@@ -237,22 +237,26 @@ struct ContentView: View {
                     }
                     .foregroundStyle(page == item ? Ink.cyan : Ink.faint)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 6).padding(.bottom, 5)
-                    .background(page == item ? Ink.surface2.opacity(0.8) : .clear,
+                    .frame(minHeight: 48)
+                    .padding(.top, 2).padding(.bottom, 2)
+                    .background(page == item ? Ink.surface2.opacity(0.78) : .clear,
                                 in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 8).padding(.top, 5).padding(.bottom, 1)
-        .background(Ink.bg)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Ink.border).frame(height: 0.5)
+        }
     }
 
     private var chatView: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 15) {
+                    LazyVStack(alignment: .leading, spacing: 15) {
                         HStack {
                             titleBlock("Чат", subtitle: "На устройстве · приватно")
                             Spacer()
@@ -269,7 +273,7 @@ struct ContentView: View {
                                     .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 12))
                             }.disabled(llamaState.isGenerating || llamaState.loading)
                         }
-                        healthStrip
+                        quickSystemStrip
                         if llamaState.activeModelName.isEmpty {
                             InkCard {
                                 HStack(alignment: .top, spacing: 15) {
@@ -344,7 +348,12 @@ struct ContentView: View {
                     .padding(.horizontal, 18).padding(.vertical, 18)
                 }
                 .onChange(of: llamaState.generatedText) { _ in
-                    withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo("chatEnd", anchor: .bottom) }
+                    // Token-by-token animated scrolling causes visible frame drops.
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        proxy.scrollTo("chatEnd", anchor: .bottom)
+                    }
                 }
             }
             composer
@@ -355,7 +364,7 @@ struct ContentView: View {
         HStack {
             if user { Spacer(minLength: 38) }
             VStack(alignment: .leading, spacing: 7) {
-                Text(user ? "ТЫ" : "INKLING")
+                Text(user ? "ТЫ" : "x1er_ai")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1.6).foregroundStyle(user ? Ink.cyan : Ink.violet)
                 Text(text).font(.system(size: largeText ? 17 : 15)).lineSpacing(4)
@@ -821,6 +830,21 @@ struct ContentView: View {
         }
     }
 
+
+    private var quickSystemStrip: some View {
+        HStack(spacing: 12) {
+            Label(String(format: "CPU %.0f%%", health.cpuPercentage), systemImage: "cpu")
+            Label(String(format: "RAM %.0f МБ", health.memoryMB), systemImage: "memorychip")
+            Spacer(minLength: 4)
+            Circle().fill(health.thermal == "Нормальная" ? Color.green : Color.orange)
+                .frame(width: 6, height: 6)
+        }
+        .font(.system(.caption2).weight(.medium))
+        .foregroundStyle(Ink.faint)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Ink.surface.opacity(0.75), in: Capsule())
+    }
 
     private var healthStrip: some View {
         InkCard {
@@ -1344,7 +1368,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.system(.title2).weight(.semibold))
                 .foregroundStyle(.white)
-            Text(subtitle).font(.system(size: 12)).foregroundStyle(Ink.faint)
+            Text(subtitle).font(.subheadline).foregroundStyle(Ink.faint)
         }
         .padding(.horizontal, 3).padding(.bottom, 2)
     }
