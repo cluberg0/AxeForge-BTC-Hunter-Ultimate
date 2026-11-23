@@ -193,7 +193,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
                 pages += 1
             }
             files = Array(Dictionary(grouping: collected, by: { $0.path }).compactMap { $0.value.first })
-                .filter { !$0.fileName.lowercased().hasPrefix("mmproj-") && !$0.fileName.lowercased().contains("lora") }
+
                 .sorted { $0.size == $1.size ? $0.path < $1.path : $0.size < $1.size }
             info = files.isEmpty ? "GGUF-файлы не найдены" : "Найдено GGUF: \(files.count)"
         } catch {
@@ -204,14 +204,8 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
     func startDownload(file: HFRemoteFile) {
         guard activeTask == nil else { errorMessage = "Сначала завершите текущую загрузку"; return }
         let repo = normalizedRepository(repositoryText)
-        if file.fileName.lowercased().hasPrefix("mmproj-") {
-            errorMessage = "Это vision projector, а не языковая модель. Выбери Inkling-2-Mini-Uncensored-AD-IQ2_M.gguf"
-            return
-        }
-        if file.fileName.lowercased().contains("lora") {
-            errorMessage = "Это только LoRA-адаптер. Выбери готовую AD-IQ2_M.gguf"
-            return
-        }
+        // Companions can also be downloaded; library marks them non-runnable.
+        // Model inference remains limited to supported architectures in llama.cpp.
         if file.size > 0 && availableDiskSpace > 0 && availableDiskSpace < file.size + 1_000_000_000 {
             errorMessage = "Недостаточно места на iPhone для GGUF. Освободи ещё минимум 1 ГБ сверх размера модели."
             return
