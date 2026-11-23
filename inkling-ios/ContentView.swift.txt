@@ -908,8 +908,37 @@ struct ContentView: View {
                     }
                 }
             }
-            composer
+            VStack(spacing: 7) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        promptChip("Уточнить", icon: "text.bubble") {
+                            draft = "Уточни и объясни предыдущий ответ подробнее."
+                        }
+                        promptChip("Резюме", icon: "text.alignleft") {
+                            draft = "Кратко резюмируй наш диалог."
+                        }
+                        promptChip("Составь план", icon: "list.bullet.rectangle") {
+                            draft = "Составь понятный пошаговый план по нашей теме."
+                        }
+                    }
+                    .padding(.horizontal, 13)
+                }
+                composer
+            }
         }
+    }
+
+    private func promptChip(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.system(.caption).weight(.medium))
+                .foregroundStyle(Ink.text)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Ink.border, lineWidth: 0.6))
+        }
+        .buttonStyle(.plain)
     }
 
     private func bubble(text: String, user: Bool) -> some View {
@@ -924,9 +953,11 @@ struct ContentView: View {
                     .textSelection(.enabled)
             }
             .padding(15)
-            .background(user ? Ink.surface2 : Ink.surface,
-                        in: RoundedRectangle(cornerRadius: 17))
-            .overlay(RoundedRectangle(cornerRadius: 17).stroke(Ink.border, lineWidth: 1))
+            .background(user ? Ink.cyan.opacity(0.11) : Ink.surface.opacity(0.62),
+                        in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .strokeBorder(Ink.border, lineWidth: 0.7))
             if !user { Spacer(minLength: 20) }
         }
     }
@@ -951,9 +982,13 @@ struct ContentView: View {
             TextField("Спроси что-нибудь...", text: $draft, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($composerFocused)
-                .font(.system(size: 14))
-                .padding(.horizontal, 14).padding(.vertical, 13)
-                .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 17))
+                .font(.system(.body))
+                .submitLabel(.send)
+                .onSubmit(sendMessage)
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 17))
+                .overlay(RoundedRectangle(cornerRadius: 17)
+                    .strokeBorder(Ink.border, lineWidth: 0.65))
             Button(action: sendMessage) {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 17, weight: .bold))
@@ -965,7 +1000,7 @@ struct ContentView: View {
             .disabled(!canSend)
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(Ink.bg)
+        .background(.ultraThinMaterial)
         .overlay(alignment: .top) {
             if !attachedName.isEmpty {
                 Text("📎 \(attachedName) · текст будет добавлен в запрос")
