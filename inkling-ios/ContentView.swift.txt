@@ -54,6 +54,10 @@ struct ContentView: View {
     @StateObject private var health = X1DeviceMonitor()
     @StateObject private var speech = X1Speech()
     @StateObject private var camera = X1Camera()
+    @StateObject private var lidar = X1LidarScanner()
+    @State private var scanMode = "camera"
+    @State private var fitDetails = ""
+    @State private var riskyModel: URL?
     @AppStorage("x1er_auto_tts") private var autoSpeak = false
     private let telemetryTimer = Timer.publish(every: 2.5, on: .main, in: .common).autoconnect()
     @AppStorage("inkling_use_gpu") private var metalEnabled = false
@@ -95,8 +99,13 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .onReceive(telemetryTimer) { _ in health.refresh() }
         .onChange(of: page) { newPage in
-            if newPage != .camera { camera.stop() }
-            else { camera.start() }
+            if newPage != .camera { camera.stop(); lidar.stop() }
+            else if scanMode == "camera" { camera.start() }
+            else { lidar.start() }
+        }
+        .onChange(of: scanMode) { mode in
+            if mode == "lidar" { camera.stop() }
+            else { lidar.stop() }
         }
         .onChange(of: llamaState.isGenerating) { busy in
             if !busy, autoSpeak, !llamaState.generatedText.isEmpty {
@@ -126,6 +135,21 @@ struct ContentView: View {
             set: { if !$0 { importError = "" } }
         )) { Button("Понятно", role: .cancel) { importError = "" } } message: {
             Text(importError)
+        }
+        .alert("Оценка совместимости", isPresented: Binding(get: { !fitDetails.isEmpty },
+                 set: { if !$0 { fitDetails = "" } })) {
+            Button("Закрыть", role: .cancel) { fitDetails = "" }
+        } message: { Text(fitDetails) }
+        .confirmationDialog("Возможна нехватка памяти", isPresented: Binding(
+            get: { riskyModel != nil }, set: { if !$0 { riskyModel = nil }
+        }), titleVisibility: .visible) {
+            Button("Всё равно попробовать") {
+                if let url = riskyModel { loadLocalModel(url) }
+                riskyModel = nil
+            }
+            Button("Отмена", role: .cancel) { riskyModel = nil }
+        } message: {
+            Text("Это оценка по размеру файла, не проверка реального лимита iOS. Приложение может быть закрыто системой.")
         }
         .confirmationDialog("Удалить эту GGUF-модель с телефона?",
                             isPresented: Binding(get: { deleteTarget != nil },
@@ -489,6 +513,11 @@ struct ContentView: View {
                                         .font(.system(size: 12, weight: .semibold))
                                         .lineLimit(3).textSelection(.enabled)
                                     Text(file.displaySize).font(.system(size: 10)).foregroundStyle(Ink.faint)
+                                    let report = X1ModelFit.inspect(bytes: file.size, fileName: file.fileName,
+                                                                   freeDisk: health.freeDiskGB)
+                                    Text(report.rating)
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(report.color)
                                 }
                                 Spacer(minLength: 3)
                                 Button {
@@ -565,22 +594,33 @@ struct ContentView: View {
                                 HStack(spacing: 10) {
                                     Text(HFModelLibrary.sizeOf(url))
                                         .font(.system(size: 11)).foregroundStyle(Ink.faint)
+                                    let bytes = Int64((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+                                    let fit = X1ModelFit.inspect(bytes: bytes, fileName: url.lastPathComponent,
+                                                                  freeDisk: health.freeDiskGB)
+                                    Button {
+                                        fitDetails = fit.rating + "\n" + fit.detail + "\n" + X1ModelFit.headerInfo(url)
+                                    } label: {
+                                        Label(fit.rating, systemImage: "memorychip")
+                                            .font(.system(size: 10)).foregroundStyle(fit.color)
+                                    }
                                     Spacer()
                                     Button(role: .destructive) { deleteTarget = url } label: {
                                         Image(systemName: "trash").foregroundStyle(.red.opacity(0.8))
                                     }
                                     Button {
-                                        Task {
-                                            await llamaState.loadModelInBackground(modelUrl: url)
-                                            if llamaState.loadError.isEmpty { page = .chat }
-                                        }
+                                        let bytes = Int64((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+                                        let fit = X1ModelFit.inspect(bytes: bytes, fileName: url.lastPathComponent)
+                                        if fit.risky { riskyModel = url }
+                                        else { loadLocalModel(url) }
                                     } label: {
                                         Label("Запустить", systemImage: "play.fill")
                                             .font(.system(size: 11, weight: .bold))
                                             .foregroundStyle(Ink.bg)
                                             .padding(.horizontal, 12).padding(.vertical, 9)
                                             .background(Ink.cyan, in: Capsule())
-                                    }.disabled(llamaState.loading)
+                                    }.disabled(llamaState.loading ||
+                                        url.lastPathComponent.lowercased().hasPrefix("mmproj-") ||
+                                        url.lastPathComponent.lowercased().contains("lora"))
                                 }
                             }
                         }
@@ -646,6 +686,20 @@ struct ContentView: View {
     }
 
     private var cameraView: some View {
+        VStack(spacing: 0) {
+            Picker("Режим сканирования", selection: $scanMode) {
+                Text("Камера · Vision").tag("camera")
+                Text("LiDAR · 3D").tag("lidar")
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            if scanMode == "lidar" { lidarView }
+            else { cameraBaseView }
+        }
+    }
+
+    private var cameraBaseView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 15) {
                 titleBlock("Камера", subtitle: "Анализ сцены на iPhone · Apple Vision")
@@ -821,6 +875,87 @@ struct ContentView: View {
             } catch {
                 await MainActor.run { importError = error.localizedDescription }
             }
+        }
+    }
+
+
+    private var lidarView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 13) {
+                titleBlock("3D-сканер LiDAR", subtitle: "ARKit · захват геометрии с реальными координатами")
+                InkCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("СКАНЕР ПРОСТРАНСТВА", systemImage: "cube.transparent")
+                            .font(.system(size: 11, weight: .bold)).foregroundStyle(Ink.cyan)
+                        X1LidarPreview(scanner: lidar)
+                            .frame(height: 270)
+                            .background(Color.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        Text(lidar.status).font(.system(size: 12)).foregroundStyle(Ink.faint)
+                        HStack(spacing: 10) {
+                            Button {
+                                if lidar.running { lidar.stop() } else { lidar.start() }
+                            } label: {
+                                Label(lidar.running ? "Стоп" : "Начать скан", systemImage: lidar.running ? "pause.fill" : "record.circle")
+                            }
+                            .buttonStyle(.borderedProminent).tint(Ink.cyan).foregroundStyle(Ink.bg)
+                            .disabled(!lidar.supported)
+                            Button { lidar.reset() } label: {
+                                Label("Сброс", systemImage: "arrow.counterclockwise")
+                            }.buttonStyle(.bordered)
+                        }
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("РЕЗУЛЬТАТ", systemImage: "cube")
+                            .font(.system(size: 11, weight: .bold)).foregroundStyle(Ink.violet)
+                        HStack {
+                            meter("УЧАСТКИ", value: "\(lidar.anchorCount)", icon: "square.3.layers.3d",
+                                  bar: Double(min(100, lidar.anchorCount)) / 100, color: Ink.cyan)
+                            meter("ПОЛИГОНЫ", value: "\(lidar.faceCount)", icon: "triangle",
+                                  bar: Double(min(300000, lidar.faceCount)) / 300000, color: Ink.violet)
+                        }
+                        Button { lidar.exportOBJ() } label: {
+                            Label(lidar.exporting ? "Обработка..." : "Сохранить 3D-модель (OBJ)",
+                                  systemImage: "square.and.arrow.down")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .disabled(lidar.exporting || lidar.anchorCount == 0)
+                        if !lidar.lastSummary.isEmpty {
+                            Text(lidar.lastSummary).font(.system(size: 12))
+                                .foregroundStyle(Ink.faint).textSelection(.enabled)
+                            Button {
+                                attachedName = "3D-скан LiDAR"
+                                attachedText = lidar.lastSummary
+                                draft = "Проанализируй размеры и геометрию этого LiDAR-скана, что можно сказать?"
+                                page = .chat
+                            } label: {
+                                Label("Обсудить измерения с ИИ", systemImage: "sparkles")
+                            }.font(.system(size: 12, weight: .semibold))
+                        }
+                        if let file = lidar.exportedURL {
+                            ShareLink(item: file) {
+                                Label("Экспорт OBJ через «Файлы»", systemImage: "square.and.arrow.up")
+                                    .font(.system(size: 12))
+                            }
+                        }
+                    }
+                }
+                Text("Это настоящий ARKit LiDAR mesh, экспортируемый в OBJ. ИИ получает измерения и сводку, а не исходные 3D-тензоры. Размеры приблизительные и не предназначены для точной подгонки деталей до миллиметра.")
+                    .font(.system(size: 11)).foregroundStyle(Ink.faint)
+                    .padding(.horizontal, 4)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+        }
+        .onAppear { if !lidar.running { lidar.start() } }
+        .onDisappear { lidar.stop() }
+    }
+
+    private func loadLocalModel(_ url: URL) {
+        Task {
+            await llamaState.loadModelInBackground(modelUrl: url)
+            if llamaState.loadError.isEmpty { page = .chat }
         }
     }
 
