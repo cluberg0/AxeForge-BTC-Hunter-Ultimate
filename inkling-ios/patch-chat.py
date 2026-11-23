@@ -53,7 +53,7 @@ struct X1Turn: Sendable {
                                                   output.baseAddress, Int32(output.count))
                     }
                 }
-                if written > 0 && written < buffer.count {
+                if written > 0 && Int(written) < buffer.count {
                     let utf8 = buffer.prefix(Int(written)).map { UInt8(bitPattern: $0) }
                     if let prompt = String(bytes: utf8, encoding: .utf8) {
                         return prompt
