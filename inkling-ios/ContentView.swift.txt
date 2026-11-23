@@ -289,6 +289,67 @@ struct ContentView: View {
         .padding(.bottom, 5)
     }
 
+    private var dashboardActions: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text("Быстрые действия")
+                .font(.system(.subheadline).weight(.semibold))
+                .foregroundStyle(Ink.text)
+                .padding(.horizontal, 3)
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10),
+                                GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                quickAction("Библиотека", subtitle: "GGUF и Hugging Face",
+                            systemName: "square.stack.3d.up.fill", tint: Ink.cyan) {
+                    page = .library
+                }
+                quickAction("Голос", subtitle: "Разговор с моделью",
+                            systemName: "waveform", tint: Ink.violet) {
+                    showVoiceMode = true
+                }
+                quickAction("Документы", subtitle: "PDF, код и текст",
+                            systemName: "doc.text.fill", tint: Ink.cyan) {
+                    page = .files
+                }
+                quickAction("LiDAR", subtitle: "3D-сканирование",
+                            systemName: "cube.transparent.fill", tint: Ink.violet) {
+                    scanMode = "lidar"
+                    page = .camera
+                }
+            }
+        }
+    }
+
+    private func quickAction(_ name: String, subtitle: String, systemName: String,
+                             tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: systemName)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(tint)
+                Spacer(minLength: 2)
+                Text(name)
+                    .font(.system(.subheadline).weight(.semibold))
+                    .foregroundStyle(Ink.text)
+                Text(subtitle)
+                    .font(.system(.caption2))
+                    .foregroundStyle(Ink.faint)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 85)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(Ink.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .strokeBorder(Ink.border, lineWidth: 0.8)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private var chatView: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
@@ -394,6 +455,9 @@ struct ContentView: View {
                                     Circle().fill(.green).frame(width: 8, height: 8)
                                 }
                             }
+                        }
+                        if history.isEmpty && llamaState.generatedText.isEmpty {
+                            dashboardActions
                         }
                         ForEach(history) { item in
                             bubble(text: item.text, user: item.role == .user)
