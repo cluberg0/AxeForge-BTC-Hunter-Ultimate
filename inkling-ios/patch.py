@@ -21,7 +21,6 @@ patch(lib, [
     ("let model = llama_model_load_from_file(path, model_params)", """
         // CPU mode saves GPU-side buffers; Metal toggle applies to next load.
         model_params.n_gpu_layers = UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? 99 : 0
-        model_params.use_mmap = true
         let model = llama_model_load_from_file(path, model_params)""".strip("\n")),
     ("ctx_params.n_ctx = 2048", """ctx_params.n_ctx = 512
         ctx_params.n_batch = 128
