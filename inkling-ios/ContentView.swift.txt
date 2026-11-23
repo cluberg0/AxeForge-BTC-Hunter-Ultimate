@@ -65,6 +65,9 @@ struct ContentView: View {
     @AppStorage("x1er_context") private var contextTokens = 512
     @AppStorage("x1er_max_tokens") private var maxTokens = 256
     @AppStorage("x1er_profile") private var selectedProfile = "Экономия"
+    @AppStorage("x1er_system_prompt") private var systemPrompt = ""
+    @AppStorage("x1er_haptics") private var hapticsOn = true
+    @AppStorage("x1er_large_text") private var largeText = false
 
     @State private var page: RunnerPage = .chat
     @State private var draft = ""
@@ -217,7 +220,8 @@ struct ContentView: View {
             ForEach(RunnerPage.allCases, id: \.self) { item in
                 Button {
                     composerFocused = false
-                    withAnimation(.easeInOut(duration: 0.2)) { page = item }
+                    if hapticsOn { UISelectionFeedbackGenerator().selectionChanged() }
+                    withAnimation(.easeInOut(duration: 0.18)) { page = item }
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: item.icon)
@@ -347,7 +351,7 @@ struct ContentView: View {
                 Text(user ? "ТЫ" : "INKLING")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .tracking(1.6).foregroundStyle(user ? Ink.cyan : Ink.violet)
-                Text(text).font(.system(size: 14))
+                Text(text).font(.system(size: largeText ? 16 : 14))
                     .foregroundStyle(.white.opacity(0.94))
                     .textSelection(.enabled)
             }
@@ -427,7 +431,17 @@ struct ContentView: View {
         attachedText = ""
         attachedName = ""
         if speech.listening { speech.stopListening() }
-        Task { await llamaState.complete(text: payload) }
+        var turns: [X1Turn] = []
+        if !systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            turns.append(X1Turn(role: "system", content: systemPrompt))
+        }
+        turns.append(contentsOf: history.suffix(24).map { message in
+            X1Turn(role: message.role == .user ? "user" : "assistant", content: message.text)
+        })
+        if let last = turns.indices.last {
+            turns[last] = X1Turn(role: "user", content: payload)
+        }
+        Task { await llamaState.complete(turns: turns) }
     }
 
 
@@ -1156,6 +1170,8 @@ struct ContentView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(Ink.cyan)
                         Toggle("Автоматически озвучивать ответы", isOn: $autoSpeak).tint(Ink.cyan)
+                        Toggle("Отклик при нажатиях", isOn: $hapticsOn).tint(Ink.cyan)
+                        Toggle("Увеличенный текст диалога", isOn: $largeText).tint(Ink.cyan)
                         Button {
                             if speech.speaking { speech.stopSpeaking() }
                             else { speech.speak(llamaState.generatedText.isEmpty ? "Привет, я x1er_ai." : llamaState.generatedText) }
@@ -1187,6 +1203,23 @@ struct ContentView: View {
                         settingRow("Режим", metalEnabled ? "Metal GPU" : "CPU")
                         Text("Новые параметры вступают в силу после перезагрузки модели.")
                             .font(.system(size: 11))
+                            .foregroundStyle(Ink.faint)
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Label("РОЛЬ ИИ", systemImage: "text.bubble.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Ink.cyan)
+                        Text("Инструкции модели")
+                            .font(.system(size: 15, weight: .semibold))
+                        TextField("Например: отвечай по-русски и кратко", text: $systemPrompt, axis: .vertical)
+                            .lineLimit(2...5)
+                            .font(.system(size: 14))
+                            .padding(11)
+                            .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 12))
+                        Text("При отправке сообщения приложение добавляет предыдущие реплики, а llama.cpp применяет шаблон чата модели, если он поддерживается.")
+                            .font(.system(size: 12))
                             .foregroundStyle(Ink.faint)
                     }
                 }
