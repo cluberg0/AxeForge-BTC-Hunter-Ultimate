@@ -1,0 +1,34 @@
+name: Cancel stale x1er_ai builds
+
+on:
+  push:
+    branches: [inkling-ios-app-build]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel old x1er_ai builds, preserve newest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ids=$(gh api "repos/${REPOSITORY}/actions/workflows/inkling-ios.yml/runs?branch=inkling-ios-app-build&per_page=40" --jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting") | .id]')
+          echo "Active builds: $ids"
+          keep=$(echo "$ids" | jq -r '.[0] // empty')
+          if [ -z "$keep" ]; then
+            echo "No active builds"
+            exit 0
+          fi
+          echo "Keeping newest run: $keep"
+          echo "$ids" | jq -r '.[]' | while read -r id; do
+            if [ "$id" != "$keep" ]; then
+              echo "Cancel obsolete run: $id"
+              gh api --method POST "repos/${REPOSITORY}/actions/runs/${id}/cancel" || true
+            fi
+          done
