@@ -2,12 +2,12 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 private enum Ink {
-    static let bg = Color(red: 0.035, green: 0.052, blue: 0.085)
-    static let surface = Color(red: 0.085, green: 0.111, blue: 0.158)
-    static let surface2 = Color(red: 0.112, green: 0.147, blue: 0.197)
-    static let cyan = Color(red: 0.38, green: 0.89, blue: 0.94)
+    static let bg = Color(red: 0.030, green: 0.043, blue: 0.071)
+    static let surface = Color(red: 0.075, green: 0.102, blue: 0.147)
+    static let surface2 = Color(red: 0.112, green: 0.153, blue: 0.210)
+    static let cyan = Color(red: 0.36, green: 0.86, blue: 0.95)
     static let violet = Color(red: 0.55, green: 0.49, blue: 0.98)
-    static let faint = Color(red: 0.62, green: 0.67, blue: 0.77)
+    static let faint = Color(red: 0.65, green: 0.72, blue: 0.82)
     static let border = Color.white.opacity(0.09)
 }
 
@@ -16,11 +16,16 @@ private struct InkCard<Content: View>: View {
     init(@ViewBuilder content: () -> Content) { self.content = content() }
     var body: some View {
         content
-            .padding(17)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Ink.border, lineWidth: 1))
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(LinearGradient(colors: [Ink.surface2.opacity(0.67), Ink.surface],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Ink.border, lineWidth: 0.7))
+            .shadow(color: .black.opacity(0.10), radius: 9, y: 3)
     }
 }
 
@@ -187,25 +192,27 @@ struct ContentView: View {
     private var header: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(LinearGradient(colors: [Ink.cyan, Ink.violet],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "sparkles").font(.system(size: 21, weight: .bold))
-                    .foregroundStyle(Ink.bg)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Ink.surface2)
+                    .frame(width: 41, height: 41)
+                Text("X1")
+                    .font(.system(size: 19, weight: .heavy))
+                    .tracking(-2.0)
+                    .foregroundStyle(LinearGradient(colors: [Ink.cyan, Color(red: 0.16, green: 0.48, blue: 0.99)],
+                                                     startPoint: .leading, endPoint: .trailing))
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("x1er_ai").font(.system(size: 21, weight: .bold, design: .rounded))
+                Text("x1er_ai").font(.system(.headline).weight(.semibold))
                     .tracking(-0.5).foregroundStyle(.white)
-                Text("PRIVATE  ·  ON DEVICE").font(.system(size: 9, weight: .bold, design: .monospaced))
+                Text("ЛОКАЛЬНЫЙ ИИ").font(.system(size: 10, weight: .bold))
                     .tracking(1.2).foregroundStyle(Ink.faint)
             }
             Spacer()
             HStack(spacing: 5) {
                 Circle().fill(llamaState.activeModelName.isEmpty ? Ink.faint : .green)
                     .frame(width: 6, height: 6)
-                Text(llamaState.activeModelName.isEmpty ? "NO MODEL" : "READY")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                Text(llamaState.activeModelName.isEmpty ? "НЕТ МОДЕЛИ" : "ГОТОВ")
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Ink.faint)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
@@ -226,7 +233,7 @@ struct ContentView: View {
                     VStack(spacing: 3) {
                         Image(systemName: item.icon)
                             .font(.system(size: 17, weight: .medium))
-                        Text(item.rawValue).font(.system(size: 9, weight: .medium))
+                        Text(item.rawValue).font(.system(size: 10, weight: .medium))
                     }
                     .foregroundStyle(page == item ? Ink.cyan : Ink.faint)
                     .frame(maxWidth: .infinity)
@@ -247,7 +254,7 @@ struct ContentView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
-                            titleBlock("Диалог", subtitle: "Локальный ИИ · без облачного чата")
+                            titleBlock("Чат", subtitle: "На устройстве · приватно")
                             Spacer()
                             Button { showChatHistory = true } label: {
                                 Image(systemName: "clock.arrow.circlepath")
@@ -274,7 +281,7 @@ struct ContentView: View {
                                                     in: RoundedRectangle(cornerRadius: 13))
                                     VStack(alignment: .leading, spacing: 9) {
                                         Text("Подключи свою модель")
-                                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                                            .font(.system(size: 19, weight: .bold))
                                         Text("Открой библиотеку, скачай GGUF с Hugging Face и нажми «Запустить».")
                                             .font(.system(size: 13)).foregroundStyle(Ink.faint)
                                             .fixedSize(horizontal: false, vertical: true)
@@ -282,7 +289,7 @@ struct ContentView: View {
                                             page = .library
                                         } label: {
                                             Label("Перейти к моделям", systemImage: "arrow.up.right")
-                                                .font(.system(size: 12, weight: .bold))
+                                                .font(.system(size: 13, weight: .bold))
                                         }
                                         .padding(.top, 3)
                                     }
@@ -297,7 +304,7 @@ struct ContentView: View {
                                         Text("Модель загружена")
                                             .font(.system(size: 11)).foregroundStyle(Ink.faint)
                                         Text(llamaState.activeModelName)
-                                            .font(.system(size: 12, weight: .semibold))
+                                            .font(.system(size: 13, weight: .semibold))
                                             .lineLimit(2)
                                     }
                                     Spacer()
@@ -349,9 +356,9 @@ struct ContentView: View {
             if user { Spacer(minLength: 38) }
             VStack(alignment: .leading, spacing: 7) {
                 Text(user ? "ТЫ" : "INKLING")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .font(.system(size: 10, weight: .bold))
                     .tracking(1.6).foregroundStyle(user ? Ink.cyan : Ink.violet)
-                Text(text).font(.system(size: largeText ? 16 : 14))
+                Text(text).font(.system(size: largeText ? 17 : 15)).lineSpacing(4)
                     .foregroundStyle(.white.opacity(0.94))
                     .textSelection(.enabled)
             }
@@ -575,7 +582,7 @@ struct ContentView: View {
                                 .font(.system(size: 18)).foregroundStyle(Ink.cyan)
                             Text("Hugging Face").font(.system(size: 17, weight: .bold))
                             Spacer()
-                            Text("MODEL HUB").font(.system(size: 9, weight: .bold, design: .monospaced))
+                            Text("MODEL HUB").font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(Ink.faint)
                         }
                         Text("Поиск репозиториев").font(.system(size: 11)).foregroundStyle(Ink.faint)
@@ -601,7 +608,7 @@ struct ContentView: View {
                             .font(.system(size: 11)).foregroundStyle(Ink.faint)
                         TextField("Автор/Репозиторий-GGUF", text: $library.repositoryText)
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.system(size: 12))
                             .padding(12)
                             .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 12))
                         Button {
@@ -613,7 +620,7 @@ struct ContentView: View {
                                 Spacer()
                                 Image(systemName: "arrow.right")
                             }
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(Ink.bg)
                             .padding(.horizontal, 16).padding(.vertical, 13)
                             .background(LinearGradient(colors: [Ink.cyan, Color(red: 0.43, green: 0.73, blue: 0.98)],
@@ -649,7 +656,7 @@ struct ContentView: View {
                                 } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text(repo.id).font(.system(size: 12, weight: .medium))
+                                            Text(repo.id).font(.system(size: 13, weight: .medium))
                                                 .multilineTextAlignment(.leading)
                                             Text("Загрузок: \(repo.downloads)")
                                                 .font(.system(size: 10)).foregroundStyle(Ink.faint)
@@ -678,13 +685,13 @@ struct ContentView: View {
                                                 in: RoundedRectangle(cornerRadius: 11))
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text(file.fileName)
-                                        .font(.system(size: 12, weight: .semibold))
+                                        .font(.system(size: 13, weight: .semibold))
                                         .lineLimit(3).textSelection(.enabled)
                                     Text(file.displaySize).font(.system(size: 10)).foregroundStyle(Ink.faint)
                                     let report = X1ModelFit.inspect(bytes: file.size, fileName: file.fileName,
                                                                    freeDisk: health.freeDiskGB)
                                     Text(report.rating)
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(report.color)
                                 }
                                 Spacer(minLength: 3)
@@ -707,13 +714,13 @@ struct ContentView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Label("ЗАГРУЗКА", systemImage: "arrow.down.circle.fill")
-                                    .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                                    .font(.system(size: 12, weight: .heavy))
                                     .foregroundStyle(Ink.cyan)
                                 Spacer()
                                 Text("\(Int(library.progress * 100))%")
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 15, weight: .bold))
                             }
-                            Text(library.activeName).font(.system(size: 12, weight: .semibold))
+                            Text(library.activeName).font(.system(size: 13, weight: .semibold))
                                 .lineLimit(2)
                             GeometryReader { proxy in
                                 ZStack(alignment: .leading) {
@@ -734,7 +741,7 @@ struct ContentView: View {
                                         Text("Осталось ~\(library.remainingSeconds / 60) мин \(library.remainingSeconds % 60) с")
                                     }
                                 }
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.system(size: 10))
                                 .foregroundStyle(Ink.cyan)
                             }
                             HStack(spacing: 10) {
@@ -756,7 +763,7 @@ struct ContentView: View {
                         Button { showImporter = true } label: {
                             Label(importing ? "Копирую GGUF..." : "Импортировать из «Файлов»",
                                   systemImage: "plus.circle.fill")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(Ink.cyan)
                         }.disabled(importing)
                         if importing { ProgressView().tint(Ink.cyan) }
@@ -769,7 +776,7 @@ struct ContentView: View {
                             Divider().overlay(Ink.border)
                             VStack(alignment: .leading, spacing: 11) {
                                 Text(url.lastPathComponent)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 13, weight: .medium))
                                     .textSelection(.enabled)
                                 HStack(spacing: 10) {
                                     Text(HFModelLibrary.sizeOf(url))
@@ -794,7 +801,7 @@ struct ContentView: View {
                                         else { loadLocalModel(url) }
                                     } label: {
                                         Label("Запустить", systemImage: "play.fill")
-                                            .font(.system(size: 11, weight: .bold))
+                                            .font(.system(size: 12, weight: .bold))
                                             .foregroundStyle(Ink.bg)
                                             .padding(.horizontal, 12).padding(.vertical, 9)
                                             .background(Ink.cyan, in: Capsule())
@@ -820,7 +827,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Label("ЗАГРУЖЕННОСТЬ IPHONE", systemImage: "gauge.high")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(Ink.cyan)
                     Spacer()
                     Circle().fill(health.thermal == "Нормальная" ? Color.green : Color.orange)
@@ -850,10 +857,10 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 4) {
                 Image(systemName: icon).font(.system(size: 9))
-                Text(label).font(.system(size: 8, weight: .medium, design: .monospaced))
+                Text(label).font(.system(size: 8, weight: .medium))
                     .lineLimit(1).minimumScaleFactor(0.75)
             }.foregroundStyle(Ink.faint)
-            Text(value).font(.system(size: 12, weight: .bold, design: .rounded))
+            Text(value).font(.system(size: 13, weight: .bold))
                 .lineLimit(1).minimumScaleFactor(0.7)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -887,14 +894,14 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Label("ЖИВОЕ НАБЛЮДЕНИЕ", systemImage: "camera.viewfinder")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(Ink.cyan)
                             Spacer()
                             if camera.running {
                                 HStack(spacing: 4) {
                                     Circle().fill(.red).frame(width: 6, height: 6)
                                     Text("LIVE · 1 кадр / 2,5 c")
-                                        .font(.system(size: 10, design: .monospaced))
+                                        .font(.system(size: 10))
                                 }.foregroundStyle(Ink.faint)
                             }
                         }
@@ -927,7 +934,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("ЧТО ОБНАРУЖЕНО", systemImage: "sparkle.magnifyingglass")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(Ink.violet)
                         Text(camera.observation.isEmpty ? "Включи камеру, чтобы распознавать надписи и объекты." : camera.observation)
                             .font(.system(size: 13))
@@ -940,7 +947,7 @@ struct ContentView: View {
                             page = .chat
                         } label: {
                             Label("Передать наблюдения в чат", systemImage: "arrow.up.right")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                         }
                         .disabled(camera.observation.isEmpty)
                     }
@@ -948,7 +955,7 @@ struct ContentView: View {
                 if let photo = camera.snapshot {
                     InkCard {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Последний снимок").font(.system(size: 14, weight: .bold))
+                            Text("Последний снимок").font(.system(size: 15, weight: .bold))
                             Image(uiImage: photo).resizable().scaledToFit()
                                 .frame(maxHeight: 240).clipShape(RoundedRectangle(cornerRadius: 12))
                             ShareLink(item: Image(uiImage: photo), preview: SharePreview("Снимок x1er_ai",
@@ -974,7 +981,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 14) {
                         Label("ДОБАВИТЬ ДОКУМЕНТ", systemImage: "doc.badge.plus")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Ink.cyan)
                         Text("TXT, Markdown, CSV, JSON, исходный код, PDF с текстом и изображения с OCR.")
                             .font(.system(size: 12)).foregroundStyle(Ink.faint)
@@ -984,7 +991,7 @@ struct ContentView: View {
                                 Text("Выбрать из «Файлов»")
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                            }.font(.system(size: 13, weight: .semibold))
+                            }.font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(Ink.bg).padding(13)
                                 .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 12))
                         }
@@ -994,7 +1001,7 @@ struct ContentView: View {
                     InkCard {
                         VStack(alignment: .leading, spacing: 12) {
                             Label(attachedName, systemImage: "paperclip")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
                             Text("Извлечено символов: \(attachedText.count) · контекст будет сокращён до доступного окна модели.")
                                 .font(.system(size: 11)).foregroundStyle(Ink.faint)
@@ -1014,19 +1021,19 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("ЭКСПОРТ ДИАЛОГА", systemImage: "square.and.arrow.up")
-                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.violet)
+                            .font(.system(size: 13, weight: .bold)).foregroundStyle(Ink.violet)
                         Text("Сохраняй переписку в «Файлы» или отправляй через системное меню.")
                             .font(.system(size: 12)).foregroundStyle(Ink.faint)
                         ShareLink(item: exportConversation) {
                             Label("Поделиться перепиской", systemImage: "square.and.arrow.up")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 14, weight: .medium))
                         }
                     }
                 }
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("ПРИВАТНОСТЬ", systemImage: "lock.shield")
-                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.cyan)
+                            .font(.system(size: 13, weight: .bold)).foregroundStyle(Ink.cyan)
                         Text("Файлы обрабатываются локально; PDF и изображения сначала разбирает система iOS. Содержимое не отправляется в Hugging Face. Сеть используется только для поиска и загрузки моделей.")
                             .font(.system(size: 12)).foregroundStyle(Ink.faint)
                     }
@@ -1066,7 +1073,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("СКАНЕР ПРОСТРАНСТВА", systemImage: "cube.transparent")
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(Ink.cyan)
+                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.cyan)
                         X1LidarPreview(scanner: lidar)
                             .frame(height: 270)
                             .background(Color.black)
@@ -1089,7 +1096,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("РЕЗУЛЬТАТ", systemImage: "cube")
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(Ink.violet)
+                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.violet)
                         HStack {
                             meter("УЧАСТКИ", value: "\(lidar.anchorCount)", icon: "square.3.layers.3d",
                                   bar: Double(min(100, lidar.anchorCount)) / 100, color: Ink.cyan)
@@ -1099,7 +1106,7 @@ struct ContentView: View {
                         Button { lidar.exportOBJ() } label: {
                             Label(lidar.exporting ? "Обработка..." : "Сохранить 3D-модель (OBJ)",
                                   systemImage: "square.and.arrow.down")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))
                         }
                         .disabled(lidar.exporting || lidar.anchorCount == 0)
                         if !lidar.lastSummary.isEmpty {
@@ -1112,7 +1119,7 @@ struct ContentView: View {
                                 page = .chat
                             } label: {
                                 Label("Обсудить измерения с ИИ", systemImage: "sparkles")
-                            }.font(.system(size: 12, weight: .semibold))
+                            }.font(.system(size: 13, weight: .semibold))
                         }
                         if let file = lidar.exportedURL {
                             ShareLink(item: file) {
@@ -1167,7 +1174,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("ГОЛОСОВОЙ АССИСТЕНТ", systemImage: "waveform")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(Ink.cyan)
                         Toggle("Автоматически озвучивать ответы", isOn: $autoSpeak).tint(Ink.cyan)
                         Toggle("Отклик при нажатиях", isOn: $hapticsOn).tint(Ink.cyan)
@@ -1192,7 +1199,7 @@ struct ContentView: View {
                         }
                         Toggle(isOn: $metalEnabled) {
                             VStack(alignment: .leading, spacing: 5) {
-                                Text("Metal GPU").font(.system(size: 14, weight: .semibold))
+                                Text("Metal GPU").font(.system(size: 15, weight: .semibold))
                                 Text("Переключение применяется при следующей загрузке модели.")
                                     .font(.system(size: 11)).foregroundStyle(Ink.faint)
                             }
@@ -1209,7 +1216,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 9) {
                         Label("РОЛЬ ИИ", systemImage: "text.bubble.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Ink.cyan)
                         Text("Инструкции модели")
                             .font(.system(size: 15, weight: .semibold))
@@ -1240,7 +1247,7 @@ struct ContentView: View {
                         .onChange(of: selectedProfile) { applyProfile($0) }
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Контекст: \(contextTokens) токенов")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 13, weight: .medium))
                             Picker("Контекст", selection: $contextTokens) {
                                 Text("512").tag(512)
                                 Text("1024").tag(1024)
@@ -1265,7 +1272,7 @@ struct ContentView: View {
                                     .font(.system(size: 12))
                                 Spacer()
                                 Text(String(format: "%.1f", temperature))
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 13, weight: .bold))
                             }
                             Slider(value: $temperature, in: 0.1...1.2, step: 0.1)
                                 .tint(Ink.cyan)
@@ -1278,7 +1285,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("ПАМЯТЬ IPHONE", systemImage: "memorychip")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(Ink.violet)
                         Text("Для крупных моделей сначала проверь CPU-режим.")
                             .font(.system(size: 15, weight: .bold))
@@ -1290,7 +1297,7 @@ struct ContentView: View {
                 InkCard {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("ДИАГНОСТИКА", systemImage: "waveform.path.ecg")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(Ink.cyan)
                         Text(llamaState.loading ? "Загружаю модель..." :
                              llamaState.activeModelName.isEmpty ? "Нет загруженной модели" :
@@ -1304,7 +1311,7 @@ struct ContentView: View {
                             UIPasteboard.general.string = llamaState.messageLog
                         } label: {
                             Label("Копировать журнал", systemImage: "doc.on.doc")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                         }
                         Text("InklingRunner v2  •  llama.cpp  •  без облачного инференса")
                             .font(.system(size: 10)).foregroundStyle(Ink.faint)
@@ -1329,13 +1336,13 @@ struct ContentView: View {
             Text(title).foregroundStyle(.white)
             Spacer()
         }
-        .font(.system(size: 15, weight: .bold, design: .rounded))
+        .font(.system(size: 15, weight: .bold))
         .padding(.horizontal, 3)
     }
 
     private func titleBlock(_ title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.system(size: 27, weight: .bold, design: .rounded))
+            Text(title).font(.system(.title2).weight(.semibold))
                 .foregroundStyle(.white)
             Text(subtitle).font(.system(size: 12)).foregroundStyle(Ink.faint)
         }
