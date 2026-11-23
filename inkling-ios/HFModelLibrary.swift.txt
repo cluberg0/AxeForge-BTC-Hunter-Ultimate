@@ -1,0 +1,284 @@
+import Foundation
+import Combine
+
+struct HFRepository: Identifiable {
+    let id: String
+    let downloads: Int
+}
+
+struct HFRemoteFile: Identifiable {
+    var id: String { path }
+    let path: String
+    let size: Int64
+    var fileName: String { String(path.split(separator: "/").last ?? "") }
+    var displaySize: String {
+        size > 0 ? ByteCountFormatter.string(fromByteCount: size, countStyle: .file) : "Размер неизвестен"
+    }
+}
+
+final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelegate {
+    @Published var searchText = "Inkling-2-Mini"
+    @Published var repositoryText = "AtomicChat/Inkling-2-Mini-Uncensored-GGUF"
+    @Published var repositories: [HFRepository] = []
+    @Published var files: [HFRemoteFile] = []
+    @Published var localModels: [URL] = []
+    @Published var fetching = false
+    @Published var info = ""
+    @Published var errorMessage = ""
+    @Published var activeName = ""
+    @Published var progress: Double = 0
+    @Published var received: Int64 = 0
+    @Published var expected: Int64 = 0
+    @Published var paused = false
+
+    private var activeTask: URLSessionDownloadTask?
+    private var resumeData: Data?
+    private var intendedName = ""
+    private lazy var downloader: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForRequest = 60
+        config.timeoutIntervalForResource = 86400
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    }()
+
+    var modelsDirectory: URL {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let dir = docs.appendingPathComponent("Models", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    func refreshLocal() {
+        let urls = (try? FileManager.default.contentsOfDirectory(
+            at: modelsDirectory, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]
+        )) ?? []
+        localModels = urls.filter { $0.pathExtension.lowercased() == "gguf" }
+            .sorted { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }
+    }
+
+    private func fetchJSON(_ url: URL) async throws -> (Any, HTTPURLResponse) {
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 50
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "Hugging Face", code: -1, userInfo: [NSLocalizedDescriptionKey: "Сервер не ответил"])
+        }
+        guard (200...299).contains(http.statusCode) else {
+            let reason = http.statusCode == 401 || http.statusCode == 403
+                ? "Доступ ограничен: авторизуйтесь на Hugging Face (закрытые модели не поддерживаются)"
+                : "HTTP \(http.statusCode): проверьте репозиторий и VPN"
+            throw NSError(domain: "Hugging Face", code: http.statusCode,
+                          userInfo: [NSLocalizedDescriptionKey: reason])
+        }
+        return (try JSONSerialization.jsonObject(with: data), http)
+    }
+
+    @MainActor
+    func search() async {
+        fetching = true
+        errorMessage = ""
+        defer { fetching = false }
+        do {
+            var parts = URLComponents(string: "https://huggingface.co/api/models")!
+            parts.queryItems = [
+                URLQueryItem(name: "search", value: searchText.trimmingCharacters(in: .whitespacesAndNewlines)),
+                URLQueryItem(name: "sort", value: "downloads"),
+                URLQueryItem(name: "direction", value: "-1"),
+                URLQueryItem(name: "limit", value: "40")
+            ]
+            let (json, _) = try await fetchJSON(parts.url!)
+            let objects = json as? [[String: Any]] ?? []
+            repositories = objects.compactMap { obj in
+                guard let id = obj["id"] as? String else { return nil }
+                return HFRepository(id: id, downloads: obj["downloads"] as? Int ?? 0)
+            }
+            info = "Найдено репозиториев: \(repositories.count)"
+        } catch {
+            errorMessage = "Поиск: \(error.localizedDescription)"
+        }
+    }
+
+    private func normalizedRepository(_ raw: String) -> String {
+        var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        value = value.replacingOccurrences(of: "https://huggingface.co/", with: "")
+        value = String(value.split(separator: "?").first ?? "")
+        if let range = value.range(of: "/tree/") { value = String(value[..<range.lowerBound]) }
+        if let range = value.range(of: "/blob/") { value = String(value[..<range.lowerBound]) }
+        return value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    @MainActor
+    func openRepository(_ explicit: String? = nil) async {
+        fetching = true
+        errorMessage = ""
+        files = []
+        defer { fetching = false }
+        let repo = normalizedRepository(explicit ?? repositoryText)
+        let segments = repo.split(separator: "/")
+        guard segments.count == 2, segments.allSatisfy({ !$0.isEmpty }) else {
+            errorMessage = "Укажите репозиторий вида автор/название"
+            return
+        }
+        repositoryText = repo
+        do {
+            guard let url = URL(string: "https://huggingface.co/api/models/\(repo)/tree/main?recursive=true") else {
+                throw NSError(domain: "Hugging Face", code: -2, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])
+            }
+            var collected: [HFRemoteFile] = []
+            var next: URL? = url
+            var pages = 0
+            while let current = next, pages < 12 {
+                let (json, response) = try await fetchJSON(current)
+                for obj in (json as? [[String: Any]] ?? []) {
+                    guard let path = obj["path"] as? String,
+                          path.lowercased().hasSuffix(".gguf"),
+                          (obj["type"] as? String ?? "file") == "file" else { continue }
+                    let size: Int64
+                    if let number = obj["size"] as? NSNumber { size = number.int64Value }
+                    else if let lfs = obj["lfs"] as? [String: Any], let num = lfs["size"] as? NSNumber { size = num.int64Value }
+                    else { size = 0 }
+                    collected.append(HFRemoteFile(path: path, size: size))
+                }
+                next = nil
+                if let link = response.value(forHTTPHeaderField: "Link") {
+                    for item in link.components(separatedBy: ",") where item.contains("rel=\"next\"") {
+                        if let start = item.firstIndex(of: "<"), let end = item.firstIndex(of: ">"), start < end {
+                            next = URL(string: String(item[item.index(after: start)..<end]))
+                        }
+                    }
+                }
+                pages += 1
+            }
+            files = Array(Dictionary(grouping: collected, by: { $0.path }).compactMap { $0.value.first })
+                .sorted { $0.size == $1.size ? $0.path < $1.path : $0.size < $1.size }
+            info = files.isEmpty ? "GGUF-файлы не найдены" : "Найдено GGUF: \(files.count)"
+        } catch {
+            errorMessage = "Каталог: \(error.localizedDescription)"
+        }
+    }
+
+    func startDownload(file: HFRemoteFile) {
+        guard activeTask == nil else { errorMessage = "Сначала завершите текущую загрузку"; return }
+        let repo = normalizedRepository(repositoryText)
+        let parts = file.path.split(separator: "/").map { segment in
+            String(segment).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String(segment)
+        }.joined(separator: "/")
+        guard let url = URL(string: "https://huggingface.co/\(repo)/resolve/main/\(parts)?download=true") else {
+            errorMessage = "Неверная ссылка на файл"; return
+        }
+        if FileManager.default.fileExists(atPath: modelsDirectory.appendingPathComponent(file.fileName).path) {
+            errorMessage = "Файл уже есть в библиотеке"; return
+        }
+        intendedName = file.fileName
+        activeName = file.fileName
+        errorMessage = ""
+        progress = 0
+        received = 0
+        expected = file.size
+        paused = false
+        resumeData = nil
+        info = "Загружаю \(file.fileName)"
+        activeTask = downloader.downloadTask(with: url)
+        activeTask?.resume()
+    }
+
+    func pauseDownload() {
+        guard let task = activeTask else { return }
+        paused = true
+        task.cancel(byProducingResumeData: { data in
+            DispatchQueue.main.async {
+                self.resumeData = data
+                self.activeTask = nil
+                self.info = data == nil ? "Загрузка остановлена (возобновление недоступно)" : "Загрузка приостановлена"
+            }
+        })
+    }
+
+    func resumeDownload() {
+        guard let data = resumeData, activeTask == nil else {
+            errorMessage = "Нет данных для продолжения загрузки"; return
+        }
+        paused = false
+        errorMessage = ""
+        activeTask = downloader.downloadTask(withResumeData: data)
+        resumeData = nil
+        activeTask?.resume()
+        info = "Продолжаю загрузку"
+    }
+
+    func cancelDownload() {
+        activeTask?.cancel()
+        activeTask = nil
+        resumeData = nil
+        paused = false
+        activeName = ""
+        progress = 0
+        info = "Загрузка отменена"
+    }
+
+    func deleteModel(_ url: URL) {
+        do { try FileManager.default.removeItem(at: url); refreshLocal() }
+        catch { errorMessage = "Удаление: \(error.localizedDescription)" }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                    didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
+                    totalBytesExpectedToWrite: Int64) {
+        DispatchQueue.main.async {
+            self.received = totalBytesWritten
+            if totalBytesExpectedToWrite > 0 {
+                self.expected = totalBytesExpectedToWrite
+                self.progress = min(1, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+            }
+        }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                    didFinishDownloadingTo location: URL) {
+        var failure: String?
+        let responseCode = (downloadTask.response as? HTTPURLResponse)?.statusCode ?? 0
+        if !(200...299).contains(responseCode) {
+            failure = "Сервер вернул HTTP \(responseCode). Проверьте доступ к модели."
+        } else {
+            do {
+                let source = try FileHandle(forReadingFrom: location)
+                let firstBytes = try source.read(upToCount: 4)
+                try source.close()
+                guard firstBytes == Data([0x47, 0x47, 0x55, 0x46]) else {
+                    throw NSError(domain: "GGUF", code: -1,
+                                  userInfo: [NSLocalizedDescriptionKey: "Скачался не GGUF (возможно, страница входа)"])
+                }
+                let destination = modelsDirectory.appendingPathComponent(intendedName)
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    try FileManager.default.removeItem(at: destination)
+                }
+                try FileManager.default.moveItem(at: location, to: destination)
+            } catch { failure = error.localizedDescription }
+        }
+        DispatchQueue.main.async {
+            self.activeTask = nil
+            self.resumeData = nil
+            if let failure { self.errorMessage = failure; self.info = "Ошибка загрузки" }
+            else { self.info = "Модель скачана"; self.progress = 1; self.refreshLocal() }
+            self.activeName = ""
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let error = error else { return }
+        if (error as NSError).code == NSURLErrorCancelled { return }
+        DispatchQueue.main.async {
+            self.errorMessage = "Загрузка: \(error.localizedDescription)"
+            self.info = "Ошибка"
+            self.activeTask = nil
+            self.activeName = ""
+        }
+    }
+
+    static func sizeOf(_ url: URL) -> String {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+    }
+}
