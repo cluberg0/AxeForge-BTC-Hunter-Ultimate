@@ -21,7 +21,12 @@ def patch(path, changes):
 patch(lib, [
     ("var n_len: Int32 = 1024", "var n_len: Int32 = 384"),
     ("tokens_list = tokenize(text: text, add_bos: true)", """is_done = false
-        tokens_list = tokenize(text: text, add_bos: true)"""),
+        tokens_list = tokenize(text: text, add_bos: true)
+        // Prevent oversized attached document text from exceeding 512-token context.
+        let maximumPromptTokens = max(64, Int(llama_n_ctx(context)) - Int(n_len) - 8)
+        if tokens_list.count > maximumPromptTokens {
+            tokens_list = Array(tokens_list.suffix(maximumPromptTokens))
+        }"""),
     ("n_cur == n_len", "n_cur >= n_len"),
     ("let model = llama_model_load_from_file(path, model_params)", """model_params.n_gpu_layers = UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? 99 : 0
         let model = llama_model_load_from_file(path, model_params)"""),
@@ -87,6 +92,8 @@ patch(state, [
 for source, destination in [
     ("ContentView.swift.txt", app / "UI" / "ContentView.swift"),
     ("HFModelLibrary.swift.txt", app / "UI" / "InputButton.swift"),
+    ("X1Features.swift.txt", app / "UI" / "DownloadButton.swift"),
+    ("X1Lidar.swift.txt", app / "UI" / "LoadCustomButton.swift"),
 ]:
     text = (files / source).read_text(encoding="utf-8")
     if not text.strip():
@@ -94,4 +101,11 @@ for source, destination in [
     destination.write_text(text, encoding="utf-8")
     print("Replaced", destination)
 
-print("InklingRunner v2 source adaptation complete")
+# Register UIKit lifecycle hook for background URLSession downloads.
+launch = app / "llama_swiftuiApp.swift"
+patch(launch, [
+    ("struct llama_swiftuiApp: App {", """struct llama_swiftuiApp: App {
+    @UIApplicationDelegateAdaptor(X1AppDelegate.self) private var appDelegate"""),
+])
+
+print("x1er_ai v3 source adaptation complete")
