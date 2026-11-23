@@ -19,7 +19,8 @@ def patch(path, changes):
     print("Patched", path)
 
 patch(lib, [
-    ("var n_len: Int32 = 1024", "var n_len: Int32 = 384"),
+    ("var n_len: Int32 = 1024",
+     """var n_len: Int32 = Int32(max(64, min(512, UserDefaults.standard.integer(forKey: "x1er_max_tokens") == 0 ? 256 : UserDefaults.standard.integer(forKey: "x1er_max_tokens"))))"""),
     ("tokens_list = tokenize(text: text, add_bos: true)", """is_done = false
         tokens_list = tokenize(text: text, add_bos: true)
         // Prevent oversized attached document text from exceeding 512-token context.
@@ -28,9 +29,13 @@ patch(lib, [
             tokens_list = Array(tokens_list.suffix(maximumPromptTokens))
         }"""),
     ("n_cur == n_len", "n_cur >= n_len"),
+    ("llama_sampler_chain_add(self.sampling, llama_sampler_init_temp(0.4))",
+     """let requestedTemp = UserDefaults.standard.object(forKey: "x1er_temperature") as? Double ?? 0.6
+        llama_sampler_chain_add(self.sampling, llama_sampler_init_temp(Float(max(0.05, min(1.5, requestedTemp)))))"""),
     ("let model = llama_model_load_from_file(path, model_params)", """model_params.n_gpu_layers = UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? 99 : 0
         let model = llama_model_load_from_file(path, model_params)"""),
-    ("ctx_params.n_ctx = 2048", """ctx_params.n_ctx = 512
+    ("ctx_params.n_ctx = 2048", """let contextChoice = UserDefaults.standard.integer(forKey: "x1er_context")
+        ctx_params.n_ctx = UInt32([512, 1024, 2048, 4096].contains(contextChoice) ? contextChoice : 512)
         ctx_params.n_batch = 128
         ctx_params.n_ubatch = 32"""),
     ("""        llama_model_free(model)
@@ -108,4 +113,4 @@ patch(launch, [
     @UIApplicationDelegateAdaptor(X1AppDelegate.self) private var appDelegate"""),
 ])
 
-print("x1er_ai v3 source adaptation complete")
+print("x1er_ai v4 source adaptation complete")
