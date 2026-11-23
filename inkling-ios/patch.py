@@ -70,14 +70,14 @@ patch(state, [
         loadError = ""
         activeModelName = ""
         generatedText = ""
-        messageLog += "Открываю модель: \(modelUrl.lastPathComponent)\n"
+        messageLog += "Открываю модель: \\(modelUrl.lastPathComponent)\\n"
         let header = X1ModelFit.headerInfo(modelUrl)
-        messageLog += "Проверка GGUF: \(header)\n"
+        messageLog += "Проверка GGUF: \\(header)\\n"
         let fileSize = (try? modelUrl.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        messageLog += "Размер: \(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)); CPU/GPU: \(UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? "Metal" : "CPU")\n"
+        messageLog += "Размер: \\(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)); CPU/GPU: \\(UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? "Metal" : "CPU")\\n"
         guard header.hasPrefix("GGUF v") else {
             loadError = "Файл не является полноценным GGUF: \(header)"
-            messageLog += loadError + "\n"
+            messageLog += loadError + "\\n"
             loading = false
             return
         }
@@ -92,7 +92,7 @@ patch(state, [
             activeModelName = modelUrl.lastPathComponent
             messageLog += "Модель загружена: \\(modelUrl.lastPathComponent)\\n"
         } catch {
-            loadError = "Модель не загружена: \(error.localizedDescription)\nGGUF: \(header)\nВозможен лимит памяти iOS. Попробуй контекст 512 и CPU или GGUF меньшего размера."
+            loadError = "Модель не загружена: \\(error.localizedDescription)\\nGGUF: \\(header)\\nВозможен лимит памяти iOS. Попробуй контекст 512 и CPU или GGUF меньшего размера."
             messageLog += loadError + "\\n"
         }
         loading = false
