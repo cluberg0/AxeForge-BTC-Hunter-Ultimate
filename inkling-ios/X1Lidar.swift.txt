@@ -1,0 +1,300 @@
+import Foundation
+import SwiftUI
+import ARKit
+import SceneKit
+import simd
+
+struct X1ModelFitReport {
+    let rating: String
+    let detail: String
+    let storage: String
+    let color: Color
+    let risky: Bool
+}
+
+enum X1ModelFit {
+    // Heuristic, not the private iOS jetsam limit. Runtime buffers/KV and OS use extra RAM.
+    static func inspect(bytes: Int64, fileName: String, freeDisk: Double = 0) -> X1ModelFitReport {
+        let gb = Double(bytes) / 1e9
+        let ramGB = Double(ProcessInfo.processInfo.physicalMemory) / 1e9
+        let safeApprox = ramGB * 0.50
+        let riskApprox = ramGB * 0.62
+        let isProjector = fileName.lowercased().contains("mmproj")
+        let isLora = fileName.lowercased().contains("lora")
+        let display = fileName.lowercased().hasSuffix(".gguf")
+        let storage = freeDisk > 0
+            ? (freeDisk > gb + 0.75 ? "Место: достаточно (~\(String(format: "%.1f", freeDisk)) ГБ свободно)" :
+                "На диске может не хватить места (~\(String(format: "%.1f", freeDisk)) ГБ)")
+            : "Свободное место: не определено"
+        if !display {
+            return X1ModelFitReport(rating: "Не GGUF", detail: "Нужен полноценный файл модели .gguf",
+                                    storage: storage, color: .orange, risky: true)
+        }
+        if isProjector || isLora {
+            return X1ModelFitReport(rating: "Не самостоятельная модель",
+                detail: isProjector ? "mmproj нужен для зрения, а не для текстового запуска" :
+                        "LoRA требует базовую модель или слитые веса",
+                storage: storage, color: .orange, risky: true)
+        }
+        if bytes <= 0 {
+            return X1ModelFitReport(rating: "Размер неизвестен",
+                detail: "Невозможно оценить память. Проверь GGUF и попробуй загрузить.",
+                storage: storage, color: .orange, risky: true)
+        }
+        let weight = String(format: "%.2f", gb)
+        let ram = String(format: "%.1f", ramGB)
+        // Metal/CPU and actual architecture change the required RAM.
+        if gb > riskApprox {
+            return X1ModelFitReport(rating: "Высокий риск нехватки ОЗУ",
+                detail: "Вес \(weight) ГБ при \(ram) ГБ физической ОЗУ. iOS ограничивает память приложения; нужен запас для контекста, буферов и системы. Без гарантии запуска.",
+                storage: storage, color: .red, risky: true)
+        } else if gb > safeApprox {
+            return X1ModelFitReport(rating: "На грани",
+                detail: "Вес \(weight) ГБ при \(ram) ГБ ОЗУ. Начни с CPU, контекст 512, закрой другие приложения. Реальный предел iOS неизвестен.",
+                storage: storage, color: .orange, risky: true)
+        } else {
+            return X1ModelFitReport(rating: "Вероятно поместится",
+                detail: "Вес \(weight) ГБ при \(ram) ГБ ОЗУ. Движок и архитектура тоже должны поддерживаться; успешная загрузка не гарантируется.",
+                storage: storage, color: .green, risky: false)
+        }
+    }
+
+    static func headerInfo(_ url: URL) -> String {
+        guard let reader = try? FileHandle(forReadingFrom: url) else {
+            return "Не удаётся открыть файл"
+        }
+        defer { try? reader.close() }
+        guard let bytes = try? reader.read(upToCount: 2_097_152), let data = bytes, data.count >= 24 else {
+            return "Слишком короткий или недоступный файл"
+        }
+        let magic = String(data: data.prefix(4), encoding: .ascii) ?? ""
+        guard magic == "GGUF" else { return "Нет сигнатуры GGUF. Файл повреждён или это не GGUF." }
+        func uint32(_ at: Int) -> UInt32? {
+            guard at >= 0, at + 4 <= data.count else { return nil }
+            return data[at..<at+4].enumerated().reduce(UInt32(0)) {
+                $0 | (UInt32($1.element) << (UInt32($1.offset) * 8))
+            }
+        }
+        func uint64(_ at: Int) -> UInt64? {
+            guard at >= 0, at + 8 <= data.count else { return nil }
+            return data[at..<at+8].enumerated().reduce(UInt64(0)) {
+                $0 | (UInt64($1.element) << (UInt64($1.offset) * 8))
+            }
+        }
+        let version = uint32(4) ?? 0
+        let tensorCount = uint64(8) ?? 0
+        var arch = "не определена"
+        let needle = Data("general.architecture".utf8)
+        if let range = data.range(of: needle) {
+            let p = range.upperBound
+            if uint32(p) == 8, let len = uint64(p + 4), len > 0, len <= 256,
+               p + 12 + Int(len) <= data.count {
+                arch = String(data: data[(p+12)..<(p+12+Int(len))], encoding: .utf8) ?? arch
+            }
+        }
+        return "GGUF v\(version), тензоров: \(tensorCount), архитектура: \(arch)"
+    }
+}
+
+final class X1LidarScanner: NSObject, ObservableObject, ARSessionDelegate {
+    @Published var running = false
+    @Published var supported = ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
+    @Published var anchorCount = 0
+    @Published var faceCount = 0
+    @Published var status = "Нажми «Начать сканирование»"
+    @Published var exportedURL: URL?
+    @Published var lastSummary = ""
+    @Published var exporting = false
+
+    let session = ARSession()
+    private let queue = DispatchQueue(label: "com.x1er_ai.lidar.anchors")
+    private var anchors: [UUID: ARMeshAnchor] = [:]
+
+    func start() {
+        guard ARWorldTrackingConfiguration.isSupported,
+              ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) else {
+            DispatchQueue.main.async {
+                self.supported = false
+                self.status = "Для этого сканирования нужен iPhone/iPad с LiDAR и поддержкой ARKit."
+            }
+            return
+        }
+        session.delegate = self
+        let config = ARWorldTrackingConfiguration()
+        config.sceneReconstruction = ARWorldTrackingConfiguration.supportsSceneReconstruction(.meshWithClassification)
+            ? .meshWithClassification : .mesh
+        config.environmentTexturing = .none
+        config.planeDetection = [.horizontal, .vertical]
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            config.frameSemantics.insert(.sceneDepth)
+        }
+        session.run(config, options: [.resetTracking, .removeExistingAnchors])
+        queue.async { self.anchors.removeAll() }
+        DispatchQueue.main.async {
+            self.running = true
+            self.status = "Медленно обойди объект или комнату, показывая разные стороны."
+            self.anchorCount = 0
+            self.faceCount = 0
+            self.exportedURL = nil
+        }
+    }
+
+    func stop() {
+        session.pause()
+        DispatchQueue.main.async {
+            self.running = false
+            self.status = "Сканирование приостановлено. Можно сохранить 3D-геометрию."
+        }
+    }
+
+    func reset() {
+        stop()
+        queue.async { self.anchors.removeAll() }
+        DispatchQueue.main.async {
+            self.anchorCount = 0
+            self.faceCount = 0
+            self.exportedURL = nil
+            self.lastSummary = ""
+        }
+    }
+
+    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) { record(anchors) }
+    func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) { record(anchors) }
+    func session(_ session: ARSession, didRemove anchors: [ARAnchor]) {
+        queue.async {
+            for anchor in anchors { self.anchors.removeValue(forKey: anchor.identifier) }
+            self.publishCounts()
+        }
+    }
+
+    private func record(_ updates: [ARAnchor]) {
+        let meshes = updates.compactMap { $0 as? ARMeshAnchor }
+        if meshes.isEmpty { return }
+        queue.async {
+            for anchor in meshes { self.anchors[anchor.identifier] = anchor }
+            self.publishCounts()
+        }
+    }
+
+    private func publishCounts() {
+        let a = anchors.count
+        let faces = anchors.values.reduce(0) { $0 + $1.geometry.faces.count }
+        DispatchQueue.main.async {
+            self.anchorCount = a
+            self.faceCount = faces
+        }
+    }
+
+    func exportOBJ() {
+        guard !exporting else { return }
+        exporting = true
+        status = "Сохраняю mesh в OBJ..."
+        queue.async {
+            let captured = Array(self.anchors.values)
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    guard !captured.isEmpty else {
+                        throw NSError(domain: "LiDAR", code: 1, userInfo: [
+                            NSLocalizedDescriptionKey: "Пока нет 3D-сетки. Медленно обойди сцену с включённым сканированием."
+                        ])
+                    }
+                    let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent("LiDAR", isDirectory: true)
+                    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+                    let out = dir.appendingPathComponent("x1er_scan_\(formatter.string(from: Date())).obj")
+                    FileManager.default.createFile(atPath: out.path, contents: nil)
+                    let handle = try FileHandle(forWritingTo: out)
+                    defer { try? handle.close() }
+                    func write(_ string: String) throws {
+                        if let bytes = string.data(using: .utf8) { try handle.write(contentsOf: bytes) }
+                    }
+                    try write("# x1er_ai LiDAR scan from ARKit\n# Unit: meters\n")
+                    var vertexBase = 1
+                    var vertices = 0
+                    var polygons = 0
+                    var low = SIMD3<Float>(repeating: Float.greatestFiniteMagnitude)
+                    var high = SIMD3<Float>(repeating: -Float.greatestFiniteMagnitude)
+                    let maxTriangles = 300_000
+                    for anchor in captured {
+                        if polygons >= maxTriangles { break }
+                        let geometry = anchor.geometry
+                        let nVerts = geometry.vertices.count
+                        let buffer = geometry.vertices.buffer.contents()
+                        let stride = geometry.vertices.stride
+                        let offset = geometry.vertices.offset
+                        var lines = "# anchor \(anchor.identifier.uuidString)\n"
+                        for index in 0..<nVerts {
+                            let p = buffer.advanced(by: offset + stride * index)
+                                .assumingMemoryBound(to: SIMD3<Float>.self).pointee
+                            let v = anchor.transform * SIMD4<Float>(p.x, p.y, p.z, 1)
+                            low = simd_min(low, SIMD3<Float>(v.x, v.y, v.z))
+                            high = simd_max(high, SIMD3<Float>(v.x, v.y, v.z))
+                            lines += String(format: "v %.5f %.5f %.5f\n", v.x, v.y, v.z)
+                        }
+                        try write(lines)
+                        let faceSource = geometry.faces
+                        let indices = faceSource.buffer.contents()
+                        let maxFacesHere = min(faceSource.count, maxTriangles - polygons)
+                        var faceText = ""
+                        for face in 0..<maxFacesHere {
+                            var corners: [Int] = []
+                            for c in 0..<faceSource.indexCountPerPrimitive {
+                                let index = face * faceSource.indexCountPerPrimitive + c
+                                let addr = indices.advanced(by: index * faceSource.bytesPerIndex)
+                                let value: UInt32 = faceSource.bytesPerIndex == 2
+                                    ? UInt32(addr.assumingMemoryBound(to: UInt16.self).pointee)
+                                    : addr.assumingMemoryBound(to: UInt32.self).pointee
+                                corners.append(Int(value) + vertexBase)
+                            }
+                            if corners.count >= 3 {
+                                faceText += "f \(corners.map(String.init).joined(separator: " "))\n"
+                                polygons += 1
+                            }
+                        }
+                        try write(faceText)
+                        vertexBase += nVerts
+                        vertices += nVerts
+                    }
+                    let dimensions = high - low
+                    let summary = String(format:
+                        "LiDAR: %d меш-участков, %d вершин, %d полигонов. Приблизительный охват: ширина %.2f м, высота %.2f м, глубина %.2f м. Координаты и размеры приблизительные, не для точных инженерных измерений.",
+                        captured.count, vertices, polygons,
+                        dimensions.x, dimensions.y, dimensions.z)
+                    DispatchQueue.main.async {
+                        self.exporting = false
+                        self.exportedURL = out
+                        self.lastSummary = summary
+                        self.status = "3D-модель сохранена. Поделиться можно через «Файлы»."
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        self.exporting = false
+                        self.status = "Ошибка экспорта: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
+    }
+}
+
+final class X1LidarPreviewView: ARSCNView {
+    override init(frame: CGRect, options: [String : Any]? = nil) {
+        super.init(frame: frame, options: options)
+        automaticallyUpdatesLighting = true
+        debugOptions = [.showFeaturePoints, .showWorldOrigin]
+        scene = SCNScene()
+    }
+    required init?(coder: NSCoder) { super.init(coder: coder) }
+}
+
+struct X1LidarPreview: UIViewRepresentable {
+    @ObservedObject var scanner: X1LidarScanner
+    func makeUIView(context: Context) -> X1LidarPreviewView {
+        let view = X1LidarPreviewView(frame: .zero)
+        view.session = scanner.session
+        return view
+    }
+    func updateUIView(_ uiView: X1LidarPreviewView, context: Context) {}
+}
