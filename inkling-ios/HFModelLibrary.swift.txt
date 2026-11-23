@@ -54,12 +54,34 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
     private var resumeData: Data?
     private var intendedName = ""
     private lazy var downloader: URLSession = {
-        let config = URLSessionConfiguration.default
+        // Background URLSession transfers continue during iOS suspension.
+        // Force quitting from the app switcher is an Apple platform exception.
+        let config = URLSessionConfiguration.background(withIdentifier: "com.cluberg0.inklingrunner.hfmodels")
         config.waitsForConnectivity = true
+        config.isDiscretionary = false
+        config.sessionSendsLaunchEvents = true
+        config.allowsCellularAccess = true
         config.timeoutIntervalForRequest = 180
         config.timeoutIntervalForResource = 604800
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
+
+    override init() {
+        super.init()
+        intendedName = UserDefaults.standard.string(forKey: "x1er_download_name") ?? ""
+        _ = downloader
+        downloader.getAllTasks { [weak self] tasks in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard let task = tasks.first as? URLSessionDownloadTask else { return }
+                self.activeTask = task
+                self.intendedName = task.taskDescription ?? self.intendedName
+                self.activeName = self.intendedName
+                self.info = "Фоновая загрузка восстановлена"
+                if task.state == .suspended { task.resume() }
+            }
+        }
+    }
 
     var modelsDirectory: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -204,6 +226,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
             errorMessage = "Файл уже есть в библиотеке"; return
         }
         intendedName = file.fileName
+        UserDefaults.standard.set(file.fileName, forKey: "x1er_download_name")
         activeName = file.fileName
         errorMessage = ""
         progress = 0
@@ -213,6 +236,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
         resumeData = nil
         info = "Загружаю \(file.fileName)"
         activeTask = downloader.downloadTask(with: url)
+        activeTask?.taskDescription = file.fileName
         activeTask?.resume()
     }
 
@@ -235,6 +259,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
         paused = false
         errorMessage = ""
         activeTask = downloader.downloadTask(withResumeData: data)
+        activeTask?.taskDescription = intendedName
         resumeData = nil
         activeTask?.resume()
         info = "Продолжаю загрузку"
@@ -247,6 +272,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
         paused = false
         activeName = ""
         progress = 0
+        UserDefaults.standard.removeObject(forKey: "x1er_download_name")
         info = "Загрузка отменена"
     }
 
@@ -286,7 +312,15 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
                     throw NSError(domain: "GGUF", code: -1,
                                   userInfo: [NSLocalizedDescriptionKey: "Скачался не GGUF (возможно, страница входа)"])
                 }
-                let destination = modelsDirectory.appendingPathComponent(intendedName)
+                let actualName = downloadTask.taskDescription
+                    ?? UserDefaults.standard.string(forKey: "x1er_download_name")
+                    ?? intendedName
+                guard actualName.lowercased().hasSuffix(".gguf"),
+                      !actualName.contains("/"), !actualName.contains("..") else {
+                    throw NSError(domain: "GGUF", code: 12,
+                                  userInfo: [NSLocalizedDescriptionKey: "Не удалось восстановить имя загружаемого GGUF"])
+                }
+                let destination = modelsDirectory.appendingPathComponent(actualName)
                 if FileManager.default.fileExists(atPath: destination.path) {
                     try FileManager.default.removeItem(at: destination)
                 }
@@ -299,6 +333,7 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
             if let failure { self.errorMessage = failure; self.info = "Ошибка загрузки" }
             else { self.info = "Модель скачана"; self.progress = 1; self.refreshLocal() }
             self.activeName = ""
+            UserDefaults.standard.removeObject(forKey: "x1er_download_name")
         }
     }
 
@@ -323,6 +358,10 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
             self.activeTask = nil
             self.activeName = ""
         }
+    }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        X1BackgroundHandler.complete()
     }
 
     static func sizeOf(_ url: URL) -> String {
