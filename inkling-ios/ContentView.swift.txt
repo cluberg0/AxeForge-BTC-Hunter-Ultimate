@@ -711,6 +711,18 @@ struct ContentView: View {
                             }.frame(height: 8)
                             Text("\(ByteCountFormatter.string(fromByteCount: library.received, countStyle: .file)) / \(ByteCountFormatter.string(fromByteCount: library.expected, countStyle: .file))")
                                 .font(.system(size: 11)).foregroundStyle(Ink.faint)
+                            if library.transferSpeedBytesPerSecond > 0 {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "speedometer")
+                                    Text("\(ByteCountFormatter.string(fromByteCount: Int64(library.transferSpeedBytesPerSecond), countStyle: .file))/с")
+                                    Spacer()
+                                    if library.remainingSeconds > 0 {
+                                        Text("Осталось ~\(library.remainingSeconds / 60) мин \(library.remainingSeconds % 60) с")
+                                    }
+                                }
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(Ink.cyan)
+                            }
                             HStack(spacing: 10) {
                                 Button(library.paused ? "Продолжить" : "Пауза") {
                                     if library.paused { library.resumeDownload() }
