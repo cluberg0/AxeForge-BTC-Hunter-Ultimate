@@ -360,3 +360,47 @@ final class X1AppDelegate: NSObject, UIApplicationDelegate {
         X1BackgroundHandler.completion = completionHandler
     }
 }
+
+
+// Local-only, versioned JSON chat archive: no accounts or cloud storage required.
+struct X1StoredMessage: Codable, Identifiable {
+    var id: UUID
+    var role: String
+    var text: String
+}
+
+struct X1StoredChat: Codable, Identifiable {
+    var id: UUID
+    var title: String
+    var updatedAt: Date
+    var messages: [X1StoredMessage]
+}
+
+enum X1ChatArchive {
+    static var archiveURL: URL {
+        let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("x1er_ai", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent("chat_history.json")
+    }
+
+    static func load() -> [X1StoredChat] {
+        guard let data = try? Data(contentsOf: archiveURL),
+              let chats = try? JSONDecoder().decode([X1StoredChat].self, from: data) else {
+            return []
+        }
+        return chats.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    static func save(_ chats: [X1StoredChat]) throws {
+        // Guard against accidental unbounded file growth from huge pasted outputs.
+        let bounded = Array(chats.sorted { $0.updatedAt > $1.updatedAt }.prefix(60))
+            .map { chat -> X1StoredChat in
+                var copy = chat
+                copy.messages = Array(copy.messages.suffix(200))
+                return copy
+            }
+        let data = try JSONEncoder().encode(bounded)
+        try data.write(to: archiveURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    }
+}
