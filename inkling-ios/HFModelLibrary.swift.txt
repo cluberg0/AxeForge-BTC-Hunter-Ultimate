@@ -49,6 +49,10 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
     @Published var received: Int64 = 0
     @Published var expected: Int64 = 0
     @Published var paused = false
+    @Published var transferSpeedBytesPerSecond: Double = 0
+    @Published var remainingSeconds: Int = 0
+    private var lastProgressSampleAt: TimeInterval = 0
+    private var lastProgressSampleBytes: Int64 = 0
 
     private var activeTask: URLSessionDownloadTask?
     private var resumeData: Data?
@@ -226,6 +230,10 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
         progress = 0
         received = 0
         expected = file.size
+        transferSpeedBytesPerSecond = 0
+        remainingSeconds = 0
+        lastProgressSampleAt = 0
+        lastProgressSampleBytes = 0
         paused = false
         resumeData = nil
         info = "Загружаю \(file.fileName)"
@@ -256,6 +264,9 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
         activeTask?.taskDescription = intendedName
         resumeData = nil
         activeTask?.resume()
+        lastProgressSampleAt = 0
+        transferSpeedBytesPerSecond = 0
+        remainingSeconds = 0
         info = "Продолжаю загрузку"
     }
 
@@ -280,6 +291,22 @@ final class HFModelLibrary: NSObject, ObservableObject, URLSessionDownloadDelega
                     totalBytesExpectedToWrite: Int64) {
         DispatchQueue.main.async {
             self.received = totalBytesWritten
+            let now = ProcessInfo.processInfo.systemUptime
+            if self.lastProgressSampleAt == 0 {
+                self.lastProgressSampleAt = now
+                self.lastProgressSampleBytes = totalBytesWritten
+            } else if now - self.lastProgressSampleAt >= 1.0 {
+                let interval = now - self.lastProgressSampleAt
+                let byteDelta = totalBytesWritten - self.lastProgressSampleBytes
+                let instantaneous = max(0, Double(byteDelta) / interval)
+                self.transferSpeedBytesPerSecond = self.transferSpeedBytesPerSecond == 0 ?
+                    instantaneous : (self.transferSpeedBytesPerSecond * 0.65 + instantaneous * 0.35)
+                self.lastProgressSampleAt = now
+                self.lastProgressSampleBytes = totalBytesWritten
+                let outstanding = max(Int64(0), self.expected - totalBytesWritten)
+                self.remainingSeconds = self.transferSpeedBytesPerSecond > 100 ?
+                    Int(Double(outstanding) / self.transferSpeedBytesPerSecond) : 0
+            }
             if totalBytesExpectedToWrite > 0 {
                 self.expected = totalBytesExpectedToWrite
                 self.progress = min(1, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
