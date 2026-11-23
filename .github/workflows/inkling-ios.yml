@@ -1,4 +1,4 @@
-name: Build InklingRunner unsigned IPA
+name: Build x1er_ai iOS IPA
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build-iphone-ipa:
-    name: Build llama.cpp Metal + iOS app
+    name: Build x1er_ai with llama.cpp and ARKit
     runs-on: macos-15
     timeout-minutes: 110
     steps:
@@ -49,7 +49,10 @@ jobs:
             -derivedDataPath "$PWD/DerivedData" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             PRODUCT_BUNDLE_IDENTIFIER=com.cluberg0.inklingrunner \
-            INFOPLIST_KEY_CFBundleDisplayName=InklingRunner \
+            INFOPLIST_KEY_CFBundleDisplayName=x1er_ai \
+            INFOPLIST_KEY_NSCameraUsageDescription="Для анализа фото, видео и 3D-сканирования LiDAR" \
+            INFOPLIST_KEY_NSMicrophoneUsageDescription="Для локального голосового общения с ИИ" \
+            INFOPLIST_KEY_NSSpeechRecognitionUsageDescription="Для офлайн-распознавания голосовых команд" \
             INFOPLIST_KEY_UIFileSharingEnabled=YES \
             INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace=YES \
             build
@@ -60,16 +63,16 @@ jobs:
           app="$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d -print -quit)"
           test -n "$app"
           mkdir -p Payload
-          ditto "$app" Payload/InklingRunner.app
-          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName InklingRunner' Payload/InklingRunner.app/Info.plist || true
-          plutil -p Payload/InklingRunner.app/Info.plist | head -40
-          zip -qry InklingRunner-unsigned.ipa Payload
-          ls -lh InklingRunner-unsigned.ipa
+          ditto "$app" Payload/x1er_ai.app
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName x1er_ai' Payload/x1er_ai.app/Info.plist || true
+          plutil -p Payload/x1er_ai.app/Info.plist | head -40
+          zip -qry x1er_ai-unsigned.ipa Payload
+          ls -lh x1er_ai-unsigned.ipa
 
       - name: Upload IPA for SideStore signing
         uses: actions/upload-artifact@v4
         with:
-          name: InklingRunner-iOS-unsigned-IPA
-          path: InklingRunner-unsigned.ipa
+          name: x1er_ai-iOS-unsigned-IPA
+          path: x1er_ai-unsigned.ipa
           retention-days: 14
           if-no-files-found: error
