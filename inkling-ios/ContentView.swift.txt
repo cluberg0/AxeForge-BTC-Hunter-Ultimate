@@ -626,7 +626,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                Text("Большие GGUF требуют много свободного места. Для Inkling 2 (8,67 ГБ) сам факт установки приложения не гарантирует достаточного лимита ОЗУ iOS.")
+                Text("Большие GGUF требуют много свободного места. Даже небольшой GGUF требует дополнительной памяти под вычисления. Проверь статус совместимости перед запуском.")
                     .font(.system(size: 11)).foregroundStyle(Ink.faint)
                     .padding(.horizontal, 6)
             }
@@ -1006,9 +1006,9 @@ struct ContentView: View {
                         Label("ПАМЯТЬ IPHONE", systemImage: "memorychip")
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .foregroundStyle(Ink.violet)
-                        Text("Для Inkling 2 начни с выключенным Metal.")
+                        Text("Для крупных моделей сначала проверь CPU-режим.")
                             .font(.system(size: 15, weight: .bold))
-                        Text("У iOS отдельный лимит памяти на приложение. Даже модель IQ2 размером 8,67 ГБ может не поместиться. Загрузка GGUF на диск и загрузка модели в ОЗУ являются разными операциями.")
+                        Text("У iOS отдельный лимит памяти на приложение. Крупная GGUF-модель может не поместиться, даже если файл есть на диске. Загрузка GGUF на диск и загрузка модели в ОЗУ являются разными операциями.")
                             .font(.system(size: 12)).foregroundStyle(Ink.faint)
                             .fixedSize(horizontal: false, vertical: true)
                     }
