@@ -294,27 +294,62 @@ struct ContentView: View {
                         quickSystemStrip
                         if llamaState.activeModelName.isEmpty {
                             InkCard {
-                                HStack(alignment: .top, spacing: 15) {
-                                    Image(systemName: "cpu.fill")
-                                        .font(.system(size: 27))
-                                        .foregroundStyle(Ink.cyan)
-                                        .frame(width: 45, height: 45)
-                                        .background(Ink.cyan.opacity(0.1),
-                                                    in: RoundedRectangle(cornerRadius: 13))
-                                    VStack(alignment: .leading, spacing: 9) {
-                                        Text("Подключи свою модель")
-                                            .font(.system(size: 19, weight: .bold))
-                                        Text("Открой библиотеку, скачай GGUF с Hugging Face и нажми «Запустить».")
-                                            .font(.system(size: 13)).foregroundStyle(Ink.faint)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                        Button {
-                                            page = .library
-                                        } label: {
-                                            Label("Перейти к моделям", systemImage: "arrow.up.right")
-                                                .font(.system(size: 13, weight: .bold))
+                                VStack(alignment: .leading, spacing: 15) {
+                                    HStack(spacing: 11) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .fill(
+                                                    LinearGradient(colors: [Ink.cyan.opacity(0.23), Ink.violet.opacity(0.16)],
+                                                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                                                )
+                                                .frame(width: 56, height: 56)
+                                            Image(systemName: "cpu")
+                                                .font(.system(size: 26, weight: .light))
+                                                .foregroundStyle(Ink.cyan)
+                                                .symbolRenderingMode(.hierarchical)
                                         }
-                                        .padding(.top, 3)
+                                        Spacer()
+                                        HStack(spacing: 6) {
+                                            Circle().fill(Ink.cyan).frame(width: 6, height: 6)
+                                            Text("READY FOR GGUF")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .tracking(0.4)
+                                        }
+                                        .foregroundStyle(Ink.cyan.opacity(0.9))
                                     }
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Твой ИИ. На твоём iPhone.")
+                                            .font(.system(.title3).weight(.semibold))
+                                            .tracking(-0.5)
+                                            .foregroundStyle(.white)
+                                        Text("Любые совместимые GGUF, приватный чат, файлы и сканирование. Без регистрации и облачного ответа.")
+                                            .font(.system(.subheadline))
+                                            .foregroundStyle(Ink.faint)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    HStack(spacing: 10) {
+                                        Button {
+                                            withAnimation(.easeInOut(duration: 0.18)) { page = .library }
+                                        } label: {
+                                            Label("Выбрать модель", systemImage: "square.stack.3d.up")
+                                                .font(.system(.subheadline).weight(.semibold))
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 12)
+                                                .foregroundStyle(Ink.bg)
+                                                .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 13))
+                                        }
+                                        Button {
+                                            withAnimation(.easeInOut(duration: 0.18)) { page = .files }
+                                        } label: {
+                                            Image(systemName: "doc.badge.plus")
+                                                .font(.system(size: 17))
+                                                .foregroundStyle(Ink.cyan)
+                                                .frame(width: 44, height: 44)
+                                                .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 13))
+                                        }
+                                        .accessibilityLabel("Файлы")
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         } else {
