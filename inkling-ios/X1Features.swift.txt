@@ -93,7 +93,7 @@ import Darwin
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
             try AVAudioSession.sharedInstance().setActive(true)
-        } catch { error = "Аудиовывод: \(error.localizedDescription)" }
+        } catch { self.error = "Аудиовывод: \(error.localizedDescription)" }
         let sentence = AVSpeechUtterance(string: text)
         sentence.voice = AVSpeechSynthesisVoice(language: "ru-RU")
         sentence.rate = 0.5
