@@ -19,6 +19,17 @@ def patch(path, changes):
     print("Patched", path)
 
 patch(lib, [
+    ("enum LlamaError: Error {\n    case couldNotInitializeContext\n}",
+     """enum LlamaError: LocalizedError {
+    case couldNotInitializeContext
+
+    var errorDescription: String? {
+        switch self {
+        case .couldNotInitializeContext:
+            return "llama.cpp отклонил модель или не смог выделить память. Возможные причины: неподдерживаемая архитектура, повреждённый GGUF или лимит ОЗУ iOS."
+        }
+    }
+}"""),
     ("var n_len: Int32 = 1024",
      """var n_len: Int32 = Int32(max(64, min(512, UserDefaults.standard.integer(forKey: "x1er_max_tokens") == 0 ? 256 : UserDefaults.standard.integer(forKey: "x1er_max_tokens"))))"""),
     ("tokens_list = tokenize(text: text, add_bos: true)", """is_done = false
@@ -59,7 +70,17 @@ patch(state, [
         loadError = ""
         activeModelName = ""
         generatedText = ""
-        messageLog += "Открываю модель: \\(modelUrl.lastPathComponent)\\n"
+        messageLog += "Открываю модель: \(modelUrl.lastPathComponent)\n"
+        let header = X1ModelFit.headerInfo(modelUrl)
+        messageLog += "Проверка GGUF: \(header)\n"
+        let fileSize = (try? modelUrl.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        messageLog += "Размер: \(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)); CPU/GPU: \(UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? "Metal" : "CPU")\n"
+        guard header.hasPrefix("GGUF v") else {
+            loadError = "Файл не является полноценным GGUF: \(header)"
+            messageLog += loadError + "\n"
+            loading = false
+            return
+        }
         // Free any previously loaded model before allocating a new large context.
         llamaContext = nil
         do {
@@ -71,7 +92,7 @@ patch(state, [
             activeModelName = modelUrl.lastPathComponent
             messageLog += "Модель загружена: \\(modelUrl.lastPathComponent)\\n"
         } catch {
-            loadError = "Не получилось загрузить GGUF: \\(error.localizedDescription). Проверьте архитектуру и память устройства."
+            loadError = "Модель не загружена: \(error.localizedDescription)\nGGUF: \(header)\nВозможен лимит памяти iOS. Попробуй контекст 512 и CPU или GGUF меньшего размера."
             messageLog += loadError + "\\n"
         }
         loading = false
