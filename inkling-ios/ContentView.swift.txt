@@ -27,12 +27,16 @@ private struct InkCard<Content: View>: View {
 private enum RunnerPage: String, CaseIterable {
     case chat = "Чат"
     case library = "Модели"
-    case settings = "Настройки"
+    case files = "Файлы"
+    case camera = "Камера"
+    case settings = "Система"
     var icon: String {
         switch self {
         case .chat: return "bubble.left.and.bubble.right.fill"
         case .library: return "square.stack.3d.up.fill"
-        case .settings: return "slider.horizontal.3"
+        case .files: return "doc.text.fill"
+        case .camera: return "camera.fill"
+        case .settings: return "gauge.with.dots.needle.50percent"
         }
     }
 }
@@ -47,6 +51,11 @@ private struct ChatEntry: Identifiable {
 struct ContentView: View {
     @StateObject private var llamaState = LlamaState()
     @StateObject private var library = HFModelLibrary()
+    @StateObject private var health = X1DeviceMonitor()
+    @StateObject private var speech = X1Speech()
+    @StateObject private var camera = X1Camera()
+    @AppStorage("x1er_auto_tts") private var autoSpeak = false
+    private let telemetryTimer = Timer.publish(every: 2.5, on: .main, in: .common).autoconnect()
     @AppStorage("inkling_use_gpu") private var metalEnabled = false
 
     @State private var page: RunnerPage = .chat
@@ -56,6 +65,9 @@ struct ContentView: View {
     @State private var importing = false
     @State private var importError = ""
     @State private var deleteTarget: URL?
+    @State private var showDocumentPicker = false
+    @State private var attachedName = ""
+    @State private var attachedText = ""
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -71,6 +83,8 @@ struct ContentView: View {
                     switch page {
                     case .chat: chatView
                     case .library: libraryView
+                    case .files: filesView
+                    case .camera: cameraView
                     case .settings: settingsView
                     }
                 }
@@ -79,6 +93,24 @@ struct ContentView: View {
         }
         .tint(Ink.cyan)
         .preferredColorScheme(.dark)
+        .onReceive(telemetryTimer) { _ in health.refresh() }
+        .onChange(of: page) { newPage in
+            if newPage != .camera { camera.stop() }
+            else { camera.start() }
+        }
+        .onChange(of: llamaState.isGenerating) { busy in
+            if !busy, autoSpeak, !llamaState.generatedText.isEmpty {
+                speech.speak(llamaState.generatedText)
+            }
+        }
+        .fileImporter(isPresented: $showDocumentPicker, allowedContentTypes: [.item],
+                      allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first { importDocument(url) }
+            case .failure(let error): importError = error.localizedDescription
+            }
+        }
         .fileImporter(isPresented: $showImporter,
                       allowedContentTypes: [UTType(filenameExtension: "gguf") ?? .data],
                       allowsMultipleSelection: false) { selection in
@@ -119,16 +151,16 @@ struct ContentView: View {
                     .foregroundStyle(Ink.bg)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("INKLING").font(.system(size: 18, weight: .black, design: .rounded))
-                    .tracking(2.4).foregroundStyle(.white)
-                Text("RUNNER  •  PRIVATE AI").font(.system(size: 9, weight: .bold, design: .monospaced))
+                Text("x1er_ai").font(.system(size: 21, weight: .bold, design: .rounded))
+                    .tracking(-0.5).foregroundStyle(.white)
+                Text("PRIVATE  ·  ON DEVICE").font(.system(size: 9, weight: .bold, design: .monospaced))
                     .tracking(1.2).foregroundStyle(Ink.faint)
             }
             Spacer()
             HStack(spacing: 5) {
                 Circle().fill(llamaState.activeModelName.isEmpty ? Ink.faint : .green)
                     .frame(width: 6, height: 6)
-                Text(llamaState.activeModelName.isEmpty ? "OFFLINE" : "READY")
+                Text(llamaState.activeModelName.isEmpty ? "NO MODEL" : "READY")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .foregroundStyle(Ink.faint)
             }
@@ -140,27 +172,27 @@ struct ContentView: View {
     }
 
     private var bottomNavigation: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             ForEach(RunnerPage.allCases, id: \.self) { item in
                 Button {
                     composerFocused = false
                     withAnimation(.easeInOut(duration: 0.2)) { page = item }
                 } label: {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 3) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 18, weight: .medium))
-                        Text(item.rawValue).font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 17, weight: .medium))
+                        Text(item.rawValue).font(.system(size: 9, weight: .medium))
                     }
                     .foregroundStyle(page == item ? Ink.cyan : Ink.faint)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 12).padding(.bottom, 8)
-                    .background(page == item ? Ink.surface2 : .clear,
-                                in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.top, 6).padding(.bottom, 5)
+                    .background(page == item ? Ink.surface2.opacity(0.8) : .clear,
+                                in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 20).padding(.top, 9).padding(.bottom, 4)
+        .padding(.horizontal, 8).padding(.top, 5).padding(.bottom, 1)
         .background(Ink.bg)
     }
 
@@ -169,7 +201,8 @@ struct ContentView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 15) {
-                        titleBlock("Диалог", subtitle: "Всё обрабатывается на твоём устройстве")
+                        titleBlock("Диалог", subtitle: "Локальный ИИ · без облачного чата")
+                        healthStrip
                         if llamaState.activeModelName.isEmpty {
                             InkCard {
                                 HStack(alignment: .top, spacing: 15) {
@@ -271,7 +304,22 @@ struct ContentView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 10) {
+        HStack(alignment: .bottom, spacing: 8) {
+            Button { showDocumentPicker = true } label: {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 36, height: 44)
+                    .foregroundStyle(Ink.cyan)
+            }
+            Button {
+                if speech.listening { speech.stopListening() }
+                else { speech.beginListening { draft = $0 } }
+            } label: {
+                Image(systemName: speech.listening ? "waveform" : "mic.fill")
+                    .font(.system(size: 17))
+                    .foregroundStyle(speech.listening ? .red : Ink.cyan)
+                    .frame(width: 30, height: 44)
+            }
             TextField("Спроси что-нибудь...", text: $draft, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($composerFocused)
@@ -288,8 +336,17 @@ struct ContentView: View {
             }
             .disabled(!canSend)
         }
-        .padding(.horizontal, 17).padding(.vertical, 12)
+        .padding(.horizontal, 10).padding(.vertical, 7)
         .background(Ink.bg)
+        .overlay(alignment: .top) {
+            if !attachedName.isEmpty {
+                Text("📎 \(attachedName) · текст будет добавлен в запрос")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Ink.cyan)
+                    .lineLimit(1)
+                    .offset(y: -17)
+            }
+        }
     }
 
     private var canSend: Bool {
@@ -307,7 +364,12 @@ struct ContentView: View {
         history.append(ChatEntry(role: .user, text: input))
         draft = ""
         composerFocused = false
-        Task { await llamaState.complete(text: input) }
+        let payload = attachedText.isEmpty ? input :
+            "[Файл: \(attachedName)]\n\(attachedText.prefix(1700))\n\nВопрос: \(input)"
+        attachedText = ""
+        attachedName = ""
+        if speech.listening { speech.stopListening() }
+        Task { await llamaState.complete(text: payload) }
     }
 
     private var libraryView: some View {
@@ -535,7 +597,26 @@ struct ContentView: View {
     private var settingsView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
-                titleBlock("Настройки", subtitle: "Тонкая настройка локального движка")
+                titleBlock("Система", subtitle: "Нагрузка устройства и возможности")
+                healthStrip
+                InkCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("ГОЛОСОВОЙ АССИСТЕНТ", systemImage: "waveform")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Ink.cyan)
+                        Toggle("Автоматически озвучивать ответы", isOn: $autoSpeak).tint(Ink.cyan)
+                        Button {
+                            if speech.speaking { speech.stopSpeaking() }
+                            else { speech.speak(llamaState.generatedText.isEmpty ? "Привет, я x1er_ai." : llamaState.generatedText) }
+                        } label: {
+                            Label(speech.speaking ? "Остановить голос" : "Проверить озвучку",
+                                  systemImage: speech.speaking ? "stop.fill" : "speaker.wave.2.fill")
+                        }
+                        if !speech.error.isEmpty {
+                            Text(speech.error).font(.system(size: 11)).foregroundStyle(.orange)
+                        }
+                    }
+                }
                 InkCard {
                     VStack(alignment: .leading, spacing: 13) {
                         HStack(spacing: 10) {
