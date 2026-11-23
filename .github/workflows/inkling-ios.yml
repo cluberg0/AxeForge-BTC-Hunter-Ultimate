@@ -40,8 +40,11 @@ jobs:
           chmod +x ./build-xcframework.sh
           ./build-xcframework.sh ios-device
 
-      - name: Apply InklingRunner UI and memory settings
+      - name: Apply x1er_ai UI and memory settings
         run: python3 inkling-ios/patch.py llama-src
+
+      - name: Enable native multi-turn chat, model templates and token controls
+        run: python3 inkling-ios/patch-chat.py llama-src
 
       - name: Build unsigned app for physical iPhone
         run: |
