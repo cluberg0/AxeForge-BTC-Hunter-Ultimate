@@ -94,6 +94,9 @@ struct ContentView: View {
     @State private var archivedChats: [X1StoredChat] = []
     @State private var activeChatID = UUID()
     @State private var showChatHistory = false
+    @State private var showVoiceMode = false
+    @State private var voicePulse = false
+    @State private var voiceReplyRequested = false
     @State private var archiveError = ""
     @Environment(\.scenePhase) private var scenePhase
     @State private var showImporter = false
@@ -143,8 +146,9 @@ struct ContentView: View {
         }
         .onChange(of: llamaState.isGenerating) { busy in
             if !busy { persistChat() }
-            if !busy, autoSpeak, !llamaState.generatedText.isEmpty {
+            if !busy, (autoSpeak || voiceReplyRequested), !llamaState.generatedText.isEmpty {
                 speech.speak(llamaState.generatedText)
+                voiceReplyRequested = false
             }
         }
         .fileImporter(isPresented: $showDocumentPicker, allowedContentTypes: [.item],
@@ -204,6 +208,7 @@ struct ContentView: View {
             if phase != .active { persistChat() }
         }
         .sheet(isPresented: $showChatHistory) { chatHistorySheet }
+        .fullScreenCover(isPresented: $showVoiceMode) { voiceSheet }
     }
 
     private var header: some View {
@@ -298,6 +303,13 @@ struct ContentView: View {
                                     .frame(width: 38, height: 38)
                                     .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 12))
                             }.disabled(llamaState.isGenerating || llamaState.loading)
+                            Button { showVoiceMode = true } label: {
+                                Image(systemName: "waveform.circle.fill")
+                                    .font(.system(size: 20))
+                                    .frame(width: 38, height: 38)
+                                    .background(Ink.surface2, in: RoundedRectangle(cornerRadius: 12))
+                            }
+                            .accessibilityLabel("Голосовой режим")
                             Button { newChat() } label: {
                                 Image(systemName: "square.and.pencil")
                                     .font(.system(size: 19))
@@ -897,6 +909,143 @@ struct ContentView: View {
         }
     }
 
+
+    private var voiceSheet: some View {
+        ZStack {
+            Ink.bg.ignoresSafeArea()
+            RadialGradient(colors: [Ink.cyan.opacity(0.16), .clear],
+                           center: .center, startRadius: 20, endRadius: 430)
+                .ignoresSafeArea()
+            VStack(spacing: 15) {
+                HStack {
+                    Button {
+                        showVoiceMode = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(.headline).weight(.medium))
+                            .foregroundStyle(Ink.text)
+                            .frame(width: 42, height: 42)
+                            .background(Ink.surface, in: Circle())
+                    }
+                    .accessibilityLabel("Закрыть голосовой режим")
+                    Spacer()
+                    Text("Голосовой режим")
+                        .font(.system(.headline).weight(.semibold))
+                        .foregroundStyle(Ink.text)
+                    Spacer()
+                    Image(systemName: "waveform")
+                        .foregroundStyle(Ink.cyan)
+                        .frame(width: 42, height: 42)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+
+                Spacer(minLength: 25)
+                ZStack {
+                    Circle()
+                        .fill(Ink.cyan.opacity(0.09))
+                        .frame(width: 290, height: 290)
+                        .scaleEffect(voicePulse ? 1.11 : 0.91)
+                    Circle()
+                        .fill(Ink.violet.opacity(0.12))
+                        .frame(width: 230, height: 230)
+                        .scaleEffect(voicePulse ? 0.94 : 1.1)
+                    Circle()
+                        .fill(
+                            RadialGradient(colors: [
+                                Ink.cyan.opacity(0.92),
+                                Ink.violet.opacity(0.68),
+                                Ink.bg.opacity(0.45)
+                            ], center: .init(x: 0.32, y: 0.28), startRadius: 3, endRadius: 148)
+                        )
+                        .frame(width: 175, height: 175)
+                        .overlay(Circle().strokeBorder(Ink.border, lineWidth: 1))
+                        .shadow(color: Ink.violet.opacity(0.35), radius: 35, y: 5)
+                        .scaleEffect(voicePulse && speech.listening ? 1.08 : 1)
+                    Image(systemName: speech.listening ? "waveform" : "mic.slash")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(Ink.onAccent)
+                        .symbolRenderingMode(.hierarchical)
+                }
+                .accessibilityLabel(speech.listening ? "Микрофон активен" : "Микрофон выключен")
+
+                Text(speech.listening ? "Слушаю тебя" : "Нажми на микрофон")
+                    .font(.system(.title2).weight(.semibold))
+                    .foregroundStyle(Ink.text)
+                Text(speech.transcript.isEmpty ? "Говори естественно. Распознавание речи выполняется на iPhone." : speech.transcript)
+                    .font(.system(.body))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(speech.transcript.isEmpty ? Ink.faint : Ink.text)
+                    .frame(maxWidth: .infinity, minHeight: 65)
+                    .padding(.horizontal, 24)
+                    .lineLimit(6)
+                if !speech.error.isEmpty {
+                    Text(speech.error)
+                        .font(.system(.footnote))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 25)
+                }
+                Spacer(minLength: 25)
+                HStack(spacing: 25) {
+                    Button {
+                        speech.stopSpeaking()
+                        if speech.listening {
+                            speech.stopListening()
+                        } else {
+                            speech.beginListening { draft = $0 }
+                        }
+                        if hapticsOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                    } label: {
+                        Image(systemName: speech.listening ? "mic.slash" : "mic.fill")
+                            .font(.system(size: 23))
+                            .foregroundStyle(Ink.text)
+                            .frame(width: 62, height: 62)
+                            .background(Ink.surface2, in: Circle())
+                    }
+                    .accessibilityLabel(speech.listening ? "Остановить запись" : "Включить запись")
+                    Button {
+                        let message = speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !message.isEmpty, !llamaState.activeModelName.isEmpty else { return }
+                        draft = message
+                        voiceReplyRequested = true
+                        speech.stopListening()
+                        showVoiceMode = false
+                        sendMessage()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.up")
+                            Text("Отправить")
+                        }
+                        .font(.system(.headline).weight(.semibold))
+                        .foregroundStyle(Ink.onAccent)
+                        .frame(minWidth: 150, minHeight: 62)
+                        .background(Ink.cyan, in: Capsule())
+                    }
+                    .disabled(speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                              llamaState.activeModelName.isEmpty || llamaState.isGenerating)
+                    .opacity(speech.transcript.isEmpty ? 0.45 : 1.0)
+                }
+                .padding(.bottom, 24)
+                Text("Речевой ввод и озвучка локально. Для работы нужна установленная GGUF-модель.")
+                    .font(.system(.caption2))
+                    .foregroundStyle(Ink.faint)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 25)
+                    .padding(.bottom, 14)
+            }
+        }
+        .preferredColorScheme(themeChoice == "light" ? .light : themeChoice == "dark" ? .dark : nil)
+        .onAppear {
+            voicePulse = false
+            withAnimation(.easeInOut(duration: 1.65).repeatForever(autoreverses: true)) {
+                voicePulse = true
+            }
+            if !speech.listening {
+                speech.beginListening { draft = $0 }
+            }
+        }
+        .onDisappear { speech.stopListening() }
+    }
 
     private var quickSystemStrip: some View {
         HStack(spacing: 12) {
