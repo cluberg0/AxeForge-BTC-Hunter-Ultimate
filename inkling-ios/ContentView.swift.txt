@@ -94,8 +94,11 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             Ink.bg.ignoresSafeArea()
-            RadialGradient(colors: [Ink.violet.opacity(0.12), .clear],
-                           center: .topTrailing, startRadius: 10, endRadius: 370)
+            RadialGradient(colors: [Ink.cyan.opacity(0.11), .clear],
+                           center: .topLeading, startRadius: 25, endRadius: 415)
+                .ignoresSafeArea()
+            RadialGradient(colors: [Ink.violet.opacity(0.095), .clear],
+                           center: .bottomTrailing, startRadius: 0, endRadius: 490)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 header
@@ -218,38 +221,53 @@ struct ContentView: View {
             .padding(.horizontal, 11).padding(.vertical, 9)
             .background(Ink.surface2, in: Capsule())
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 17)
+        .padding(.vertical, 10)
     }
 
+    // Compact floating island: glass background, native SF Symbols, usable 44pt hit targets.
     private var bottomNavigation: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(RunnerPage.allCases, id: \.self) { item in
                 Button {
                     composerFocused = false
                     if hapticsOn { UISelectionFeedbackGenerator().selectionChanged() }
-                    withAnimation(.easeInOut(duration: 0.18)) { page = item }
+                    withAnimation(.easeInOut(duration: 0.19)) { page = item }
                 } label: {
-                    VStack(spacing: 3) {
+                    VStack(spacing: 5) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 17, weight: .medium))
-                        Text(item.rawValue).font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 16, weight: page == item ? .semibold : .medium))
+                            .symbolRenderingMode(.hierarchical)
+                        Text(item.rawValue)
+                            .font(.system(size: 10, weight: page == item ? .semibold : .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                     .foregroundStyle(page == item ? Ink.cyan : Ink.faint)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 48)
-                    .padding(.top, 2).padding(.bottom, 2)
-                    .background(page == item ? Ink.surface2.opacity(0.78) : .clear,
-                                in: RoundedRectangle(cornerRadius: 10))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(page == item ? Ink.cyan.opacity(0.10) : Color.clear)
+                    )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(item.rawValue)
+                .accessibilityAddTraits(page == item ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 8).padding(.top, 5).padding(.bottom, 1)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) {
-            Rectangle().fill(Ink.border).frame(height: 0.5)
-        }
+        .padding(5)
+        .background(
+            RoundedRectangle(cornerRadius: 21, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 21, style: .continuous)
+                .strokeBorder(.white.opacity(0.10), lineWidth: 0.8)
+        )
+        .shadow(color: .black.opacity(0.26), radius: 18, y: 7)
+        .padding(.horizontal, 15)
+        .padding(.top, 3)
+        .padding(.bottom, 5)
     }
 
     private var chatView: some View {
