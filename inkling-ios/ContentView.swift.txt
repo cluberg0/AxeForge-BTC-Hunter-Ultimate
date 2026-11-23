@@ -13,10 +13,10 @@ private enum Ink {
             return UIColor(red: rgb.0, green: rgb.1, blue: rgb.2, alpha: alpha)
         })
     }
-    static let bg = adaptive((0.946, 0.968, 0.984), (0.030, 0.043, 0.071))
-    static let surface = adaptive((0.992, 0.996, 1.000), (0.075, 0.102, 0.147))
-    static let surface2 = adaptive((0.873, 0.921, 0.959), (0.112, 0.153, 0.210))
-    static let cyan = adaptive((0.016, 0.468, 0.659), (0.36, 0.86, 0.95))
+    static let bg = adaptive((0.89, 0.94, 0.98), (0.025, 0.038, 0.069))
+    static let surface = adaptive((0.985, 0.990, 1.000), (0.078, 0.107, 0.169))
+    static let surface2 = adaptive((0.876, 0.919, 0.959), (0.122, 0.171, 0.246))
+    static let cyan = adaptive((0.068, 0.48, 0.67), (0.43, 0.89, 0.95))
     static let violet = adaptive((0.35, 0.30, 0.76), (0.55, 0.49, 0.98))
     static let faint = adaptive((0.34, 0.42, 0.51), (0.65, 0.72, 0.82))
     static let text = adaptive((0.066, 0.122, 0.205), (0.98, 0.99, 1.00))
@@ -31,32 +31,46 @@ private struct InkCard<Content: View>: View {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(LinearGradient(colors: [Ink.surface2.opacity(0.67), Ink.surface],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-            )
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Ink.border, lineWidth: 0.7))
-            .shadow(color: .black.opacity(0.10), radius: 9, y: 3)
+            .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                .fill(.ultraThinMaterial))
+            .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                .fill(LinearGradient(colors: [Ink.surface.opacity(0.45), Ink.surface2.opacity(0.13)],
+                                      startPoint: .topLeading, endPoint: .bottomTrailing)))
+            .overlay(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                .strokeBorder(Ink.border.opacity(0.9), lineWidth: 0.7))
+            .shadow(color: .black.opacity(0.07), radius: 14, y: 5)
     }
 }
 
 private enum RunnerPage: String, CaseIterable {
-    case chat = "Чат"
+    case home = "Главная"
+    case projects = "Проекты"
+    case chat = "ИИ"
+    case activity = "Аналитика"
+    case settings = "Настройки"
     case library = "Модели"
     case files = "Файлы"
     case camera = "Камера"
-    case settings = "Система"
+    static let mainTabs: [RunnerPage] = [.home, .projects, .chat, .activity, .settings]
     var icon: String {
         switch self {
-        case .chat: return "bubble.left.and.bubble.right.fill"
+        case .home: return "house.fill"
+        case .projects: return "square.grid.2x2.fill"
+        case .chat: return "sparkles"
+        case .activity: return "chart.xyaxis.line"
+        case .settings: return "gearshape.fill"
         case .library: return "square.stack.3d.up.fill"
         case .files: return "doc.text.fill"
         case .camera: return "camera.fill"
-        case .settings: return "gauge.with.dots.needle.50percent"
         }
     }
+}
+
+private struct X1BoardTask: Codable, Identifiable {
+    var id = UUID()
+    var title: String
+    var lane: String = "В работе"
+    var created: Date = Date()
 }
 
 private struct ChatEntry: Identifiable {
@@ -88,7 +102,12 @@ struct ContentView: View {
     @AppStorage("x1er_large_text") private var largeText = false
     @AppStorage("x1er_theme") private var themeChoice = "system"
 
-    @State private var page: RunnerPage = .chat
+    @State private var page: RunnerPage = .home
+    @AppStorage("x1er_board_json") private var boardJSON = ""
+    @State private var newBoardTitle = ""
+    @State private var showCreateTask = false
+    @State private var cpuTimeline: [Double] = []
+    @State private var ramTimeline: [Double] = []
     @State private var draft = ""
     @State private var history: [ChatEntry] = []
     @State private var archivedChats: [X1StoredChat] = []
@@ -111,17 +130,20 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             Ink.bg.ignoresSafeArea()
-            RadialGradient(colors: [Ink.cyan.opacity(0.11), .clear],
-                           center: .topLeading, startRadius: 25, endRadius: 415)
+            RadialGradient(colors: [Ink.cyan.opacity(0.27), Ink.cyan.opacity(0.06), .clear],
+                           center: .topLeading, startRadius: 5, endRadius: 480)
                 .ignoresSafeArea()
-            RadialGradient(colors: [Ink.violet.opacity(0.095), .clear],
-                           center: .bottomTrailing, startRadius: 0, endRadius: 490)
+            RadialGradient(colors: [Ink.violet.opacity(0.24), Ink.violet.opacity(0.05), .clear],
+                           center: .bottomTrailing, startRadius: 12, endRadius: 470)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 header
                 Rectangle().fill(Ink.border).frame(height: 1)
                 Group {
                     switch page {
+                    case .home: homeView
+                    case .projects: projectsView
+                    case .activity: analyticsView
                     case .chat: chatView
                     case .library: libraryView
                     case .files: filesView
@@ -134,7 +156,13 @@ struct ContentView: View {
         }
         .tint(Ink.cyan)
         .preferredColorScheme(themeChoice == "light" ? .light : themeChoice == "dark" ? .dark : nil)
-        .onReceive(telemetryTimer) { _ in health.refresh() }
+        .onReceive(telemetryTimer) { _ in
+            health.refresh()
+            cpuTimeline.append(health.cpuPercentage)
+            ramTimeline.append(health.memoryMB)
+            if cpuTimeline.count > 60 { cpuTimeline.removeFirst() }
+            if ramTimeline.count > 60 { ramTimeline.removeFirst() }
+        }
         .onChange(of: page) { newPage in
             if newPage != .camera { camera.stop(); lidar.stop() }
             else if scanMode == "camera" { camera.start() }
@@ -208,6 +236,11 @@ struct ContentView: View {
             if phase != .active { persistChat() }
         }
         .sheet(isPresented: $showChatHistory) { chatHistorySheet }
+        .alert("Новая задача", isPresented: $showCreateTask) {
+            TextField("Что сделать?", text: $newBoardTitle)
+            Button("Добавить") { createBoardTask() }
+            Button("Отмена", role: .cancel) { newBoardTitle = "" }
+        } message: { Text("Задачи сохраняются локально на iPhone.") }
         .fullScreenCover(isPresented: $showVoiceMode) { voiceSheet }
     }
 
