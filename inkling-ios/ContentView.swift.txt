@@ -61,6 +61,10 @@ struct ContentView: View {
     @AppStorage("x1er_auto_tts") private var autoSpeak = false
     private let telemetryTimer = Timer.publish(every: 2.5, on: .main, in: .common).autoconnect()
     @AppStorage("inkling_use_gpu") private var metalEnabled = false
+    @AppStorage("x1er_temperature") private var temperature = 0.6
+    @AppStorage("x1er_context") private var contextTokens = 512
+    @AppStorage("x1er_max_tokens") private var maxTokens = 256
+    @AppStorage("x1er_profile") private var selectedProfile = "Экономия"
 
     @State private var page: RunnerPage = .chat
     @State private var draft = ""
@@ -1109,6 +1113,26 @@ struct ContentView: View {
         }
     }
 
+    private func applyProfile(_ preset: String) {
+        switch preset {
+        case "Экономия":
+            contextTokens = 512
+            maxTokens = 128
+            temperature = 0.5
+            metalEnabled = false
+        case "Баланс":
+            contextTokens = 1024
+            maxTokens = 256
+            temperature = 0.6
+        case "Творчество":
+            contextTokens = 2048
+            maxTokens = 384
+            temperature = 0.95
+        default:
+            break
+        }
+    }
+
     private var settingsView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
@@ -1146,9 +1170,64 @@ struct ContentView: View {
                             }
                         }.tint(Ink.cyan)
                         Divider().overlay(Ink.border)
-                        settingRow("Контекст", "512 токенов")
+                        settingRow("Контекст", "\(contextTokens) токенов")
                         settingRow("Batch / Microbatch", "128 / 32")
-                        settingRow("Режим", metalEnabled ? "Metal + RAM" : "CPU + mmap")
+                        settingRow("Режим", metalEnabled ? "Metal GPU" : "CPU")
+                        Text("Новые параметры вступают в силу после перезагрузки модели.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Ink.faint)
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 9) {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundStyle(Ink.cyan)
+                            Text("Профиль генерации")
+                                .font(.system(size: 17, weight: .bold))
+                        }
+                        Picker("Профиль", selection: $selectedProfile) {
+                            Text("Экономия").tag("Экономия")
+                            Text("Баланс").tag("Баланс")
+                            Text("Творчество").tag("Творчество")
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: selectedProfile) { applyProfile($0) }
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Контекст: \(contextTokens) токенов")
+                                .font(.system(size: 12, weight: .medium))
+                            Picker("Контекст", selection: $contextTokens) {
+                                Text("512").tag(512)
+                                Text("1024").tag(1024)
+                                Text("2048").tag(2048)
+                                Text("4096").tag(4096)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        HStack {
+                            Text("Длина ответа").font(.system(size: 12))
+                            Spacer()
+                            Picker("Токенов", selection: $maxTokens) {
+                                Text("128").tag(128)
+                                Text("256").tag(256)
+                                Text("384").tag(384)
+                                Text("512").tag(512)
+                            }.labelsHidden().pickerStyle(.menu)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Температура")
+                                    .font(.system(size: 12))
+                                Spacer()
+                                Text(String(format: "%.1f", temperature))
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            }
+                            Slider(value: $temperature, in: 0.1...1.2, step: 0.1)
+                                .tint(Ink.cyan)
+                            Text("Ниже = стабильнее и точнее; выше = разнообразнее. Для тяжёлых GGUF сначала выбери «Экономия».")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Ink.faint)
+                        }
                     }
                 }
                 InkCard {
