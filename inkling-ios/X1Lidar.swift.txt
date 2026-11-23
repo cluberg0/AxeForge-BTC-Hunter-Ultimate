@@ -64,7 +64,7 @@ enum X1ModelFit {
             return "Не удаётся открыть файл"
         }
         defer { try? reader.close() }
-        guard let bytes = try? reader.read(upToCount: 2_097_152), let data = bytes, data.count >= 24 else {
+        guard let data = try? reader.read(upToCount: 2_097_152), data.count >= 24 else {
             return "Слишком короткий или недоступный файл"
         }
         let magic = String(data: data.prefix(4), encoding: .ascii) ?? ""
