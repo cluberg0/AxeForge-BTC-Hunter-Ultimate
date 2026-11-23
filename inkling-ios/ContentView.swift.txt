@@ -594,6 +594,236 @@ struct ContentView: View {
         }
     }
 
+
+    private var healthStrip: some View {
+        InkCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("ЗАГРУЖЕННОСТЬ IPHONE", systemImage: "gauge.high")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Ink.cyan)
+                    Spacer()
+                    Circle().fill(health.thermal == "Нормальная" ? Color.green : Color.orange)
+                        .frame(width: 7, height: 7)
+                    Text(health.thermal).font(.system(size: 10)).foregroundStyle(Ink.faint)
+                }
+                HStack(spacing: 9) {
+                    meter("CPU APP", value: String(format: "%.0f%%", health.cpuPercentage),
+                          icon: "cpu", bar: min(1, health.cpuPercentage / 100), color: Ink.cyan)
+                    meter("RAM APP", value: String(format: "%.0f MB", health.memoryMB),
+                          icon: "memorychip",
+                          bar: min(1, health.memoryMB * 1048576 / Double(ProcessInfo.processInfo.physicalMemory)),
+                          color: Ink.violet)
+                    meter("БАТАРЕЯ", value: "\(health.batteryPercentage)%",
+                          icon: health.charging ? "battery.100percent.bolt" : "battery.75percent",
+                          bar: Double(health.batteryPercentage) / 100, color: .green)
+                }
+                Text(String(format: "Свободно на диске: %.1f GB  ·  CPU: нагрузка этого приложения, 100%% = одно ядро", health.freeDiskGB))
+                    .font(.system(size: 9)).foregroundStyle(Ink.faint)
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    private func meter(_ label: String, value: String, icon: String,
+                       bar: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 4) {
+                Image(systemName: icon).font(.system(size: 9))
+                Text(label).font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .lineLimit(1).minimumScaleFactor(0.75)
+            }.foregroundStyle(Ink.faint)
+            Text(value).font(.system(size: 12, weight: .bold, design: .rounded))
+                .lineLimit(1).minimumScaleFactor(0.7)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Ink.surface2)
+                    Capsule().fill(color).frame(width: geo.size.width * max(0, min(1, bar)))
+                }
+            }.frame(height: 4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var cameraView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 15) {
+                titleBlock("Камера", subtitle: "Анализ сцены на iPhone · Apple Vision")
+                InkCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Label("ЖИВОЕ НАБЛЮДЕНИЕ", systemImage: "camera.viewfinder")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Ink.cyan)
+                            Spacer()
+                            if camera.running {
+                                HStack(spacing: 4) {
+                                    Circle().fill(.red).frame(width: 6, height: 6)
+                                    Text("LIVE · 1 кадр / 2,5 c")
+                                        .font(.system(size: 10, design: .monospaced))
+                                }.foregroundStyle(Ink.faint)
+                            }
+                        }
+                        X1CameraPreview(session: camera.session)
+                            .frame(height: 265)
+                            .background(Color.black, in: RoundedRectangle(cornerRadius: 16))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        HStack(spacing: 10) {
+                            Button {
+                                if camera.running { camera.stop() }
+                                else { camera.start() }
+                            } label: {
+                                Label(camera.running ? "Выключить" : "Включить камеру",
+                                      systemImage: camera.running ? "pause.fill" : "play.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(Ink.cyan)
+                            .foregroundStyle(Ink.bg)
+
+                            Button { camera.takePhoto() } label: {
+                                Label("Снимок", systemImage: "camera.fill")
+                            }
+                            .buttonStyle(.bordered).disabled(!camera.running)
+                        }
+                        if !camera.error.isEmpty {
+                            Text(camera.error).foregroundStyle(.orange).font(.system(size: 12))
+                        }
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("ЧТО ОБНАРУЖЕНО", systemImage: "sparkle.magnifyingglass")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Ink.violet)
+                        Text(camera.observation.isEmpty ? "Включи камеру, чтобы распознавать надписи и объекты." : camera.observation)
+                            .font(.system(size: 13))
+                            .foregroundStyle(camera.observation.isEmpty ? Ink.faint : .white)
+                            .textSelection(.enabled)
+                        Button {
+                            attachedName = camera.snapshot == nil ? "Живой кадр камеры (описание)" : "Снимок с камеры (наблюдения)"
+                            attachedText = camera.observation
+                            draft = "Что ты можешь сказать об этой сцене?"
+                            page = .chat
+                        } label: {
+                            Label("Передать наблюдения в чат", systemImage: "arrow.up.right")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .disabled(camera.observation.isEmpty)
+                    }
+                }
+                if let photo = camera.snapshot {
+                    InkCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Последний снимок").font(.system(size: 14, weight: .bold))
+                            Image(uiImage: photo).resizable().scaledToFit()
+                                .frame(maxHeight: 240).clipShape(RoundedRectangle(cornerRadius: 12))
+                            ShareLink(item: Image(uiImage: photo), preview: SharePreview("Снимок x1er_ai",
+                                         image: Image(uiImage: photo))) {
+                                Label("Поделиться снимком", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    }
+                }
+                Text("Режим камеры сейчас использует Apple Vision (объекты и OCR). Прямую передачу пикселей в Inkling 2 надо подключить через libmtmd и mmproj. Видеофреймы обрабатываются только пока приложение активно.")
+                    .font(.system(size: 11)).foregroundStyle(Ink.faint)
+                    .padding(.horizontal, 6)
+            }.padding(.horizontal, 16).padding(.vertical, 16)
+        }
+        .onAppear { camera.start() }
+        .onDisappear { camera.stop() }
+    }
+
+    private var filesView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 15) {
+                titleBlock("Файлы", subtitle: "Локальные документы и контекст для чата")
+                InkCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Label("ДОБАВИТЬ ДОКУМЕНТ", systemImage: "doc.badge.plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(Ink.cyan)
+                        Text("TXT, Markdown, CSV, JSON, исходный код, PDF с текстом и изображения с OCR.")
+                            .font(.system(size: 12)).foregroundStyle(Ink.faint)
+                        Button { showDocumentPicker = true } label: {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Выбрать из «Файлов»")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }.font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Ink.bg).padding(13)
+                                .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                }
+                if !attachedName.isEmpty {
+                    InkCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label(attachedName, systemImage: "paperclip")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                            Text("Извлечено символов: \(attachedText.count) · контекст будет сокращён до доступного окна модели.")
+                                .font(.system(size: 11)).foregroundStyle(Ink.faint)
+                            HStack {
+                                Button {
+                                    draft = "Проанализируй прикреплённый файл."
+                                    page = .chat
+                                } label: { Label("Перейти к чату", systemImage: "bubble.left") }
+                                Spacer()
+                                Button("Убрать", role: .destructive) {
+                                    attachedName = ""; attachedText = ""
+                                }
+                            }.font(.system(size: 12))
+                        }
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("ЭКСПОРТ ДИАЛОГА", systemImage: "square.and.arrow.up")
+                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.violet)
+                        Text("Сохраняй переписку в «Файлы» или отправляй через системное меню.")
+                            .font(.system(size: 12)).foregroundStyle(Ink.faint)
+                        ShareLink(item: exportConversation) {
+                            Label("Поделиться перепиской", systemImage: "square.and.arrow.up")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                    }
+                }
+                InkCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("ПРИВАТНОСТЬ", systemImage: "lock.shield")
+                            .font(.system(size: 12, weight: .bold)).foregroundStyle(Ink.cyan)
+                        Text("Файлы обрабатываются локально; PDF и изображения сначала разбирает система iOS. Содержимое не отправляется в Hugging Face. Сеть используется только для поиска и загрузки моделей.")
+                            .font(.system(size: 12)).foregroundStyle(Ink.faint)
+                    }
+                }
+            }.padding(.horizontal, 16).padding(.vertical, 16)
+        }
+    }
+
+    private var exportConversation: String {
+        let rows = history.map {
+            ($0.role == .user ? "Я: " : "x1er_ai: ") + $0.text
+        }
+        return (rows + (llamaState.generatedText.isEmpty ? [] : ["x1er_ai: " + llamaState.generatedText]))
+            .joined(separator: "\n\n")
+    }
+
+    private func importDocument(_ url: URL) {
+        Task.detached(priority: .userInitiated) {
+            do {
+                let text = try X1FileReader.extract(url)
+                await MainActor.run {
+                    attachedName = url.lastPathComponent
+                    attachedText = text
+                    importError = ""
+                }
+            } catch {
+                await MainActor.run { importError = error.localizedDescription }
+            }
+        }
+    }
+
     private var settingsView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
