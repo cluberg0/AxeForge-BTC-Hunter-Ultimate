@@ -71,7 +71,9 @@ struct X1Turn: Sendable {
         let n_ctx = Int(llama_n_ctx(context))
         // Preserve requested space for the answer instead of truncating chat
         // template control tokens in the middle.
-        let reserve = min(Int(n_len), max(64, n_ctx / 3))
+        // Keep a strict output reservation: generation must not overrun KV context.
+        let reserve = min(Int(n_len), max(32, n_ctx / 2))
+        n_len = Int32(reserve)
         let promptBudget = max(32, n_ctx - reserve - 8)
 
         var selected = Array(turns.suffix(24))
