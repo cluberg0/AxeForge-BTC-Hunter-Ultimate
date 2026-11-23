@@ -1,14 +1,27 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
+// Native Apple SF Pro + dynamically resolved iOS colors.
+// The same SwiftUI views render in system, light and dark modes.
 private enum Ink {
-    static let bg = Color(red: 0.030, green: 0.043, blue: 0.071)
-    static let surface = Color(red: 0.075, green: 0.102, blue: 0.147)
-    static let surface2 = Color(red: 0.112, green: 0.153, blue: 0.210)
-    static let cyan = Color(red: 0.36, green: 0.86, blue: 0.95)
-    static let violet = Color(red: 0.55, green: 0.49, blue: 0.98)
-    static let faint = Color(red: 0.65, green: 0.72, blue: 0.82)
-    static let border = Color.white.opacity(0.09)
+    private static func adaptive(_ light: (CGFloat, CGFloat, CGFloat),
+                                 _ dark: (CGFloat, CGFloat, CGFloat),
+                                 alpha: CGFloat = 1) -> Color {
+        Color(uiColor: UIColor { traits in
+            let rgb = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: rgb.0, green: rgb.1, blue: rgb.2, alpha: alpha)
+        })
+    }
+    static let bg = adaptive((0.946, 0.968, 0.984), (0.030, 0.043, 0.071))
+    static let surface = adaptive((0.992, 0.996, 1.000), (0.075, 0.102, 0.147))
+    static let surface2 = adaptive((0.873, 0.921, 0.959), (0.112, 0.153, 0.210))
+    static let cyan = adaptive((0.016, 0.468, 0.659), (0.36, 0.86, 0.95))
+    static let violet = adaptive((0.35, 0.30, 0.76), (0.55, 0.49, 0.98))
+    static let faint = adaptive((0.34, 0.42, 0.51), (0.65, 0.72, 0.82))
+    static let text = adaptive((0.066, 0.122, 0.205), (0.98, 0.99, 1.00))
+    static let onAccent = adaptive((1, 1, 1), (0.030, 0.043, 0.071))
+    static let border = adaptive((0.50, 0.61, 0.73), (0.83, 0.90, 0.99), alpha: 0.16)
 }
 
 private struct InkCard<Content: View>: View {
@@ -73,6 +86,7 @@ struct ContentView: View {
     @AppStorage("x1er_system_prompt") private var systemPrompt = ""
     @AppStorage("x1er_haptics") private var hapticsOn = true
     @AppStorage("x1er_large_text") private var largeText = false
+    @AppStorage("x1er_theme") private var themeChoice = "system"
 
     @State private var page: RunnerPage = .chat
     @State private var draft = ""
@@ -116,7 +130,7 @@ struct ContentView: View {
             }
         }
         .tint(Ink.cyan)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(themeChoice == "light" ? .light : themeChoice == "dark" ? .dark : nil)
         .onReceive(telemetryTimer) { _ in health.refresh() }
         .onChange(of: page) { newPage in
             if newPage != .camera { camera.stop(); lidar.stop() }
@@ -206,7 +220,7 @@ struct ContentView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text("x1er_ai").font(.system(.headline).weight(.semibold))
-                    .tracking(-0.5).foregroundStyle(.white)
+                    .tracking(-0.5).foregroundStyle(Ink.text)
                 Text("ЛОКАЛЬНЫЙ ИИ").font(.system(size: 10, weight: .bold))
                     .tracking(1.2).foregroundStyle(Ink.faint)
             }
@@ -262,7 +276,7 @@ struct ContentView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 21, style: .continuous)
-                .strokeBorder(.white.opacity(0.10), lineWidth: 0.8)
+                .strokeBorder(Ink.border, lineWidth: 0.8)
         )
         .shadow(color: .black.opacity(0.26), radius: 18, y: 7)
         .padding(.horizontal, 15)
@@ -321,7 +335,7 @@ struct ContentView: View {
                                         Text("Твой ИИ. На твоём iPhone.")
                                             .font(.system(.title3).weight(.semibold))
                                             .tracking(-0.5)
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(Ink.text)
                                         Text("Любые совместимые GGUF, приватный чат, файлы и сканирование. Без регистрации и облачного ответа.")
                                             .font(.system(.subheadline))
                                             .foregroundStyle(Ink.faint)
@@ -335,7 +349,7 @@ struct ContentView: View {
                                                 .font(.system(.subheadline).weight(.semibold))
                                                 .frame(maxWidth: .infinity)
                                                 .padding(.vertical, 12)
-                                                .foregroundStyle(Ink.bg)
+                                                .foregroundStyle(Ink.onAccent)
                                                 .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 13))
                                         }
                                         Button {
@@ -421,7 +435,7 @@ struct ContentView: View {
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1.6).foregroundStyle(user ? Ink.cyan : Ink.violet)
                 Text(text).font(.system(size: largeText ? 17 : 15)).lineSpacing(4)
-                    .foregroundStyle(.white.opacity(0.94))
+                    .foregroundStyle(Ink.text.opacity(0.94))
                     .textSelection(.enabled)
             }
             .padding(15)
@@ -458,7 +472,7 @@ struct ContentView: View {
             Button(action: sendMessage) {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(Ink.bg)
+                    .foregroundStyle(Ink.onAccent)
                     .frame(width: 46, height: 46)
                     .background(canSend ? Ink.cyan : Ink.faint,
                                 in: RoundedRectangle(cornerRadius: 15))
@@ -658,7 +672,7 @@ struct ContentView: View {
                             } label: {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 15, weight: .bold))
-                                    .foregroundStyle(Ink.bg)
+                                    .foregroundStyle(Ink.onAccent)
                                     .frame(width: 37, height: 37)
                                     .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 11))
                             }.disabled(library.fetching)
@@ -683,7 +697,7 @@ struct ContentView: View {
                                 Image(systemName: "arrow.right")
                             }
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Ink.bg)
+                            .foregroundStyle(Ink.onAccent)
                             .padding(.horizontal, 16).padding(.vertical, 13)
                             .background(LinearGradient(colors: [Ink.cyan, Color(red: 0.43, green: 0.73, blue: 0.98)],
                                                        startPoint: .leading, endPoint: .trailing),
@@ -864,7 +878,7 @@ struct ContentView: View {
                                     } label: {
                                         Label("Запустить", systemImage: "play.fill")
                                             .font(.system(size: 12, weight: .bold))
-                                            .foregroundStyle(Ink.bg)
+                                            .foregroundStyle(Ink.onAccent)
                                             .padding(.horizontal, 12).padding(.vertical, 9)
                                             .background(Ink.cyan, in: Capsule())
                                     }.disabled(llamaState.loading ||
@@ -996,7 +1010,7 @@ struct ContentView: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(Ink.cyan)
-                            .foregroundStyle(Ink.bg)
+                            .foregroundStyle(Ink.onAccent)
 
                             Button { camera.takePhoto() } label: {
                                 Label("Снимок", systemImage: "camera.fill")
@@ -1069,7 +1083,7 @@ struct ContentView: View {
                                 Spacer()
                                 Image(systemName: "chevron.right")
                             }.font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Ink.bg).padding(13)
+                                .foregroundStyle(Ink.onAccent).padding(13)
                                 .background(Ink.cyan, in: RoundedRectangle(cornerRadius: 12))
                         }
                     }
@@ -1079,7 +1093,7 @@ struct ContentView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Label(attachedName, systemImage: "paperclip")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Ink.text)
                             Text("Извлечено символов: \(attachedText.count) · контекст будет сокращён до доступного окна модели.")
                                 .font(.system(size: 11)).foregroundStyle(Ink.faint)
                             HStack {
@@ -1162,7 +1176,7 @@ struct ContentView: View {
                             } label: {
                                 Label(lidar.running ? "Стоп" : "Начать скан", systemImage: lidar.running ? "pause.fill" : "record.circle")
                             }
-                            .buttonStyle(.borderedProminent).tint(Ink.cyan).foregroundStyle(Ink.bg)
+                            .buttonStyle(.borderedProminent).tint(Ink.cyan).foregroundStyle(Ink.onAccent)
                             .disabled(!lidar.supported)
                             Button { lidar.reset() } label: {
                                 Label("Сброс", systemImage: "arrow.counterclockwise")
@@ -1247,6 +1261,25 @@ struct ContentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
                 titleBlock("Система", subtitle: "Нагрузка устройства и возможности")
+                InkCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("ВНЕШНИЙ ВИД", systemImage: "circle.lefthalf.filled")
+                            .font(.system(.caption).weight(.semibold))
+                            .foregroundStyle(Ink.cyan)
+                        Text("Оформление x1er_ai")
+                            .font(.system(.headline).weight(.semibold))
+                            .foregroundStyle(Ink.text)
+                        Picker("Тема", selection: $themeChoice) {
+                            Label("Система", systemImage: "iphone").tag("system")
+                            Label("День", systemImage: "sun.max.fill").tag("light")
+                            Label("Ночь", systemImage: "moon.stars.fill").tag("dark")
+                        }
+                        .pickerStyle(.segmented)
+                        Text("Как на iPhone: автоматически переключается вместе с оформлением iOS.")
+                            .font(.system(.footnote))
+                            .foregroundStyle(Ink.faint)
+                    }
+                }
                 healthStrip
                 InkCard {
                     VStack(alignment: .leading, spacing: 10) {
@@ -1410,7 +1443,7 @@ struct ContentView: View {
     private func sectionHeader(_ title: String, icon: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon).foregroundStyle(Ink.cyan)
-            Text(title).foregroundStyle(.white)
+            Text(title).foregroundStyle(Ink.text)
             Spacer()
         }
         .font(.system(size: 15, weight: .bold))
@@ -1420,7 +1453,7 @@ struct ContentView: View {
     private func titleBlock(_ title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.system(.title2).weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Ink.text)
             Text(subtitle).font(.subheadline).foregroundStyle(Ink.faint)
         }
         .padding(.horizontal, 3).padding(.bottom, 2)
