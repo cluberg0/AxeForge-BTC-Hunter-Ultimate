@@ -18,6 +18,9 @@ def patch(path, changes):
     print("Updated", path)
 
 patch(lib, [
+    ("var n_len: Int32 = 1024", "var n_len: Int32 = 384"),
+    ('tokens_list = tokenize(text: text, add_bos: true)', 'is_done = false\\n        tokens_list = tokenize(text: text, add_bos: true)'),
+    ('n_cur == n_len', 'n_cur >= n_len'),
     ("let model = llama_model_load_from_file(path, model_params)", """
         // CPU mode saves GPU-side buffers; Metal toggle applies to next load.
         model_params.n_gpu_layers = UserDefaults.standard.bool(forKey: "inkling_use_gpu") ? 99 : 0
