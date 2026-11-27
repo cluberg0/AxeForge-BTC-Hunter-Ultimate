@@ -297,7 +297,7 @@ final class ARMeshManager: NSObject, ObservableObject, ARSessionDelegate {
         do {
             let resource=try MeshResource.generate(from:[descriptor])
             var material=UnlitMaterial(color:UIColor.systemTeal.withAlphaComponent(0.72))
-            material.faceCulling = .none
+            if #available(iOS 18.0, *) { material.faceCulling = .none }
             if let model=overlayModel {model.model=ModelComponent(mesh:resource,materials:[material])}
             else {let model=ModelEntity(mesh:resource,materials:[material]);overlay.addChild(model);overlayModel=model}
         } catch {hint="Не удалось показать сетку: \(error.localizedDescription)"}
