@@ -144,6 +144,19 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  assert(cJSON_GetArrayItem(cJSON_GetArrayItem(trials,0),0)->valueint==604);
  assert(cJSON_GetArrayItem(cJSON_GetArrayItem(trials,15),0)->valueint==619);
  assert(cJSON_GetObjectItem(history,"storageError"));cJSON_Delete(history);
+ // Exercise repeated ring wraparound and JSON allocation/free cycles.
+ for(unsigned i=20;i<4096;i++){
+  turbo::trial(uint16_t(600+i%100),1170,float(1200+i),23,0);
+  if(i%64==63){
+   assert(turbo::get(&history_req)==0);
+   auto* snapshot=cJSON_Parse(response.c_str());assert(snapshot);
+   assert(cJSON_GetObjectItem(snapshot,"totalSteps")->valueint==int(i+1));
+   auto* ring=cJSON_GetObjectItem(snapshot,"trials");assert(cJSON_GetArraySize(ring)==16);
+   for(unsigned j=0;j<16;j++)
+    assert(cJSON_GetArrayItem(cJSON_GetArrayItem(ring,j),0)->valueint==int(600+(i-15+j)%100));
+   cJSON_Delete(snapshot);
+  }
+ }
  turbo::finish();
  reset();cfg.overclock=false;''')
 p.write_text(s)
