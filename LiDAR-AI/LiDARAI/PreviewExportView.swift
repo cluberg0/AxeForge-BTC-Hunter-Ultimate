@@ -71,7 +71,7 @@ struct PreviewExportView: View {
         do {
             let dir=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true)
             try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true)
-            let url=dir.appendingPathComponent("LiDAR-AI.obj"); try result.obj.write(to:url,atomically:true,encoding:.utf8)
+            let url=dir.appendingPathComponent("LiDAR-AI-v2.obj"); try result.obj.write(to:url,atomically:true,encoding:.utf8)
             share=ShareItem(url:url)
         } catch { message=error.localizedDescription }
     }
