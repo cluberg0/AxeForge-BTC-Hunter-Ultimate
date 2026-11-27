@@ -66,7 +66,7 @@ s=s.replace(anchor,''' {
   if(restored.mhz)seed=restored;
  }
  }
- ESP_LOGI("turbo","FASTSEARCH startup seed %u MHz @ %u mV; rollback %u MHz",
+ ESP_LOGW("turbo","FASTSEARCH startup seed %u MHz @ %u mV; rollback %u MHz",
           unsigned(seed.mhz),unsigned(seed.mv),unsigned(anchor_point.mhz));
 '''+anchor,1)
 p.write_text(s)
