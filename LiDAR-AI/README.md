@@ -1,0 +1,2 @@
+# LiDAR AI Scanner
+Native iOS 16+ ARKit/RealityKit LiDAR scanner. Open LiDARAI.xcodeproj; select an iPhone/iPad with LiDAR. Generate the app icon with python3 generate-icon.py before local building. No third-party Swift dependencies. GitHub Actions produces an unsigned IPA requiring signing before installation. Scan dimensions are approximate, not metrology.

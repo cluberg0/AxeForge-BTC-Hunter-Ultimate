@@ -2,7 +2,7 @@ name: LiDAR AI IPA
 on:
   push:
     branches: [lidar-ai]
-    paths: ['LiDAR-AI/**']
+    paths: ['LiDAR-AI/**', '.github/workflows/lidar-ai.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Geometry tests
         run: swiftc LiDARAI/MeshProcessor.swift Tests/MeshTests.swift -o /tmp/mesh-tests && /tmp/mesh-tests
+      - name: Generate app icon
+        run: python3 generate-icon.py
       - name: Build
         run: |
           set -o pipefail
