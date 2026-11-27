@@ -122,6 +122,16 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  begin();assert(turbo::next_candidate(candidate)&&candidate.mhz==800);
  assert(!turbo::next_candidate(candidate));turbo::finish();
 
+ // Once flash recovers, a fresh verified measurement must persist and
+ // survive another reboot, rather than leaving storage permanently degraded.
+ begin();
+ assert(turbo::remember(825,1200,1650,24,55,60));
+ assert(turbo::persisted&&turbo::storage_error==ESP_OK);
+ assert(saved.at("map_v4")!=baseline&&pending.empty());
+ turbo::finish();turbo::archive=turbo::Archive{};turbo::start();
+ assert(turbo::persisted&&turbo::storage_error==ESP_OK);
+ begin();assert(turbo::next_candidate(candidate)&&candidate.mhz==825);
+ turbo::finish();
 
  // The API reports the complete attempt count while preserving a bounded,
  // chronological ring for the browser even beyond sixteen attempts.
