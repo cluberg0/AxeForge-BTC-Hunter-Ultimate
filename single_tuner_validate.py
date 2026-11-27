@@ -22,7 +22,10 @@ assert 'ONE-TUNER: поиск' not in cpp
 assert 'Only FASTSEARCH is available on Gamma' in cpp
 assert 'if(turbo::supported()){if(turbo::unlocked())turbo::request_search();}' in cpp
 assert 'if(turbo::supported() && cfg.autotune)' in tuner
-assert 'gamma_network_retries<2' in tuner
+assert 'gamma_network_retries<2' not in tuner
+assert 'if(gamma_network_retries<5)++gamma_network_retries;' in tuner
+assert 'pdMS_TO_TICKS(120000u * gamma_network_retries)' in tuner
+assert 'turbo::reason()==turbo::Reason::Network' in tuner
 assert 's_hold' in tuner
 assert 'turbo::power_budget()' in tuner
 assert 'WARMUP_S 120' in tuner and 'FAST_WINDOW_S 120' in tuner
