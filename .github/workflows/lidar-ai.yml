@@ -1,0 +1,42 @@
+name: LiDAR AI IPA
+on:
+  push:
+    branches: [lidar-ai]
+    paths: ['LiDAR-AI/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    if: github.ref == 'refs/heads/lidar-ai'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: LiDAR-AI
+    steps:
+      - uses: actions/checkout@v4
+      - name: Geometry tests
+        run: swiftc LiDARAI/MeshProcessor.swift Tests/MeshTests.swift -o /tmp/mesh-tests && /tmp/mesh-tests
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project LiDARAI.xcodeproj -scheme LiDARAI -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$PWD/build" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' build 2>&1 | tee xcodebuild.log
+      - name: Package
+        run: |
+          mkdir -p dist/Payload
+          cp -R build/Build/Products/Release-iphoneos/LiDARAI.app dist/Payload/
+          test -f dist/Payload/LiDARAI.app/LiDARAI
+          cd dist
+          zip -qry LiDARAI-unsigned.ipa Payload
+          unzip -t LiDARAI-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LiDARAI-unsigned
+          path: LiDAR-AI/dist/LiDARAI-unsigned.ipa
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LiDARAI-build-log
+          path: LiDAR-AI/xcodebuild.log
+          if-no-files-found: ignore
