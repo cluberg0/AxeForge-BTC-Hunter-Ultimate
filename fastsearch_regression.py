@@ -105,6 +105,23 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  read_fail=false;reset();assert(saved.count("map_v4")&&!saved.at("map_v4").empty());saved.at("map_v4")[0]^=1;turbo::start();
  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK);
  saved["map_v4"]=durable;reset();turbo::start();assert(turbo::persisted&&turbo::storage_error==ESP_OK);
+ // Repeated failed writes and commits must never replace the durable map.
+ // Exercise the actual controller under alternating flash faults, then reboot.
+ reset();begin();turbo::archive=turbo::Archive{};
+ assert(turbo::remember(800,1170,1600,23.5f,55,60));
+ const auto baseline=saved.at("map_v4");
+ for(unsigned cycle=0;cycle<256;cycle++){
+  write_fail=(cycle%2)==0;commit_fail=!write_fail;
+  assert(turbo::remember(825,1200,1650,24,55,60));
+  assert(!turbo::persisted&&turbo::storage_error!=ESP_OK);
+  assert(saved.at("map_v4")==baseline&&pending.empty());
+ }
+ write_fail=commit_fail=false;
+ turbo::finish();turbo::archive=turbo::Archive{};turbo::start();
+ assert(turbo::persisted&&turbo::storage_error==ESP_OK);
+ begin();assert(turbo::next_candidate(candidate)&&candidate.mhz==800);
+ assert(!turbo::next_candidate(candidate));turbo::finish();
+
 
  // The API reports the complete attempt count while preserving a bounded,
  // chronological ring for the browser even beyond sixteen attempts.
