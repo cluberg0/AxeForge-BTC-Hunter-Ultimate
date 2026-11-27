@@ -20,3 +20,19 @@ assert s.count(a)==1
 s=s.replace(a,'trial_count=0;power_watch_samples=0;')
 p.write_text(s)
 print('V3: PSU spike debounce and verified result retention')
+
+# Retry transient network failures indefinitely with a bounded interval.
+# Explicit stop and fatal hardware faults remain latched.
+p=Path(sys.argv[1])/'upstream/main/core/tuner.cpp'
+s=p.read_text()
+a='turbo::reason()==turbo::Reason::Network && gamma_network_retries<2'
+assert s.count(a)==1
+s=s.replace(a,'turbo::reason()==turbo::Reason::Network')
+a='++gamma_network_retries;'
+assert s.count(a)==1
+s=s.replace(a,'if(gamma_network_retries<5)++gamma_network_retries;\n                note("FASTSEARCH: network recovery scheduled");')
+a='pdMS_TO_TICKS(120000);'
+assert s.count(a)==1
+s=s.replace(a,'pdMS_TO_TICKS(120000u * gamma_network_retries);')
+p.write_text(s)
+print("Network recovery: repeated guarded retries with 2-10 minute backoff")
