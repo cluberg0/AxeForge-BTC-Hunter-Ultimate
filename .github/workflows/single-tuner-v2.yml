@@ -67,6 +67,23 @@ jobs:
           PY
           bash scripts/test.sh
 
+      - name: Architecture audit (Deslop Python and web)
+        working-directory: project
+        run: |
+          npm install -g @sourcegraph/scip-python @sourcegraph/scip-typescript
+          cargo install --locked --git https://github.com/Bor4brn/deslop-please --rev acb918de6bc44d3add02840b6a6e450e30c00636
+          # Include standalone Python generators in a separate manifest-backed project.
+          mkdir -p architecture-audit/generators
+          cp ../*.py architecture-audit/generators/
+          printf '[project]\nname = "axeforge-generators"\nversion = "0.0.0"\n' > architecture-audit/generators/pyproject.toml
+          cd architecture-audit/generators
+          deslop-please --language python
+      - name: Architecture audit (prepared web sources)
+        working-directory: project
+        run: |
+          deslop-please --language javascript
+          deslop-please --language typescript
+
       - name: Browser regression tests
         working-directory: project
         run: |
