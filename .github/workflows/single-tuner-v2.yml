@@ -71,7 +71,7 @@ jobs:
         working-directory: project
         run: |
           npm install -g @sourcegraph/scip-python @sourcegraph/scip-typescript
-          cargo install --locked --git https://github.com/Bor4brn/deslop-please --rev acb918de6bc44d3add02840b6a6e450e30c00636
+          cargo install --locked --git https://github.com/Bor4brn/deslop-please --rev acb918de6bc44d3add02840b6a6e450e30c00636 deslop-please
           # Include standalone Python generators in a separate manifest-backed project.
           mkdir -p architecture-audit/generators
           cp ../*.py architecture-audit/generators/
