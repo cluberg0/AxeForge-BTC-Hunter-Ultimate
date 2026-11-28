@@ -33,16 +33,18 @@ assert 'current_limit=std::min(amps-.5f,6.5f)' in Path("upstream/main/core/turbo
 assert 'user>30' in Path("upstream/main/core/turbo_math.h").read_text()
 class Parser(HTMLParser):
  def __init__(self):
-  super().__init__();self.scripts=[];self.inscript=False
+  super().__init__();self._scripts=[];self.inscript=False
  def handle_starttag(self,t,attrs):
   if t=='script':self.inscript=True
  def handle_endtag(self,t):
   if t=='script':self.inscript=False
  def handle_data(self,data):
-  if self.inscript:self.scripts.append(data)
-p=Parser();p.feed(s)
-assert p.scripts, "No inline scripts"
+  if self.inscript:self._scripts.append(data)
+ def javascript(self):
+  assert self._scripts, "No inline scripts"
+  return "\n".join(self._scripts)
+p=Parser();p.feed(s);p.close()
 with tempfile.NamedTemporaryFile(mode="w",suffix=".js") as f:
- f.write("\n".join(p.scripts));f.flush()
+ f.write(p.javascript());f.flush()
  subprocess.run(["node","--check",f.name],check=True)
 print("Verified one visible FASTSEARCH tuner, one cap, safety guards and valid JS")
