@@ -74,3 +74,22 @@ p.write_text(s)
 overlay=root/"overlay/main/core/turbo.cpp"
 overlay.write_text(s)
 print("V4 compact archive: 4 verified points, legacy read-only, no NVS erase")
+
+
+# Reset the retry epoch only when the production phase enters verified HOLD.
+# Keep the counter in the tuner task; pass it explicitly to the phase.
+p=root/"upstream/main/core/tuner.cpp"
+s=p.read_text()
+def replace_once(old,new):
+ global s
+ assert s.count(old)==1,(old,s.count(old))
+ s=s.replace(old,new,1)
+replace_once("static void run_turbo_phase()", "static void run_turbo_phase(unsigned *network_retries=nullptr)")
+replace_once("        g_state.tuner.phase=TunerPhase::Locked;", "        if(network_retries)*network_retries=0;\\n        g_state.tuner.phase=TunerPhase::Locked;".replace("\\n","\n"))
+replace_once("            run_turbo_phase();", "            run_turbo_phase(&gamma_network_retries);")
+p.write_text(s)
+# Preserve extraction of the production phase in the native harness.
+p=root/"tests/turbo_phase.py"
+s=p.read_text().replace("static void run_turbo_phase()", "static void run_turbo_phase(unsigned *network_retries=nullptr)")
+p.write_text(s)
+print("Network retry epoch resets only on verified HOLD")
