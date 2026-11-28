@@ -130,7 +130,13 @@ s = change(s, ' reset();cfg.overclock=false;', r'''
  assert(saved.at("map_v4")!=baseline&&pending.empty());
  turbo::finish();turbo::archive=turbo::Archive{};turbo::start();
  assert(turbo::persisted&&turbo::storage_error==ESP_OK);
- begin();assert(turbo::next_candidate(candidate)&&candidate.mhz==825);
+ begin();
+ // Recovery ranking must not select a voltage above the applied voltage.
+ // Model the safe preselection operating state, as in the ranking tests above.
+ g_state.core_mv=1200;
+ assert(turbo::next_candidate(candidate)&&candidate.mhz==825&&candidate.mv==1200);
+ assert(turbo::next_candidate(candidate)&&candidate.mhz==800);
+ assert(!turbo::next_candidate(candidate));
  turbo::finish();
 
  // The API reports the complete attempt count while preserving a bounded,
